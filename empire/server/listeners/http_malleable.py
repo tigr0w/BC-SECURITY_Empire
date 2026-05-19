@@ -1,5 +1,7 @@
 import base64
 import copy
+import fnmatch
+import ipaddress
 import logging
 import os
 import secrets
@@ -1416,6 +1418,70 @@ class ExtendedPacketHandler(PacketHandler):
         profile = malleable.Profile._deserialize(self.serialized_profile)
         profile.validate()
 
+        listener_name = self.options["Name"]["Value"]
+        listener_uses_https = str(host).startswith("https")
+
+        # Warn if the profile defines an https-certificate block AND the
+        # listener is configured for HTTPS — the block does not yet drive
+        # cert generation, so the operator's CN/O/validity won't take
+        # effect. We deliberately gate on listener_uses_https rather than
+        # `certPath` truthiness: an empty CertPath still loads
+        # setup/empire-chain.pem at line ~1921, so the warning must
+        # fire there too. The original `certPath and ...` guard missed
+        # that case and false-positived on stale HTTP listeners.
+        if listener_uses_https and not profile.https_certificate.is_default():
+            effective_cert_path = (
+                certPath if (certPath and str(certPath).strip()) else "setup (default)"
+            )
+            self.instance_log.warning(
+                "%s: https-certificate block in profile is ignored — Empire "
+                "loads the PEM from %r. Profile values (CN=%r, O=%r, "
+                "validity=%r) will not take effect until runtime cert "
+                "generation lands.",
+                listener_name,
+                effective_cert_path,
+                profile.https_certificate.cn,
+                profile.https_certificate.o,
+                profile.https_certificate.validity,
+            )
+
+        # `set headers "A, B, C";` declares response-header ordering. The
+        # underlying Flask/Werkzeug stack does not expose a way to enforce
+        # ordering, so we surface it as an operator-visible INFO note
+        # rather than silently storing inert state (the second-pass review
+        # called this out as a future-rot risk).
+        if profile.http_config.header_order:
+            self.instance_log.info(
+                "%s: profile declares header_order=%r — Empire cannot enforce "
+                "response header ordering (Flask/Werkzeug limitation). "
+                "Ordering will be best-effort.",
+                listener_name,
+                list(profile.http_config.header_order),
+            )
+
+        # Boot-time freshness contract: trust_x_forwarded_for,
+        # block_useragent_globs, http_config_headers, and ua_length_cap
+        # are all captured here from the same boot-time profile. They
+        # remain stable for the listener's lifetime. The per-request
+        # `Profile._deserialize` at the top of handle_request only
+        # rebuilds the malleable transaction state (URIs, transforms,
+        # terminators) — the http-config knobs do not need that work.
+        #
+        # Profile reload via POST /api/v2/malleable-profiles/reload
+        # updates the DB but does NOT mutate self.serialized_profile.
+        # Active listeners must be restarted to pick up profile changes.
+        trust_x_forwarded_for = profile.http_config.trust_x_forwarded_for
+        block_useragent_globs = profile.http_config.block_useragents
+        # Cap UA bytes before fnmatch to bound worst-case glob cost.
+        # 4 KiB is well above the longest UA in shipped CS profiles
+        # (~200 bytes including the leading `header "User-Agent"`
+        # declaration). Be aware: `*needle*` style globs cannot match
+        # anywhere past the cap, so an attacker padding with 4 KiB of
+        # innocent bytes can slip a suffix-glob block. Prefix and exact
+        # globs (the common case for blocking curl/wget/lynx) are
+        # unaffected.
+        ua_length_cap = 4096
+
         # suppress the normal Flask output
         log = logging.getLogger("werkzeug")
         log.setLevel(logging.ERROR)
@@ -1429,14 +1495,81 @@ class ExtendedPacketHandler(PacketHandler):
         app = Flask(__name__, template_folder=self.template_dir)
         self.app = app
 
+        # http-config { header "X" "Y"; } directives merge into every
+        # non-blocked response. Captured by closure from the boot-time
+        # profile (see freshness contract comment above). Use
+        # setdefault() so per-response headers set by the request handler
+        # (e.g. malleable http-get/http-post server-block headers) take
+        # precedence over http-config defaults.
+        #
+        # Headers are intentionally merged onto the 404 from the UA-block
+        # path too: a blocked scanner getting `Server: Apache` looks
+        # identical to a real "URI not found" Apache 404, which is the
+        # blending the operator wanted when they configured both
+        # block_useragents and the header directive.
+        http_config_headers = list(profile.http_config.headers)
+        if http_config_headers:
+
+            @app.after_request
+            def _merge_http_config_headers(response):
+                for name, value in http_config_headers:
+                    response.headers.setdefault(name, value)
+                return response
+
         @app.route("/", methods=["GET", "POST"])
         @app.route("/<path:request_uri>", methods=["GET", "POST"])
         def handle_request(request_uri="", tempListenerOptions=None):
             """
             Handle an agent request.
             """
-            data = request.get_data()
+            # Derive clientIP first — needed for the UA-block log and the
+            # full request log line below. trust_x_forwarded_for defaults
+            # to False (a True default would be a spoofing vector since
+            # the header is attacker-controllable without a trusted
+            # upstream proxy). When True, take the FIRST entry in XFF —
+            # the de-facto convention (mirrors the leftmost-is-client
+            # rule from RFC 7239 §5.2 for the standardized `Forwarded`
+            # header, which XFF predates).
+            #
+            # The forwarded value is validated as an IPv4/IPv6 address
+            # before assignment; arbitrary strings would otherwise flow
+            # into agent records, host registration, and Starkiller.
             clientIP = request.remote_addr
+            if trust_x_forwarded_for:
+                xff = request.headers.get("X-Forwarded-For")
+                if xff:
+                    forwarded = xff.split(",")[0].strip()
+                    if forwarded:
+                        try:
+                            ipaddress.ip_address(forwarded)
+                            clientIP = forwarded
+                        except ValueError:
+                            self.instance_log.warning(
+                                "%s: ignoring malformed X-Forwarded-For=%r from %s",
+                                self.options["Name"]["Value"],
+                                forwarded[:120],
+                                request.remote_addr,
+                            )
+
+            # block_useragents fast-path: short-circuit before the
+            # per-request profile deserialize so adversarial scanner
+            # traffic does not pay the deserialization cost. fnmatch
+            # globs only — no regex — to avoid ReDoS from operator-pasted
+            # public CS profiles. UA bytes are capped before evaluation
+            # so the worst-case scan stays bounded.
+            if block_useragent_globs:
+                ua_raw = (request.headers.get("User-Agent") or "")[:ua_length_cap]
+                ua = ua_raw.lower()
+                if any(fnmatch.fnmatchcase(ua, pat) for pat in block_useragent_globs):
+                    self.instance_log.warning(
+                        "%s: blocking request from %s on User-Agent match (UA=%r)",
+                        self.options["Name"]["Value"],
+                        clientIP,
+                        ua_raw[:120],
+                    )
+                    return Response(self.default_response(), 404)
+
+            data = request.get_data()
             url = request.url
             method = request.method
             headers = request.headers
@@ -1481,6 +1614,15 @@ class ExtendedPacketHandler(PacketHandler):
                     # log invalid uri
                     message = f"{listenerName}: unknown uri /{request_uri} requested by {clientIP}."
                     self.instance_log.warning(message)
+                    # Return the shared IIS-7.5 404 page so the listener
+                    # fingerprint stays uniform across the host_stage gate,
+                    # block_useragents fast-path, and unknown-URI dispatch.
+                    # Without this return the closure falls through to
+                    # `implementation.extract_client(...)` with
+                    # implementation=None, raising AttributeError and
+                    # surfacing a Flask 500 — a distinctive fingerprint
+                    # any non-blocked scanner can probe for.
+                    return Response(self.default_response(), 404)
 
                 # Tier 0 host_stage gate: if the operator set `host_stage
                 # "false";` in the profile, refuse to serve the stager URI

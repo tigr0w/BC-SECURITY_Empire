@@ -22,7 +22,10 @@ import pytest
 
 from empire.server.common.malleable.profile import (
     _AGENT_PROFILE_SCHEMA_VERSION,
+    HttpConfig,
+    HttpsCertificate,
     Profile,
+    _coerce_bool,
 )
 from empire.server.common.malleable.transformation import (
     Transform,
@@ -123,12 +126,8 @@ class TestSerializeForAgentTopLevel:
             / "comms"
             / "malleable.go"
         )
-        # The pattern tolerates an optional Go type annotation (e.g.
-        # `const supportedProfileVersion uint8 = 1`) so a future agent-side
-        # refactor that adds a type doesn't silently break the cross-language
-        # pin. The constant name itself stays anchored.
         match = re.search(
-            r"^\s*const\s+supportedProfileVersion(?:\s+\w+)?\s*=\s*(\d+)\s*$",
+            r"^\s*const\s+supportedProfileVersion\s*=\s*(\d+)\s*$",
             gopire.read_text(),
             re.MULTILINE,
         )
@@ -519,25 +518,41 @@ http-stager {
         p = self._ingest('set sample_name "Operation Foo";\n')
         assert p.sample_name == "Operation Foo"
 
-    def test_accepted_but_ignored_directive_logs_info(self, caplog):
-        with caplog.at_level("INFO", logger="empire.server.common.malleable.profile"):
+    def test_accepted_but_ignored_directive_logs_debug(self, caplog):
+        # Shipped CS profiles routinely declare directives Empire does not
+        # yet honor (maxdns, compile_time, image_size_*, dns_idle, userwx,
+        # …). Emitting one INFO per directive per profile load — and Empire
+        # loads several profiles per startup — flooded operator consoles
+        # with non-actionable messages. These are diagnostics, not events.
+        with caplog.at_level("DEBUG", logger="empire.server.common.malleable.profile"):
             self._ingest('set dns_idle "8.8.8.8";\n')
-        messages = [r.getMessage() for r in caplog.records]
-        info_logs = [
-            m for m in messages if "dns_idle" in m and "does not act on it yet" in m
+        debug_logs = [
+            r.getMessage()
+            for r in caplog.records
+            if r.levelname == "DEBUG"
+            and "dns_idle" in r.getMessage()
+            and "does not act on it yet" in r.getMessage()
         ]
-        assert info_logs, (
-            f"expected INFO log for accepted-but-ignored key, saw: {messages}"
+        assert debug_logs, (
+            f"expected DEBUG log for accepted-but-ignored key, saw: "
+            f"{[(r.levelname, r.getMessage()) for r in caplog.records]}"
         )
 
-    def test_accepted_but_ignored_directive_emits_no_warning(self, caplog):
-        with caplog.at_level(
-            "WARNING", logger="empire.server.common.malleable.profile"
-        ):
+    def test_accepted_but_ignored_directive_emits_no_info_or_warning(self, caplog):
+        # Stronger than the previous WARNING-only check: shipped profiles
+        # produce zero INFO and zero WARNING for accepted-but-ignored keys
+        # post-DEBUG-demotion. INFO would still surface in the default
+        # Empire log level, defeating the purpose of the change.
+        with caplog.at_level("INFO", logger="empire.server.common.malleable.profile"):
             self._ingest('set dns_idle "8.8.8.8";\n')
-        warnings = [r for r in caplog.records if r.levelname == "WARNING"]
-        assert warnings == [], (
-            f"unexpected WARNINGs: {[r.getMessage() for r in warnings]}"
+        loud = [
+            (r.levelname, r.getMessage())
+            for r in caplog.records
+            if r.levelname in {"INFO", "WARNING"}
+            and "does not act on it yet" in r.getMessage()
+        ]
+        assert loud == [], (
+            f"accepted-but-ignored directives must be DEBUG-only, got: {loud}"
         )
 
     def test_unknown_directive_emits_warning(self, caplog):
@@ -555,6 +570,22 @@ http-stager {
         roundtripped = Profile._deserialize(p._serialize())
         assert roundtripped.host_stage is False
         assert isinstance(roundtripped.host_stage, bool)
+
+    def test_deserialize_host_stage_string_does_not_silently_flip(self):
+        # Same C2 footgun as TestTier1HttpConfigBlock's trust_xff guard, but
+        # for the Tier 0 stager gate: a stored profile whose host_stage
+        # round-tripped as the *string* "false" must NOT come back as True
+        # via bool("false") and silently re-enable the stager URI.
+        p = self._ingest('set host_stage "true";\n')
+        blob = p._serialize()
+        blob["host_stage"] = "false"  # simulate stringified round-trip
+        roundtripped = Profile._deserialize(blob)
+        assert roundtripped.host_stage is False, (
+            "stringified host_stage='false' must not flip the stager gate to True"
+        )
+        # Sanity: a missing host_stage still defaults to the documented True.
+        del blob["host_stage"]
+        assert Profile._deserialize(blob).host_stage is True
 
     def test_roundtrip_through_clone_preserves_sample_name(self):
         p = self._ingest('set sample_name "trial-run";\n')
@@ -599,4 +630,506 @@ class TestShippedProfilesAllowList:
             "shipped profiles produced parser warnings — either add the new key "
             "to _ACCEPTED_BUT_IGNORED_SET_KEYS in profile.py, or fix the profile:\n  "
             + "\n  ".join(f"{path}: {msg}" for path, msg in offenders)
+        )
+
+
+class TestTier1HttpConfigBlock:
+    """Tier 1: the new top-level http-config block. Listener-only behavior:
+    trust_x_forwarded_for, block_useragents (fnmatch globs), and default
+    response headers.
+    """
+
+    _SKELETON = """
+http-get {
+    set uri "/";
+    client { metadata { base64; header "Cookie"; } }
+    server { output { base64; print; } }
+}
+
+http-post {
+    set uri "/submit.php";
+    client { id { netbios; parameter "id"; } output { base64; print; } }
+    server { output { base64; print; } }
+}
+
+http-stager {
+    set uri_x86 "/a";
+    set uri_x64 "/b";
+    client { metadata { base64; header "Cookie"; } }
+    server { output { base64; print; } }
+}
+"""
+
+    def _ingest(self, http_config_block: str) -> Profile:
+        p = Profile()
+        p.ingest(content=http_config_block + self._SKELETON)
+        return p
+
+    def test_default_trust_x_forwarded_for_is_false(self):
+        # CRITICAL: trust_x_forwarded_for defaulting to True would be a
+        # spoofing vector. This test guards the secure default.
+        p = Profile()
+        assert p.http_config.trust_x_forwarded_for is False
+        assert isinstance(p.http_config.trust_x_forwarded_for, bool)
+
+    def test_default_block_useragents_empty(self):
+        p = Profile()
+        # Stored as a tuple post-Tier-1 second-pass review so the listener
+        # can consume it without re-normalizing.
+        assert p.http_config.block_useragents == ()
+
+    def test_default_headers_empty(self):
+        p = Profile()
+        assert p.http_config.headers == []
+        assert p.http_config.header_order == []
+
+    def test_trust_x_forwarded_for_true_parsed_as_bool(self):
+        p = self._ingest('http-config { set trust_x_forwarded_for "true"; }\n')
+        assert p.http_config.trust_x_forwarded_for is True
+
+    def test_trust_x_forwarded_for_false_parsed_as_bool(self):
+        p = self._ingest('http-config { set trust_x_forwarded_for "false"; }\n')
+        assert p.http_config.trust_x_forwarded_for is False
+
+    def test_trust_x_forwarded_for_accepts_truthy_aliases(self):
+        # CS-vintage profiles use "1", "yes", "on" interchangeably with
+        # "true" — and any case combination. _TRUTHY_LITERALS is the
+        # single source of truth; if a future refactor narrows the check,
+        # operator profiles silently regress to insecure-False (which is
+        # the secure direction, but the operator's intent is ignored).
+        for truthy in ("true", "TRUE", "True", "yes", "Yes", "on", "ON", "1"):
+            p = self._ingest(
+                f'http-config {{ set trust_x_forwarded_for "{truthy}"; }}\n'
+            )
+            assert p.http_config.trust_x_forwarded_for is True, truthy
+
+    def test_block_useragents_splits_comma_separated_globs(self):
+        # Shipped CS profiles ship comma-separated globs:
+        #   set block_useragents "curl*,lynx*,wget*";
+        # Stored as a lowercase tuple — normalization happens at parse
+        # time so the listener does not have to lowercase per request.
+        p = self._ingest('http-config { set block_useragents "curl*,lynx*,wget*"; }\n')
+        assert p.http_config.block_useragents == ("curl*", "lynx*", "wget*")
+
+    def test_block_useragents_lowercases_and_dedupes(self):
+        # Second-pass review concern: a duplicate `set block_useragents`
+        # value used to produce two scans per request. Normalize at the
+        # type boundary so dedup + lowercase happens once. Order is
+        # preserved (first occurrence wins).
+        p = self._ingest(
+            'http-config { set block_useragents "Curl*,CURL*,wget*,curl*"; }\n'
+        )
+        assert p.http_config.block_useragents == ("curl*", "wget*")
+
+    def test_block_useragents_trims_whitespace(self):
+        p = self._ingest(
+            'http-config { set block_useragents " curl* , lynx* , wget* "; }\n'
+        )
+        assert p.http_config.block_useragents == ("curl*", "lynx*", "wget*")
+
+    def test_header_directive_accumulates_name_value_tuples(self):
+        p = self._ingest(
+            "http-config {\n"
+            '    header "Server" "Apache";\n'
+            '    header "X-Custom" "yes";\n'
+            "}\n"
+        )
+        assert p.http_config.headers == [("Server", "Apache"), ("X-Custom", "yes")]
+
+    def test_header_directive_with_crlf_in_name_or_value_is_dropped(self, caplog):
+        # Drop the whole directive at parse time when either the name or
+        # the value contains CR/LF — without this, the after_request merge
+        # in the Flask listener becomes a header-injection vector and we
+        # depend on Werkzeug's response-finalize check for safety.
+        caplog.set_level("WARNING")
+        p = self._ingest(
+            "http-config {\n"
+            '    header "X-Good" "fine";\n'
+            '    header "X-CRLF" "v1\\r\\nInjected: bad";\n'
+            '    header "X-LF-Only" "v2\\nInjected: bad";\n'
+            '    header "X-CR-Only" "v3\\rInjected: bad";\n'
+            '    header "Bad\\r\\nX-Smuggled: 1" "x";\n'
+            '    header "Bad\\nName" "x";\n'
+            '    header "X-After" "also-fine";\n'
+            "}\n"
+        )
+        assert p.http_config.headers == [
+            ("X-Good", "fine"),
+            ("X-After", "also-fine"),
+        ], "CRLF in either header name OR value must drop the directive"
+        # Match on the invariant phrase the guard emits, not on "CRLF"
+        # substrings — keeps the test stable across log-message wording.
+        # Names are logged via %r so control chars appear as escapes; match
+        # the repr() form so the assertion is exact for both shapes.
+        guard_warnings = [
+            r.getMessage()
+            for r in caplog.records
+            if r.levelname == "WARNING" and "header injection guard" in r.getMessage()
+        ]
+        dropped_offenders = {
+            offender
+            for offender in (
+                "X-CRLF",
+                "X-LF-Only",
+                "X-CR-Only",
+                "Bad\r\nX-Smuggled: 1",
+                "Bad\nName",
+            )
+            if any(repr(offender) in w for w in guard_warnings)
+        }
+        assert dropped_offenders == {
+            "X-CRLF",
+            "X-LF-Only",
+            "X-CR-Only",
+            "Bad\r\nX-Smuggled: 1",
+            "Bad\nName",
+        }, (
+            f"expected a header-injection WARNING naming each dropped "
+            f"directive, got {dropped_offenders} from {guard_warnings}"
+        )
+
+    def test_deserialize_rejects_crlf_smuggled_via_stored_blob(self, caplog):
+        # Symmetric to the parse-time guard: a hand-edited DB row, an
+        # older serialized blob, or a future transport (YAML) carrying
+        # ["X-Smuggled\r\nInjected: 1", "x"] in the headers list must
+        # NOT bypass the parse-time check and land in c.headers — that
+        # would re-expose the Flask after_request merge to header
+        # injection through the deserialize path.
+        caplog.set_level("WARNING")
+        c = HttpConfig._deserialize(
+            {
+                "headers": [
+                    ["X-Good", "fine"],
+                    ["X-Smuggled\r\nInjected: 1", "ok"],
+                    ["X-After", "v\nlf-in-value"],
+                    ["X-Clean", "also-fine"],
+                ],
+            }
+        )
+        assert c.headers == [
+            ("X-Good", "fine"),
+            ("X-Clean", "also-fine"),
+        ], "CRLF-bearing headers in serialized data must be dropped on deserialize"
+        guard_warnings = [
+            r.getMessage()
+            for r in caplog.records
+            if r.levelname == "WARNING" and "header injection guard" in r.getMessage()
+        ]
+        assert any(
+            "X-Smuggled" in repr(w) or "X-Smuggled" in w for w in guard_warnings
+        ), f"expected WARNING naming the smuggled name, got: {guard_warnings}"
+        assert any("X-After" in w for w in guard_warnings), (
+            f"expected WARNING naming the LF-in-value offender, got: {guard_warnings}"
+        )
+
+    def test_header_order_directive_splits_comma_list(self):
+        p = self._ingest(
+            'http-config { set headers "Server, Content-Type, Cache-Control"; }\n'
+        )
+        assert p.http_config.header_order == [
+            "Server",
+            "Content-Type",
+            "Cache-Control",
+        ]
+
+    def test_clone_preserves_http_config(self):
+        p = self._ingest(
+            "http-config {\n"
+            '    set trust_x_forwarded_for "true";\n'
+            '    set block_useragents "curl*,wget*";\n'
+            '    header "Server" "Apache";\n'
+            "}\n"
+        )
+        clone = p._clone()
+        assert clone.http_config.trust_x_forwarded_for is True
+        assert clone.http_config.block_useragents == ("curl*", "wget*")
+        assert clone.http_config.headers == [("Server", "Apache")]
+
+    def test_serialize_roundtrip_preserves_http_config(self):
+        p = self._ingest(
+            "http-config {\n"
+            '    set trust_x_forwarded_for "true";\n'
+            '    set block_useragents "curl*";\n'
+            '    header "X-Empire" "yes";\n'
+            "}\n"
+        )
+        rt = Profile._deserialize(p._serialize())
+        assert rt.http_config.trust_x_forwarded_for is True
+        assert rt.http_config.block_useragents == ("curl*",)
+        assert rt.http_config.headers == [("X-Empire", "yes")]
+
+
+class TestTier1HttpsCertificateBlock:
+    """Parser coverage for the new top-level ``https-certificate`` block.
+
+    Tier 1 lands the parser only. Listener-side behavior (the startup
+    collision WARNING when an https-certificate block is paired with an
+    HTTPS listener) is a separate concern that would require Flask
+    test-client scaffolding; not covered here.
+    """
+
+    _SKELETON = TestTier1HttpConfigBlock._SKELETON
+
+    def _ingest(self, cert_block: str) -> Profile:
+        p = Profile()
+        p.ingest(content=cert_block + self._SKELETON)
+        return p
+
+    def test_default_is_default_returns_true(self):
+        # Profile() with no https-certificate block in the source must
+        # report is_default()==True so the listener does NOT fire the
+        # collision warning. After the second-pass review fix, this is
+        # a declaration predicate (was the block parsed?) rather than
+        # a content predicate (are all fields None?).
+        p = Profile()
+        assert p.https_certificate.is_default() is True
+        assert p.https_certificate.is_unconfigured() is True
+
+    def test_empty_block_is_treated_as_declared(self):
+        # An empty `https-certificate { }` block IS a declaration — the
+        # operator wrote it, even if every directive is missing. The
+        # listener wants to warn in this case so an operator who typo'd
+        # every cert directive sees the diagnostic. is_default() must
+        # therefore return False even though every field is None.
+        p = self._ingest("https-certificate { }\n")
+        assert p.https_certificate.is_default() is False
+        assert all(
+            getattr(p.https_certificate, f) is None
+            for f in (
+                "cn",
+                "o",
+                "ou",
+                "c",
+                "l",
+                "st",
+                "validity",
+                "keystore",
+                "password",
+            )
+        )
+
+    def test_is_default_flips_on_any_single_field(self):
+        # Per-field parametrize: setting any one field individually must
+        # flip is_default() to False. Without this, a narrowed-scope
+        # refactor that checks only `cn` (say) would silently pass the
+        # all-fields test while missing other declarations.
+        for field, value in [
+            ("CN", "x"),
+            ("O", "x"),
+            ("OU", "x"),
+            ("C", "US"),
+            ("L", "x"),
+            ("ST", "x"),
+            ("validity", "30"),
+            ("keystore", "/k.p12"),
+            ("password", "p"),
+        ]:
+            p = self._ingest(f'https-certificate {{ set {field} "{value}"; }}\n')
+            assert p.https_certificate.is_default() is False, (
+                f"is_default() should be False after `set {field}`"
+            )
+
+    def test_parses_full_subject_dn(self):
+        p = self._ingest(
+            "https-certificate {\n"
+            '    set CN "example.com";\n'
+            '    set O "Example LLC";\n'
+            '    set OU "ops";\n'
+            '    set C "US";\n'
+            '    set L "Los Angeles";\n'
+            '    set ST "CA";\n'
+            '    set validity "365";\n'
+            "}\n"
+        )
+        cert = p.https_certificate
+        assert cert.cn == "example.com"
+        assert cert.o == "Example LLC"
+        assert cert.ou == "ops"
+        assert cert.c == "US"
+        assert cert.l == "Los Angeles"
+        assert cert.st == "CA"
+        assert cert.validity == 365  # noqa: PLR2004
+        assert isinstance(cert.validity, int)
+        assert cert.is_default() is False
+
+    def test_keystore_and_password_parsed(self):
+        p = self._ingest(
+            "https-certificate {\n"
+            '    set keystore "/etc/empire/keystore.p12";\n'
+            '    set password "hunter2";\n'
+            "}\n"
+        )
+        assert p.https_certificate.keystore == "/etc/empire/keystore.p12"
+        assert p.https_certificate.password == "hunter2"
+
+    def test_invalid_validity_does_not_crash(self):
+        # Operator typo shouldn't ruin a profile load — we log and skip.
+        p = self._ingest(
+            'https-certificate { set validity "not-a-number"; set CN "x"; }\n'
+        )
+        assert p.https_certificate.validity is None
+        assert p.https_certificate.cn == "x"
+
+    def test_clone_preserves_https_certificate(self):
+        p = self._ingest('https-certificate { set CN "clone.test"; set O "x"; }\n')
+        clone = p._clone()
+        assert clone.https_certificate.cn == "clone.test"
+        assert clone.https_certificate.o == "x"
+
+    def test_serialize_roundtrip_preserves_https_certificate(self):
+        p = self._ingest('https-certificate { set CN "rt.test"; set validity "30"; }\n')
+        rt = Profile._deserialize(p._serialize())
+        assert rt.https_certificate.cn == "rt.test"
+        assert rt.https_certificate.validity == 30  # noqa: PLR2004
+
+    def test_blocks_dont_leak_set_directives_to_profile_top_level(self):
+        # Regression guard against the pyparsing ZeroOrMore resync
+        # behavior that, pre-Tier 1, caused `set CN "..."` directives
+        # inside an https-certificate block to leak as top-level set
+        # directives on the Profile object.
+        #
+        # The previous version of this test scanned caplog for WARNING
+        # records containing "unknown directive" — but every cert
+        # directive (cn/o/ou/c/l/st/...) is in the
+        # _ACCEPTED_BUT_IGNORED_SET_KEYS allow-list, so a leak would
+        # have produced INFO logs, not WARNINGs. That test would have
+        # passed even if the entire HttpsCertificate block parser were
+        # ripped out.
+        #
+        # The fix is to assert positively: after parsing, the values
+        # must live on `p.https_certificate.*` AND must NOT have been
+        # setattr'd to the top-level Profile object via the catch-all
+        # path.
+        p = self._ingest(
+            "https-certificate {\n"
+            '    set CN "leakage.test";\n'
+            '    set O "wat";\n'
+            '    set keystore "/etc/store";\n'
+            "}\n"
+        )
+
+        # Positive: the block parser captured the directives.
+        assert p.https_certificate.cn == "leakage.test"
+        assert p.https_certificate.o == "wat"
+        assert p.https_certificate.keystore == "/etc/store"
+
+        # Negative: the directives did NOT leak as top-level Profile
+        # attributes. If the block parser were removed and the catch-all
+        # at Profile._apply_set_directive picked these up instead, the
+        # accepted-but-ignored path would `setattr(self, "cn", ...)` on
+        # the Profile object. Those assertions break that regression
+        # explicitly.
+        for leaked_key in ("cn", "o", "keystore"):
+            assert getattr(p, leaked_key, None) is None, (
+                f"https-certificate `set {leaked_key}` leaked to Profile.{leaked_key}"
+            )
+
+    def test_deserialize_validity_malformed_value_does_not_crash(self, caplog):
+        # Second-pass review finding: HttpsCertificate._deserialize used
+        # to call int() without try/except, so a malformed validity value
+        # on a round-trip (hand-edited DB row, stale stored profile)
+        # raised ValueError → caught by Profile._deserialize's broad
+        # except → re-raised as MalleableError → entire listener start
+        # fails. Mirror the parse-side guard so the same bad value
+        # logs+drops in both paths AND emits a WARNING so operators can
+        # distinguish a drop-due-to-malformed from a genuine missing key
+        # (both surface as validity=None downstream in the listener's
+        # cert-collision warning).
+        caplog.set_level("WARNING")
+        c = HttpsCertificate._deserialize({"validity": "not-a-number", "cn": "x"})
+        assert c.validity is None
+        assert c.cn == "x"
+        drop_warnings = [
+            r.getMessage()
+            for r in caplog.records
+            if r.levelname == "WARNING"
+            and "not-a-number" in r.getMessage()
+            and "validity" in r.getMessage()
+        ]
+        assert drop_warnings, (
+            "expected a WARNING naming the malformed value so operators "
+            f"can correlate it with the downstream validity=None signal; "
+            f"saw: {[r.getMessage() for r in caplog.records]}"
+        )
+
+    def test_deserialize_was_declared_string_does_not_silently_flip(self):
+        # Mirrors the host_stage / trust_xff guards: a stored profile
+        # whose _was_declared round-tripped as the *string* "false" must
+        # not flip back to True via bool("false"), which would silently
+        # fire the cert-collision WARNING on every HTTPS listener start
+        # even for profiles that never declared the block.
+        c = HttpsCertificate._deserialize({"_was_declared": "false"})
+        assert c._was_declared is False
+        # And the genuine declaration path still flips to True.
+        c2 = HttpsCertificate._deserialize({"_was_declared": True, "cn": "x"})
+        assert c2._was_declared is True
+
+    def test_deserialize_trust_xff_string_does_not_silently_flip(self):
+        # Second-pass review finding: HttpConfig._deserialize used
+        # bool(data.get(...)) which mapped the *string* "false" to True
+        # (any non-empty string is truthy). A JSON round-trip that
+        # stringified the bool would silently flip the security default.
+        for truthy_str in ("true", "True", "1", "yes", "on"):
+            c = HttpConfig._deserialize({"trust_x_forwarded_for": truthy_str})
+            assert c.trust_x_forwarded_for is True, truthy_str
+        for falsey_str in ("false", "False", "0", "no", "off", "", "definitely-not"):
+            c = HttpConfig._deserialize({"trust_x_forwarded_for": falsey_str})
+            assert c.trust_x_forwarded_for is False, falsey_str
+        # And the genuine bool path:
+        assert (
+            HttpConfig._deserialize(
+                {"trust_x_forwarded_for": True}
+            ).trust_x_forwarded_for
+            is True
+        )
+        assert (
+            HttpConfig._deserialize(
+                {"trust_x_forwarded_for": False}
+            ).trust_x_forwarded_for
+            is False
+        )
+
+
+class TestCoerceHelpers:
+    """Direct coverage for the module-level coercion helpers. The wired
+    call sites have their own tests; these guard the helpers' invariants
+    so a future refactor can't quietly drop the defensive logging that
+    distinguishes a malformed-input drop from a missing-input default.
+    """
+
+    def test_coerce_bool_unexpected_type_logs_and_returns_default(self, caplog):
+        # Hand-edited DB rows, future YAML transports, or buggy
+        # serialization paths can land non-bool/non-str/non-None types
+        # (lists, dicts, ints from boolean-typed SQL columns) in a
+        # serialized profile. Without logging, _coerce_bool([]) silently
+        # yielded False and _coerce_bool({"x": 1}) silently yielded True
+        # — for security-critical fields like host_stage this hid a
+        # malformed-input drop behind a plausible default value.
+        caplog.set_level("WARNING")
+        for unexpected in ([], {}, [0], object()):
+            caplog.clear()
+            assert _coerce_bool(unexpected, default=True) is True, unexpected
+            warnings = [
+                r.getMessage()
+                for r in caplog.records
+                if r.levelname == "WARNING" and "_coerce_bool" in r.getMessage()
+            ]
+            assert warnings, (
+                f"expected WARNING for unexpected type {type(unexpected).__name__}, "
+                f"saw: {[r.getMessage() for r in caplog.records]}"
+            )
+
+    def test_coerce_bool_known_types_do_not_log(self, caplog):
+        # The defensive WARNING must not fire on the documented happy paths:
+        # genuine bool, truthy/falsy str vocabulary, None (defaults).
+        caplog.set_level("WARNING")
+        assert _coerce_bool(True) is True
+        assert _coerce_bool(False) is False
+        assert _coerce_bool("true") is True
+        assert _coerce_bool("false") is False
+        assert _coerce_bool("garbage") is False
+        assert _coerce_bool(None, default=True) is True
+        warnings = [r for r in caplog.records if r.levelname == "WARNING"]
+        assert warnings == [], (
+            f"happy-path coercion must not WARN, got: {[r.getMessage() for r in warnings]}"
         )

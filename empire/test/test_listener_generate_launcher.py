@@ -736,3 +736,54 @@ def test_host_stage_true_does_not_fire_gate(monkeypatch, main_menu_mock, caplog)
     assert gate_warnings == [], (
         f"host_stage gate fired unexpectedly: {[r.getMessage() for r in gate_warnings]}"
     )
+
+
+def test_unknown_uri_returns_iis_404_not_500_crash(monkeypatch, main_menu_mock, caplog):
+    """A request whose URI matches none of the profile's configured http-get,
+    http-post, or http-stager URIs must return the IIS 7.5 404 page, NOT a
+    Flask 500 from an AttributeError.
+
+    Pre-fix, ``handle_request`` logged the ``unknown uri`` WARNING and then
+    fell through to ``implementation.extract_client(...)`` with
+    ``implementation = None``, raising ``AttributeError`` and surfacing a
+    Flask 500 to the wire. That leaks an Empire fingerprint (the Flask
+    debug-style 500 body) for any non-blocked scanner probing arbitrary
+    paths — defeating the shared IIS-7.5 404 fingerprint that
+    ``block_useragents`` and ``host_stage`` rely on.
+    """
+    import logging
+
+    from fastapi import status
+
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+
+    client = _drive_handle_request_setup(listener, monkeypatch)
+    caplog.set_level(logging.WARNING, logger="empire.server.listeners.http_malleable")
+
+    # `/` does not match the amazon profile's http-get/http-post/http-stager
+    # URIs. Use a benign Mozilla UA so the block_useragents fast-path does
+    # NOT short-circuit — we need the request to reach the URI dispatch.
+    response = client.get(
+        "/",
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND, (
+        f"unknown URI must produce a clean 404, got {response.status_code}"
+    )
+    body = response.get_data(as_text=True)
+    assert "404 - File or directory not found." in body, (
+        "unknown URI must return the shared IIS-7.5 404 page so the "
+        f"listener fingerprint stays uniform; got: {body[:200]!r}"
+    )
+
+    # The dispatcher's "unknown uri" WARNING must still fire — locks the
+    # regression to this specific branch, not just to any 404-shaped response.
+    unknown_uri_warnings = [
+        r for r in caplog.records if "unknown uri" in r.getMessage()
+    ]
+    assert unknown_uri_warnings, (
+        "expected an 'unknown uri' WARNING from the dispatcher, saw: "
+        f"{[r.getMessage() for r in caplog.records]}"
+    )
