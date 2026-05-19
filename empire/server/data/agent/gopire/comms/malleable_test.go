@@ -61,6 +61,28 @@ func TestParseMalleableProfile_MalformedJSON(t *testing.T) {
 	}
 }
 
+func TestParseMalleableProfile_UnsupportedVersion(t *testing.T) {
+	// A server emitting v != supportedProfileVersion must hard-fail at the
+	// agent, not silently drop new sections. See _AGENT_PROFILE_SCHEMA_VERSION
+	// on the server side (empire/server/common/malleable/profile.py).
+	for _, badV := range []int{0, 2, 999} {
+		payload := map[string]any{
+			"v":        badV,
+			"sleep":    1000,
+			"jitter":   0,
+			"sections": map[string]any{},
+		}
+		_, err := ParseMalleableProfile(helperEncodeB64(t, payload))
+		if err == nil {
+			t.Errorf("v=%d: expected unsupported-version error, got nil", badV)
+			continue
+		}
+		if !strings.Contains(err.Error(), "unsupported schema version") {
+			t.Errorf("v=%d: expected version error, got %v", badV, err)
+		}
+	}
+}
+
 func TestParseMalleableProfile_ValidBlob(t *testing.T) {
 	payload := map[string]any{
 		"v":      1,

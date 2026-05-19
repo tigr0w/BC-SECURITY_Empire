@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import string
 
 from pyparsing import *
@@ -10,10 +11,148 @@ from .transaction import MalleableRequest, MalleableResponse
 from .transformation import Container, Terminator, Transform
 from .utility import MalleableError, MalleableObject, MalleableUtil
 
+log = logging.getLogger(__name__)
+
 # Schema version for the JSON profile blob consumed by C#/Go agents.
 # Bump when making a backwards-incompatible change — both Sharpire and
 # Gopire parse `v` and will refuse unknown versions.
 _AGENT_PROFILE_SCHEMA_VERSION = 1
+
+# Top-level `set X "Y";` directives the parser honors. Anything in this set
+# goes through normal attribute assignment (which also runs property setters
+# like Profile.useragent).
+_WIRED_UP_SET_KEYS = frozenset(
+    {
+        "useragent",
+        "sleeptime",
+        "jitter",
+        "host_stage",
+        "sample_name",
+    }
+)
+
+# `set X "Y";` directives present in shipped Cobalt Strike profiles that
+# Empire accepts but does not yet act on. Stored on the instance for
+# inspection / forward-compat but not used by the runtime.
+#
+# IMPORTANT: this set must cover *every* `set` keyword used by shipped
+# profiles under empire/server/data/profiles/. The catch is that pyparsing's
+# ZeroOrMore in Profile._pattern() greedily resyncs around unrecognised
+# blocks (http-config, https-certificate, stage, process-inject, post-ex,
+# dns-beacon, …), so `set` directives *inside* those blocks leak out and
+# parse as top-level directives. Until Tiers 1/3/4 add real block parsers,
+# we list those leaked keys here so the parser stays quiet on existing
+# profiles. The grouping comments mark which roadmap tier should drain
+# the key out of this set into a real wiring.
+#
+# Audit: `grep -rhE '^\s*set [A-Za-z_]' empire/server/data/profiles/ \
+#   | grep -oE 'set [A-Za-z_][A-Za-z_0-9]*' | awk '{print $2}' | sort -u`
+# Re-run when adding a new shipped profile and reconcile with this set —
+# the TestShippedProfilesAllowList test will fail if drift goes uncaught.
+_ACCEPTED_BUT_IGNORED_SET_KEYS = frozenset(
+    {
+        # dns-beacon block / DNS C2 (roadmap Tier 5 — deferred)
+        "beacon",
+        "data_jitter",
+        "dns_idle",
+        "dns_max_txt",
+        "dns_sleep",
+        "dns_stager_prepend",
+        "dns_stager_subhost",
+        "dns_ttl",
+        "get_a",
+        "get_aaaa",
+        "get_txt",
+        "maxdns",
+        "name",  # DNS beacon name; case-insensitive lowercase here
+        "ns_response",
+        "put_metadata",
+        "put_output",
+        # https-certificate block (roadmap Tier 1)
+        "c",
+        "cn",
+        "keystore",
+        "l",
+        "o",
+        "ou",
+        "password",
+        "st",
+        "validity",
+        # http-config block (roadmap Tier 1)
+        "block_useragents",
+        "headers",
+        "trust_x_forwarded_for",
+        "verb",
+        # stage block (roadmap Tier 3)
+        "checksum",
+        "cleanup",
+        "compile_time",
+        "entry_point",
+        "image_size_x64",
+        "image_size_x86",
+        "magic_mz_x64",
+        "magic_mz_x86",
+        "magic_pe",
+        "module_x64",
+        "module_x86",
+        "obfuscate",
+        "rich_header",
+        "sleep_mask",
+        "smartinject",
+        "stomppe",
+        "userwx",
+        # http-stager block (roadmap Tier 2 — stager-block transforms / URIs)
+        "uri",
+        "uri_x64",
+        "uri_x86",
+        # process-inject block (roadmap Tier 4)
+        "allocator",
+        "hijack_remote_thread",
+        "min_alloc",
+        "spawnto",
+        "spawnto_x64",
+        "spawnto_x86",
+        "startrwx",
+        # post-ex block (roadmap Tier 3)
+        "amsi_disable",
+        "keylogger",
+        "pipename",
+        "pipename_stager",
+        "thread_hint",
+        # SMB / TCP / SSH transports (out of scope for current tiers)
+        "smb_frame_header",
+        "ssh_banner",
+        "ssh_pipename",
+        "tcp_frame_header",
+        "tcp_port",
+    }
+)
+
+# Type normalization for wired-up scalar keys. The parser produces strings,
+# so without this `set host_stage "false";` would store the truthy string
+# "false" — silently wrong. `set sleeptime "60000";` historically worked
+# only because downstream code re-wrapped it in int().
+_BOOL_SET_KEYS = frozenset({"host_stage"})
+_INT_SET_KEYS = frozenset({"sleeptime", "jitter"})
+
+# Truthy literal values accepted for boolean `set` directives. Anything else
+# (including the empty string) is treated as False — matching Cobalt Strike's
+# documented convention for boolean profile fields.
+_TRUTHY_LITERALS = frozenset({"true", "1", "yes", "on"})
+
+
+def _normalize_set_value(key: str, raw: str):
+    """Coerce a string-valued `set <key> "<raw>";` value to its typed form.
+
+    Booleans are case-insensitive: only the literals in _TRUTHY_LITERALS map
+    to True. Integers raise no exception — if the operator wrote a non-numeric
+    value, ``int()`` will throw and the caller logs + drops the directive.
+    """
+    if key in _BOOL_SET_KEYS:
+        return raw.strip().lower() in _TRUTHY_LITERALS
+    if key in _INT_SET_KEYS:
+        return int(raw)
+    return raw
 
 # Transform.type -> JSON "op" string. NONE is intentionally absent so it
 # falls through to the "skip" branch in the serializer.
@@ -71,6 +210,12 @@ class Profile(MalleableObject):
         self.stager = Stager()
         self.sleeptime = 60000
         self.jitter = 0
+        # host_stage defaults True so existing profiles keep serving the
+        # stager URI; operators opt out by adding `set host_stage "false";`.
+        self.host_stage = True
+        # sample_name is a free-form attribution tag from the profile author,
+        # surfaced in the API but not used by the runtime.
+        self.sample_name = None
 
     def _clone(self):
         """Deep copy of the Profile object.
@@ -84,6 +229,8 @@ class Profile(MalleableObject):
         new.stager = self.stager._clone()
         new.sleeptime = self.sleeptime
         new.jitter = self.jitter
+        new.host_stage = self.host_stage
+        new.sample_name = self.sample_name
         return new
 
     def _serialize(self):
@@ -101,6 +248,8 @@ class Profile(MalleableObject):
                     "stager": self.stager._serialize(),
                     "sleeptime": self.sleeptime,
                     "jitter": self.jitter,
+                    "host_stage": self.host_stage,
+                    "sample_name": self.sample_name,
                 }.items()
             )
         )
@@ -131,6 +280,8 @@ class Profile(MalleableObject):
                     int(data["sleeptime"]) if "sleeptime" in data else 60000
                 )
                 profile.jitter = int(data["jitter"]) if "jitter" in data else 0
+                profile.host_stage = bool(data.get("host_stage", True))
+                profile.sample_name = data.get("sample_name")
             except Exception as e:
                 MalleableError.throw(
                     cls, "_deserialize", "An error occurred: " + str(e)
@@ -167,13 +318,60 @@ class Profile(MalleableObject):
                         if item.lower() == "set" and len(arg) > 1:
                             key, value = arg[0], arg[1]
                             if key and value:
-                                setattr(self, key, value)
+                                self._apply_set_directive(key, value)
                         elif item.lower() == "http-get":
                             self.get._parse(arg)
                         elif item.lower() == "http-post":
                             self.post._parse(arg)
                         elif item.lower() == "http-stager":
                             self.stager._parse(arg)
+
+    def _apply_set_directive(self, key: str, raw_value: str) -> None:
+        """Classify and apply a top-level `set <key> "<raw_value>";` directive.
+
+        Three-way classifier (see module-level allow-lists):
+          - wired-up keys flow through normal attribute assignment, with
+            type normalization for booleans/integers so `set host_stage
+            "false";` round-trips to Python ``False`` rather than the
+            truthy string ``"false"``.
+          - accepted-but-ignored keys land on the instance verbatim and
+            emit one INFO log per directive so operators can audit which
+            CS-vocabulary fields the profile uses that Empire does not yet
+            honor.
+          - unknown keys also land on the instance (preserving the
+            historical catch-all behavior so no profile parse hard-fails
+            on this change) but emit a WARNING.
+        """
+        lowered = key.lower()
+
+        if lowered in _WIRED_UP_SET_KEYS:
+            try:
+                value = _normalize_set_value(lowered, raw_value)
+            except (TypeError, ValueError) as exc:
+                log.warning(
+                    "malleable profile: dropping set %s=%r (cannot normalize: %s)",
+                    key,
+                    raw_value,
+                    exc,
+                )
+                return
+            setattr(self, lowered, value)
+            return
+
+        if lowered in _ACCEPTED_BUT_IGNORED_SET_KEYS:
+            log.info(
+                "malleable profile: accepting `set %s` but Empire does not act on it yet",
+                key,
+            )
+            setattr(self, lowered, raw_value)
+            return
+
+        log.warning(
+            "malleable profile: unknown directive `set %s %r;` — storing on profile but it will not affect behavior",
+            key,
+            raw_value,
+        )
+        setattr(self, lowered, raw_value)
 
     @property
     def useragent(self):

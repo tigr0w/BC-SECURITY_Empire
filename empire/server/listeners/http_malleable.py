@@ -1482,6 +1482,20 @@ class ExtendedPacketHandler(PacketHandler):
                     message = f"{listenerName}: unknown uri /{request_uri} requested by {clientIP}."
                     self.instance_log.warning(message)
 
+                # Tier 0 host_stage gate: if the operator set `host_stage
+                # "false";` in the profile, refuse to serve the stager URI
+                # at all. Returns the IIS 7.5 default 404 page so the
+                # listener fingerprint is indistinguishable from "URI does
+                # not exist." We log at WARNING because this is normally an
+                # interesting event (someone hit a disabled stager URI).
+                if implementation is profile.stager and not getattr(
+                    profile, "host_stage", True
+                ):
+                    self.instance_log.warning(
+                        f"{listenerName}: refusing stager URI /{request_uri} from {clientIP} (host_stage disabled)"
+                    )
+                    return Response(self.default_response(), 404)
+
                 # attempt to extract information from the request
                 if implementation is profile.stager and request.method == "POST":
                     # stage 1 negotiation comms are hard coded, so we can't use malleable

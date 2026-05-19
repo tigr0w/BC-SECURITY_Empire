@@ -26,6 +26,14 @@ import (
 	"strings"
 )
 
+// supportedProfileVersion is the JSON schema version this agent understands.
+// Must stay in lockstep with _AGENT_PROFILE_SCHEMA_VERSION on the server
+// (empire/server/common/malleable/profile.py). When the server bumps its
+// constant, this agent will refuse to parse the new blob until rebuilt, which
+// is intentional — a partial/version-mismatched parse silently dropping new
+// sections (e.g. process-inject defaults) is worse than a hard failure.
+const supportedProfileVersion = 1
+
 // MalleableProfile is the top-level v1 schema emitted by
 // Profile.serialize_for_agent. An empty MALLEABLE_PROFILE template var (from
 // the plain HTTP listener) is handled by ParseMalleableProfile returning
@@ -119,6 +127,9 @@ func ParseMalleableProfile(b64 string) (*MalleableProfile, error) {
 	mp := &MalleableProfile{}
 	if err := json.Unmarshal(raw, mp); err != nil {
 		return nil, fmt.Errorf("malleable profile: json unmarshal failed: %w", err)
+	}
+	if mp.V != supportedProfileVersion {
+		return nil, fmt.Errorf("malleable profile: unsupported schema version %d (agent supports %d)", mp.V, supportedProfileVersion)
 	}
 	return mp, nil
 }

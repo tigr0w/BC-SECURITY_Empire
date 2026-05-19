@@ -15,11 +15,15 @@ mapped explicitly.
 
 import base64
 import json
+import re
 from pathlib import Path
 
 import pytest
 
-from empire.server.common.malleable.profile import Profile
+from empire.server.common.malleable.profile import (
+    _AGENT_PROFILE_SCHEMA_VERSION,
+    Profile,
+)
 from empire.server.common.malleable.transformation import (
     Transform,
 )
@@ -99,7 +103,39 @@ class TestSerializeForAgentTopLevel:
     def test_version_field(self):
         p = Profile()
         data = json.loads(p.serialize_for_agent())
-        assert data["v"] == 1
+        # The emitted "v" must equal the module-level constant; bumping
+        # _AGENT_PROFILE_SCHEMA_VERSION is the intentional way to break
+        # downstream agents that need to opt in to a new schema.
+        assert data["v"] == _AGENT_PROFILE_SCHEMA_VERSION
+
+    def test_gopire_supported_version_matches(self):
+        # Cross-language contract pin: Gopire's supportedProfileVersion in
+        # empire/server/data/agent/gopire/comms/malleable.go must agree with
+        # the Python constant. If they drift, a v2 server will emit blobs
+        # that v1 Gopire silently parses with zero-valued new sections —
+        # worse than a hard failure.
+        gopire = (
+            Path(__file__).resolve().parent.parent
+            / "server"
+            / "data"
+            / "agent"
+            / "gopire"
+            / "comms"
+            / "malleable.go"
+        )
+        # The pattern tolerates an optional Go type annotation (e.g.
+        # `const supportedProfileVersion uint8 = 1`) so a future agent-side
+        # refactor that adds a type doesn't silently break the cross-language
+        # pin. The constant name itself stays anchored.
+        match = re.search(
+            r"^\s*const\s+supportedProfileVersion(?:\s+\w+)?\s*=\s*(\d+)\s*$",
+            gopire.read_text(),
+            re.MULTILINE,
+        )
+        assert match is not None, (
+            "supportedProfileVersion not found in Gopire malleable.go"
+        )
+        assert int(match.group(1)) == _AGENT_PROFILE_SCHEMA_VERSION
 
     def test_sleep_and_jitter(self):
         p = Profile()
@@ -372,3 +408,195 @@ class TestInvalidInput:
         for m in masks:
             # If present, key must still be a string (possibly empty).
             assert isinstance(m.get("key", ""), str)
+
+
+class TestTier0SetDirectiveClassifier:
+    """Tier 0: the top-level `set` directive parser is a three-way classifier
+    (wired-up / accepted-but-ignored / unknown). Previously a single
+    setattr() catch-all silently stored everything as a string, so
+    `set host_stage "false";` produced a truthy attribute.
+    """
+
+    # Minimal http-get/http-post/http-stager skeleton so Profile.ingest
+    # accepts the test profile body. The exact transports don't matter —
+    # we're only exercising the top-level `set` parser.
+    _SKELETON = """
+http-get {
+    set uri "/";
+    client {
+        metadata {
+            base64;
+            header "Cookie";
+        }
+    }
+    server {
+        output {
+            base64;
+            print;
+        }
+    }
+}
+
+http-post {
+    set uri "/submit.php";
+    client {
+        id {
+            netbios;
+            parameter "id";
+        }
+        output {
+            base64;
+            print;
+        }
+    }
+    server {
+        output {
+            base64;
+            print;
+        }
+    }
+}
+
+http-stager {
+    set uri_x86 "/a";
+    set uri_x64 "/b";
+    client {
+        metadata {
+            base64;
+            header "Cookie";
+        }
+    }
+    server {
+        output {
+            base64;
+            print;
+        }
+    }
+}
+"""
+
+    def _ingest(self, set_block: str) -> Profile:
+        p = Profile()
+        p.ingest(content=set_block + self._SKELETON)
+        return p
+
+    def test_default_host_stage_is_true(self):
+        p = Profile()
+        assert p.host_stage is True
+
+    def test_default_sample_name_is_none(self):
+        p = Profile()
+        assert p.sample_name is None
+
+    def test_host_stage_false_becomes_typed_bool(self):
+        # The bug Tier 0 fixes: previously this stored the string "false"
+        # which is truthy.
+        p = self._ingest('set host_stage "false";\n')
+        assert p.host_stage is False
+        assert isinstance(p.host_stage, bool)
+
+    def test_host_stage_true_becomes_typed_bool(self):
+        p = self._ingest('set host_stage "true";\n')
+        assert p.host_stage is True
+        assert isinstance(p.host_stage, bool)
+
+    def test_host_stage_garbage_value_is_falsy(self):
+        # CS convention: anything not in the truthy literal set is False.
+        p = self._ingest('set host_stage "definitely-not-true";\n')
+        assert p.host_stage is False
+
+    def test_sleeptime_normalized_to_int(self):
+        p = self._ingest('set sleeptime "45000";\n')
+        assert p.sleeptime == 45000  # noqa: PLR2004
+        assert isinstance(p.sleeptime, int)
+
+    def test_jitter_normalized_to_int(self):
+        p = self._ingest('set jitter "25";\n')
+        assert p.jitter == 25  # noqa: PLR2004
+        assert isinstance(p.jitter, int)
+
+    def test_sample_name_stored_verbatim(self):
+        p = self._ingest('set sample_name "Operation Foo";\n')
+        assert p.sample_name == "Operation Foo"
+
+    def test_accepted_but_ignored_directive_logs_info(self, caplog):
+        with caplog.at_level("INFO", logger="empire.server.common.malleable.profile"):
+            self._ingest('set dns_idle "8.8.8.8";\n')
+        messages = [r.getMessage() for r in caplog.records]
+        info_logs = [
+            m for m in messages if "dns_idle" in m and "does not act on it yet" in m
+        ]
+        assert info_logs, (
+            f"expected INFO log for accepted-but-ignored key, saw: {messages}"
+        )
+
+    def test_accepted_but_ignored_directive_emits_no_warning(self, caplog):
+        with caplog.at_level(
+            "WARNING", logger="empire.server.common.malleable.profile"
+        ):
+            self._ingest('set dns_idle "8.8.8.8";\n')
+        warnings = [r for r in caplog.records if r.levelname == "WARNING"]
+        assert warnings == [], (
+            f"unexpected WARNINGs: {[r.getMessage() for r in warnings]}"
+        )
+
+    def test_unknown_directive_emits_warning(self, caplog):
+        with caplog.at_level(
+            "WARNING", logger="empire.server.common.malleable.profile"
+        ):
+            self._ingest('set totally_made_up_field "x";\n')
+        warnings = [r.getMessage() for r in caplog.records if r.levelname == "WARNING"]
+        assert any("totally_made_up_field" in w for w in warnings), (
+            f"expected WARNING mentioning the unknown key, saw: {warnings}"
+        )
+
+    def test_roundtrip_through_serialize_preserves_host_stage(self):
+        p = self._ingest('set host_stage "false";\n')
+        roundtripped = Profile._deserialize(p._serialize())
+        assert roundtripped.host_stage is False
+        assert isinstance(roundtripped.host_stage, bool)
+
+    def test_roundtrip_through_clone_preserves_sample_name(self):
+        p = self._ingest('set sample_name "trial-run";\n')
+        assert p._clone().sample_name == "trial-run"
+
+
+class TestShippedProfilesAllowList:
+    """Allow-list completeness check: every shipped profile in data/profiles
+    must load with zero WARNING-level logs from the malleable parser. A new
+    WARNING here means either (a) a shipped profile uses a CS field we forgot
+    to add to _ACCEPTED_BUT_IGNORED_SET_KEYS, or (b) a profile genuinely has
+    a typo that's worth surfacing — both deserve human review.
+    """
+
+    def test_no_warnings_loading_shipped_profiles(self, caplog):
+        if not PROFILES_DIR.is_dir():
+            pytest.skip("No bundled .profile fixtures found")
+
+        shipped = sorted(PROFILES_DIR.rglob("*.profile"))
+        if not shipped:
+            pytest.skip("PROFILES_DIR exists but contains no .profile files")
+
+        offenders: list[tuple[str, str]] = []
+        with caplog.at_level(
+            "WARNING", logger="empire.server.common.malleable.profile"
+        ):
+            for path in shipped:
+                caplog.clear()
+                p = Profile()
+                try:
+                    p.ingest(file=str(path))
+                except Exception as exc:
+                    # A profile that fails to *parse* is a different bug;
+                    # the allow-list check is about runtime WARNING noise.
+                    offenders.append((str(path), f"parse error: {exc}"))
+                    continue
+                for record in caplog.records:
+                    if record.levelname == "WARNING":
+                        offenders.append((str(path), record.getMessage()))
+
+        assert offenders == [], (
+            "shipped profiles produced parser warnings — either add the new key "
+            "to _ACCEPTED_BUT_IGNORED_SET_KEYS in profile.py, or fix the profile:\n  "
+            + "\n  ".join(f"{path}: {msg}" for path, msg in offenders)
+        )

