@@ -1,8 +1,13 @@
 import base64
+import logging
 import re
+from unittest.mock import MagicMock
 
 import pytest
 from starlette import status
+
+from empire.server.core.exceptions import ModuleExecutionException
+from empire.server.core.stager_service import StagerService
 
 
 def get_base_stager():
@@ -804,6 +809,38 @@ def test_create_stager_download_metadata(client, admin_auth_header):
     assert len(filename) > 0
 
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+
+
+def test_generate_stager_catches_module_execution_exception(caplog):
+    """`generate_stager` now wraps `template_instance.generate()` so a compile
+    failure (subprocess timeout, EmpireCompiler error, go build kill) surfaces
+    as a structured (None, err) tuple — yielding a 400 with the message —
+    instead of a 500 stack trace. The catch must also log with exc_info=True
+    so the empire-side log keeps the chained subprocess context for debugging.
+    """
+    service = StagerService(MagicMock())
+    template_instance = MagicMock()
+    template_instance.generate.side_effect = ModuleExecutionException(
+        "Go build failed (rc=-9): <no output — likely killed by signal>"
+    )
+
+    with caplog.at_level(logging.ERROR, logger="empire.server.core.stager_service"):
+        result, err = service.generate_stager(template_instance)
+
+    assert result is None
+    assert err == "Go build failed (rc=-9): <no output — likely killed by signal>"
+
+    matching = [
+        rec
+        for rec in caplog.records
+        if rec.levelname == "ERROR"
+        and "Stager generation failed" in rec.message
+        and rec.exc_info is not None
+    ]
+    assert matching, (
+        f"expected an ERROR log with exc_info=True; got: "
+        f"{[(r.levelname, r.message) for r in caplog.records]}"
+    )
 
 
 def test_windows_c_stager_download(client, admin_auth_header):

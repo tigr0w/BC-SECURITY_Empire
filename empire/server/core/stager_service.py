@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
+from empire.server.core.exceptions import ModuleExecutionException
 from empire.server.utils.option_util import set_options, validate_options
 
 log = logging.getLogger(__name__)
@@ -161,7 +162,20 @@ class StagerService:
         return self._persist_updated_stager(db, db_stager, template_instance, generated)
 
     def generate_stager(self, template_instance):
-        resp = template_instance.generate()
+        try:
+            resp = template_instance.generate()
+        except ModuleExecutionException as e:
+            # Convert compile/subprocess failures to a structured (None, err)
+            # result so the API surfaces a 400 with the message rather than a
+            # 500 stack trace. exc_info=True preserves the chained subprocess
+            # context (rc, cmd, stderr) for empire-side debugging.
+            log.error(
+                "Stager generation failed for template %s: %s",
+                type(template_instance).__name__,
+                e,
+                exc_info=True,
+            )
+            return None, str(e)
 
         # todo generate should return error response much like listener validate
         #  options should.

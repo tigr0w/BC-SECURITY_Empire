@@ -90,9 +90,12 @@ class GoCompiler:
             )
 
             build_output = build_dir / random_task_name
+            # Merge operator env first so explicit function args (GOOS/GOARCH) win.
+            # Reversed order would let `GOOS=linux` in the operator's shell
+            # silently override a function-arg `goos="windows"` cross-compile.
             result = subprocess.run(
                 ["go", "build", "-o", str(build_output), "."],
-                env={**env, **os.environ},
+                env={**os.environ, **env},
                 capture_output=True,
                 text=True,
                 cwd=build_dir,
@@ -119,8 +122,23 @@ class GoCompiler:
                     preservation_note = (
                         " (failed to preserve rendered main.go; see logs)"
                     )
+                log.error(
+                    "go build failed (rc=%d)\nstdout: %s\nstderr: %s",
+                    result.returncode,
+                    result.stdout,
+                    result.stderr,
+                )
+                # Empty stderr with rc != 0 is consistent with a signal kill
+                # (OOM-killer, cgroup limits, AV). Surface stdout as a fallback
+                # and call out the signal-kill case explicitly so operators
+                # don't waste time chasing a non-existent build error.
+                detail = (
+                    result.stderr.strip()
+                    or result.stdout.strip()
+                    or "<no output — likely killed by signal, check OOM/AV/cgroup limits>"
+                )
                 raise ModuleExecutionException(
-                    f"Go build failed: {result.stderr.strip()}{preservation_note}"
+                    f"Go build failed (rc={result.returncode}): {detail}{preservation_note}"
                 )
 
             shutil.move(str(build_output), str(final_path))
