@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
+from empire.server.core.exceptions import StagerGenerationException
 from empire.server.utils.option_util import set_options, validate_options
 
 log = logging.getLogger(__name__)
@@ -161,12 +162,14 @@ class StagerService:
         return self._persist_updated_stager(db, db_stager, template_instance, generated)
 
     def generate_stager(self, template_instance):
-        resp = template_instance.generate()
+        try:
+            resp = template_instance.generate()
+        except StagerGenerationException as e:
+            log.warning(f"Stager generation failed: {e}")
+            return None, str(e)
 
-        # todo generate should return error response much like listener validate
-        #  options should.
         if not resp:
-            return None, "Error generating"
+            return None, "Error generating stager"
 
         out_file = template_instance.options.get("OutFile", {}).get("Value")
         file_name = Path(out_file).name if out_file else f"{uuid.uuid4()}.txt"

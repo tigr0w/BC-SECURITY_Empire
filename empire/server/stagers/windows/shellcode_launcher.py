@@ -1,8 +1,5 @@
-import logging
-
+from empire.server.core.exceptions import StagerGenerationException
 from empire.server.utils.shellcode_compiler import generate_pic_shellcode
-
-log = logging.getLogger(__name__)
 
 
 class Stager:
@@ -53,7 +50,6 @@ class Stager:
         try:
             shellcode = generate_pic_shellcode(self.mainMenu, listener_name, language)
         except Exception as e:
-            log.error(f"[!] Shellcode generation failed: {e}")
-            return ""
+            raise StagerGenerationException(f"Shellcode generation failed: {e}") from e
 
         return shellcode

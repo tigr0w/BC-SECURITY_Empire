@@ -1,6 +1,6 @@
 import re
 
-from empire.server.common import helpers
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -107,8 +107,9 @@ class Stager:
         )
 
         if pylauncher == "":
-            print(helpers.color("[!] Error in python launcher command generation."))
-            return ""
+            raise StagerGenerationException(
+                "Error in python launcher command generation."
+            )
 
         # render python launcher into python payload
         pylauncher = pylauncher.replace('"', '""')

@@ -1,4 +1,4 @@
-from empire.server.common import helpers
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -63,9 +63,7 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
 
         if not self.mainMenu.listenersv2.get_active_listener_by_name(listener_name):
-            # not a valid listener, return nothing for the script
-            print(helpers.color("[!] Invalid listener: " + listener_name))
-            return ""
+            raise StagerGenerationException(f"Invalid listener: {listener_name}")
 
         # generate launcher code
         launcher = self.mainMenu.stagergenv2.generate_launcher(
@@ -74,9 +72,8 @@ class Stager:
             encode=True,
             user_agent=user_agent,
         )
-        if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
         if arch.lower() == "x86":
             sc = (
                 # 0x17: int setuid(uid_t uid)

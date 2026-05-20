@@ -1,9 +1,6 @@
-import logging
 import subprocess
 
-from empire.server.common import helpers
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -114,10 +111,9 @@ class Stager:
             if self.main_menu.listenersv2.get_active_listener_by_name(
                 listener_name
             ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
-                log.error(
+                raise StagerGenerationException(
                     "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for C# and IronPython stagers."
                 )
-                return ""
 
             self.launcher = self.main_menu.stagergenv2.generate_exe_oneliner(
                 language=language,
@@ -140,9 +136,8 @@ class Stager:
                 bypasses=self.options["Bypasses"]["Value"],
             )
 
-        if self.launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
-            return ""
+        if not self.launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         return self.generate_shellcode(msf_format, arch, self.launcher)
 

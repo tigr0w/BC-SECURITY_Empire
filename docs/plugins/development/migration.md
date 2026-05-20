@@ -59,3 +59,7 @@ This is no different than the way things were pre 5.0.
 ## 6->7 Migration
 * `self.install_path` on `BasePlugin` is now a `Path` object instead of a `str`. If your plugin passes `self.install_path` to APIs that expect a string, wrap it with `str()`.
 * `self.main_menu.installPath` has been removed. Use `self.main_menu.install_path` (a `Path` object) instead.
+* Plugin `execute()` no longer supports returning `(result, error_string)` tuples. Raise `PluginValidationException` or `PluginExecutionException` instead.
+* Custom listener `validate_options()` must return `None` and raise `ListenerValidationException` on failure instead of returning a `(False, "msg")` tuple.
+* Custom stager `generate()` must raise `StagerGenerationException` on failure instead of returning `""` or an error string.
+* `handle_error_message` has been removed from `empire.server.utils.module_util`. Plugin modules that used it to signal errors should raise `ModuleValidationException` or `ModuleExecutionException` instead.

@@ -1,14 +1,10 @@
-import logging
-
 try:
     import donut
 except ModuleNotFoundError:
     donut = None
 
+from empire.server.core.exceptions import StagerGenerationException
 from empire.server.utils.donut_util import donut_create
-from empire.server.utils.module_util import handle_error_message
-
-log = logging.getLogger(__name__)
 
 
 class Stager:
@@ -119,8 +115,7 @@ class Stager:
         arch = self.options["Architecture"]["Value"]
 
         if not self.mainMenu.listenersv2.get_active_listener_by_name(listener_name):
-            # not a valid listener, return nothing for the script
-            return "[!] Invalid listener: " + listener_name
+            raise StagerGenerationException(f"Invalid listener: {listener_name}")
 
         obfuscate_script = False
         if obfuscate.lower() == "true":
@@ -138,17 +133,15 @@ class Stager:
             proxy_creds=proxy_creds,
             bypasses=bypasses,
         )
-        if launcher == "":
-            return "[!] Error in launcher generation."
         if not launcher or launcher.lower() == "failed":
-            return "[!] Error in launcher command generation."
+            raise StagerGenerationException("Error in launcher command generation.")
 
         if language.lower() == "powershell":
             shellcode, err = self.mainMenu.stagergenv2.generate_powershell_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
             if err:
-                return handle_error_message(err)
+                raise StagerGenerationException(err)
 
             return shellcode
 
@@ -161,7 +154,7 @@ class Stager:
                 arch_type = 3
 
             if not donut:
-                return handle_error_message(
+                raise StagerGenerationException(
                     "module donut-shellcode not installed. It is only supported on x86."
                 )
 
@@ -172,8 +165,8 @@ class Stager:
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
             if err:
-                return handle_error_message(err)
+                raise StagerGenerationException(err)
 
             return shellcode
 
-        return "[!] Invalid launcher language."
+        raise StagerGenerationException("Invalid launcher language.")

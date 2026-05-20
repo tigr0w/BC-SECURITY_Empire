@@ -1,9 +1,7 @@
-import logging
 from textwrap import dedent
 
 from empire.server.core.db.base import SessionLocal
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -87,8 +85,7 @@ class Stager:
         delete = options["Delete"]["Value"].lower() == "true"
 
         if not host:
-            log.error("[!] Error in launcher command generation.")
-            return ""
+            raise StagerGenerationException("Error in launcher command generation.")
 
         launcher = ""
         if listener.module == "http":
@@ -130,8 +127,9 @@ class Stager:
 
         MAX_CHARACTERS = 8192
         if len(launcher) > MAX_CHARACTERS:
-            log.error("[!] Error: launcher code is greater than 8192 characters.")
-            return ""
+            raise StagerGenerationException(
+                "Launcher code is greater than 8192 characters."
+            )
 
         code = dedent(
             f"""

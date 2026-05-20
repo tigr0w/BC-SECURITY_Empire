@@ -20,8 +20,8 @@ from empire.server.common.empire import MainMenu
 from empire.server.common.encryption import AESCipher
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.exceptions import ListenerValidationException
 from empire.server.utils import data_util, listener_util, log_util
-from empire.server.utils.module_util import handle_validate_message
 
 LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
@@ -178,7 +178,7 @@ class Listener:
         """
         return (self.template_dir / "default.html").read_text(encoding="utf-8")
 
-    def validate_options(self) -> tuple[bool, str | None]:
+    def validate_options(self) -> None:
         """
         Validate all options for this listener.
         """
@@ -192,8 +192,8 @@ class Listener:
         )
 
         if not profile_data:
-            return handle_validate_message(
-                f"[!] Malleable profile not found: {profile_name}"
+            raise ListenerValidationException(
+                f"Malleable profile not found: {profile_name}"
             )
 
         try:
@@ -221,7 +221,7 @@ class Listener:
                 self.mainMenu.listenersv2.validate_listener_address(self.options)
             )
             if err:
-                return False, err
+                raise ListenerValidationException(err)
 
             if profile.validate():
                 # store serialized profile for use across sessions
@@ -263,16 +263,14 @@ class Listener:
                     profile.post.client.headers.pop(header, None)
 
             else:
-                return handle_validate_message(
-                    f"[!] Unable to parse malleable profile: {profile_name}"
+                raise ListenerValidationException(
+                    f"Unable to parse malleable profile: {profile_name}"
                 )
 
         except malleable.MalleableError as e:
-            return handle_validate_message(
-                f"[!] Error parsing malleable profile: {profile_name}, {e}"
-            )
-
-        return True, None
+            raise ListenerValidationException(
+                f"Error parsing malleable profile: {profile_name}, {e}"
+            ) from e
 
     def serialize_profile_for_agent(self, profile=None):
         """Return the base64-encoded JSON malleable profile consumed by

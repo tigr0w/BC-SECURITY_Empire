@@ -5,6 +5,7 @@ from textwrap import dedent
 
 from empire.server.common import helpers, templating
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ListenerValidationException
 from empire.server.utils import data_util, listener_util
 
 LOG_NAME_PREFIX = __name__
@@ -129,7 +130,7 @@ class Listener:
         """
         return ""
 
-    def validate_options(self) -> tuple[bool, str | None]:
+    def validate_options(self) -> None:
         """
         Validate all options for this listener.
         """
@@ -143,8 +144,7 @@ class Listener:
             self.options
         )
         if err:
-            return False, err
-        return True, None
+            raise ListenerValidationException(err)
 
     def generate_launcher(
         self,

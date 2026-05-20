@@ -1,12 +1,10 @@
 import base64
-import logging
 import subprocess
 import tempfile
 from pathlib import Path
 
 from empire.server.common import packets
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -56,18 +54,18 @@ class Stager:
         listener = self.mainMenu.listenersv2.get_active_listener_by_name(listener_name)
 
         if not listener:
-            log.error(f"[!] Listener '{listener_name}' not found or not active.")
-            return ""
+            raise StagerGenerationException(
+                f"Listener '{listener_name}' not found or not active."
+            )
 
         if listener.info.get("Name") not in [
             "HTTP[S]",
             "smb_pivot",
             "port_forward_pivot",
         ]:
-            log.error(
-                "[!] c_launcher only supports HTTP[S], smb_pivot, and port_forward_pivot listeners."
+            raise StagerGenerationException(
+                "c_launcher only supports HTTP[S], smb_pivot, and port_forward_pivot listeners."
             )
-            return ""
 
         host = listener.options["Host"]["Value"]
         port = listener.options["Port"]["Value"]
@@ -100,8 +98,7 @@ class Stager:
 
         template_path = self.mainMenu.install_path / "data" / "misc" / "windows.c"
         if not template_path.exists():
-            log.error(f"[!] Template not found at {template_path}")
-            return ""
+            raise StagerGenerationException(f"Template not found at {template_path}")
 
         code = template_path.read_text()
 
@@ -140,10 +137,10 @@ class Stager:
             try:
                 subprocess.run(args, capture_output=True, text=True, check=True)
             except subprocess.CalledProcessError as e:
-                log.error(f"[!] Compilation failed: {e.stderr}")
-                return ""
+                raise StagerGenerationException(
+                    f"Compilation failed: {e.stderr}"
+                ) from e
 
             if exe_file.exists():
                 return exe_file.read_bytes()
-            log.error("[!] Exe file was not created.")
-            return ""
+            raise StagerGenerationException("Exe file was not created.")

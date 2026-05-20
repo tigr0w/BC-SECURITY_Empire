@@ -103,7 +103,12 @@ class PluginService:
                 continue
 
             req = PluginExecutePostRequest(options=auto_execute.options)
-            results, _err = self.execute_plugin(db, plugin, req, None)
+            try:
+                results = self.execute_plugin(db, plugin, req, None)
+            except (PluginValidationException, PluginExecutionException) as e:
+                log.error(f"Plugin failed to run: {plugin_name}: {e}")
+                continue
+
             if results is False:
                 log.error(f"Plugin failed to run: {plugin_name}")
             else:
@@ -257,7 +262,7 @@ class PluginService:
         plugin,
         plugin_req: PluginExecutePostRequest,
         user: models.User | None = None,
-    ) -> tuple[bool | str | None, str | None]:
+    ) -> bool | str | None:
         if plugin.enabled is False:
             raise PluginValidationException("Plugin is not running")
         if not plugin.execution_enabled:
@@ -271,16 +276,12 @@ class PluginService:
             raise PluginValidationException(err)
 
         try:
-            res = plugin.execute(cleaned_options, db=db, user=user)
-            # Tuple is deprecated. Will be removed in 7.x
-            if isinstance(res, tuple):
-                return res
-            return res, None
+            return plugin.execute(cleaned_options, db=db, user=user)
         except (PluginValidationException, PluginExecutionException) as e:
             raise e
         except Exception as e:
             log.error(f"Plugin {plugin.info.name} failed to run: {e}", exc_info=True)
-            return False, str(e)
+            raise PluginExecutionException(str(e)) from e
 
     def plugin_socketio_message(self, plugin_name, msg):
         """

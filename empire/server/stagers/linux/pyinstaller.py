@@ -1,7 +1,9 @@
-import logging
+import shutil
 import subprocess
 import time
 from pathlib import Path
+
+from empire.server.core.exceptions import StagerGenerationException
 
 """
 
@@ -20,8 +22,6 @@ Install steps...
 @TweekFawkes
 
 """
-
-log = logging.getLogger(__name__)
 
 
 class Stager:
@@ -78,11 +78,8 @@ class Stager:
         binary_file_str = self.options["BinaryFile"]["Value"]
         encode = False
 
-        output_str = subprocess.check_output(["which", "pyinstaller"])
-        if output_str == "":
-            log.error("pyInstaller is not installed")
-            log.error("Try: apt-get -y install python-pip && pip install pyinstaller")
-            return ""
+        if shutil.which("pyinstaller") is None:
+            raise StagerGenerationException("pyInstaller is not installed.")
 
         launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name=listener_name,
@@ -90,9 +87,8 @@ class Stager:
             encode=encode,
             user_agent=user_agent,
         )
-        if launcher == "":
-            log.error("Error in launcher command generation.")
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         active_listener = self.mainMenu.listenersv2.get_active_listener_by_name(
             listener_name

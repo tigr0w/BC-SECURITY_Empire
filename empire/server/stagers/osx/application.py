@@ -1,6 +1,4 @@
-import logging
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -76,9 +74,8 @@ class Stager:
             user_agent=user_agent,
         )
 
-        if launcher == "":
-            log.error("Error in launcher command generation.")
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         disarm = False
         launcher = launcher.removeprefix("echo ")

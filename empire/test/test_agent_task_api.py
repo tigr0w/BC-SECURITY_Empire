@@ -14,7 +14,6 @@ from empire.server.core.module_models import (
     EmpireModuleAdvanced,
     LanguageEnum,
 )
-from empire.server.utils.module_util import handle_error_message
 from empire.test.conftest import make_agent
 
 
@@ -115,13 +114,6 @@ def raise_exception_wrapper(exception):
     return raise_exception
 
 
-def return_handle_error_message_wrapper(message):
-    def return_handle_error_message(*args, **kwargs):
-        return handle_error_message(message)
-
-    return return_handle_error_message
-
-
 @pytest.fixture(scope="module")
 def _module_with_validation_exception(main):
     module_name = "this_module_has_a_validation_exception"
@@ -173,28 +165,6 @@ def _module_with_unexpected_exception(main):
             custom_generate=True,
             generate_class=SimpleNamespace(
                 generate=raise_exception_wrapper(RuntimeError("boom"))
-            ),
-        ),
-    )
-
-    yield
-
-    del main.modulesv2.modules[module_name]
-
-
-@pytest.fixture(scope="module")
-def _module_with_legacy_handle_error_message(main):
-    module_name = "this_module_uses_legacy_handle_error_message"
-    main.modulesv2.modules[module_name] = EmpireModule(
-        id=module_name,
-        name=module_name,
-        language=LanguageEnum.powershell,
-        advanced=EmpireModuleAdvanced(
-            custom_generate=True,
-            generate_class=SimpleNamespace(
-                generate=return_handle_error_message_wrapper(
-                    module_name + ": this is the error"
-                )
             ),
         ),
     )
@@ -549,11 +519,7 @@ def test_create_task_module_ignore_admin_check(
     assert response.json()["id"] > 0
 
 
-@pytest.mark.filterwarnings(
-    "ignore:handle_error_message is deprecated:DeprecationWarning",
-    "ignore:Returning a tuple on errors from module generation is deprecated:DeprecationWarning",
-)
-@pytest.mark.usefixtures("_module_with_legacy_handle_error_message")
+@pytest.mark.usefixtures("_module_with_validation_exception")
 def test_create_task_module_validation_exception(
     client, admin_auth_header, agent_low_integrity
 ):
@@ -561,17 +527,14 @@ def test_create_task_module_validation_exception(
         f"/api/v2/agents/{agent_low_integrity}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_id": "this_module_uses_legacy_handle_error_message",
+            "module_id": "this_module_has_a_validation_exception",
             "ignore_admin_check": True,
             "options": {},
         },
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert (
-        response.json()["detail"]
-        == "this_module_uses_legacy_handle_error_message: this is the error"
-    )
+    assert response.json()["detail"] == "this_module_has_a_validation_exception"
 
 
 @pytest.mark.usefixtures("_module_with_execution_exception")
@@ -608,24 +571,6 @@ def test_create_task_module_unexpected_exception(
 
     assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert response.json()["detail"] == "Error generating script."
-
-
-@pytest.mark.usefixtures("_module_with_execution_exception")
-def test_create_task_handle_error_message(
-    client, admin_auth_header, agent_low_integrity
-):
-    response = client.post(
-        f"/api/v2/agents/{agent_low_integrity}/tasks/module",
-        headers=admin_auth_header,
-        json={
-            "module_id": "this_module_has_an_execution_exception",
-            "ignore_admin_check": True,
-            "options": {},
-        },
-    )
-
-    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-    assert response.json()["detail"] == "this_module_has_an_execution_exception"
 
 
 def test_create_task_upload_file_not_found(client, admin_auth_header, agent):

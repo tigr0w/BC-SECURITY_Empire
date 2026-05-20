@@ -27,18 +27,11 @@ raise PluginExecutionException("Error Message")
 
 Before the plugin's execute function is called, the core Empire code will validate the command arguments. If the arguments are invalid, the API will return a 400 error with the error message.
 
-The execute function can return a String, a Boolean, or a Tuple of (Any, String)
+The execute function can return a String, a Boolean, or None.
 
 * None - The execution will be considered successful.
 * String - The string will be displayed to the user executing the plugin and the execution will be considered successful.
 * Boolean - If the boolean is True, the execution will be considered successful. If the boolean is False, the execution will be considered failed.
-
-#### Deprecated
-
-* Tuple - The tuple must be a tuple of (Any, String). The second value in the tuple represents an error message. The string will be displayed to the user executing the plugin and the execution will be considered failed.
-
-This is deprecated.
-Instead of returning an error message in a tuple, raise a `PluginValidationException` or `PluginExecutionException`.
 
 
 ```python

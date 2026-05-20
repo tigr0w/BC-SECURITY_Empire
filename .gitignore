@@ -60,3 +60,4 @@ workspace.xml
 starkiller-dist.tar.gz
 .worktrees/
 config.user.yaml
+.claude/settings.local.json

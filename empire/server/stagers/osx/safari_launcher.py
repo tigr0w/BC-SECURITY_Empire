@@ -1,4 +1,4 @@
-from empire.server.common import helpers
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -73,9 +73,8 @@ class Stager:
             encode=encode,
             user_agent=user_agent,
         )
-        if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         launcher = launcher.replace("'", "\\'")
         launcher = launcher.replace('"', '\\\\"')

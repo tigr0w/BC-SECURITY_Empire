@@ -5,7 +5,6 @@ import json
 import logging
 import shutil
 import typing
-import warnings
 from pathlib import Path
 
 import yaml
@@ -152,24 +151,8 @@ class ModuleService:
             cleaned_options,
             agent.language,
         )
-        if isinstance(module_data, tuple):
-            warnings.warn(
-                "Returning a tuple on errors from module generation is deprecated. Raise exceptions instead."
-                "https://bc-security.gitbook.io/empire-wiki/module-development/powershell-modules#custom-generate",
-                DeprecationWarning,
-                stacklevel=5,
-            )
-            (module_data, err) = module_data
-        else:
-            # Not all modules return a tuple. If they just return a single value,
-            # we don't want to throw an unpacking error.
-            err = None
-
-        # Should standardize on the return type.
         if not module_data:
-            # This should probably be a ModuleExecutionException, but
-            # for backwards compatability with 5.x, it needs to raise a 400
-            raise ModuleValidationException(err or "module produced an empty script")
+            raise ModuleValidationException("module produced an empty script")
 
         if type(module_data) is not ModuleExecutionRequest:
             module_data = ModuleExecutionRequest(command="", data=module_data)
@@ -434,14 +417,13 @@ class ModuleService:
         params: dict,
         agent_language: str,
         obfuscation_config: models.ObfuscationConfig = None,
-    ) -> ModuleExecutionRequest | str | tuple[str | None, str | None]:
+    ) -> ModuleExecutionRequest | str:
         """
         Generate the script to execute.
 
         Non-custom paths always return a ``ModuleExecutionRequest``.
         Custom-generate modules (``module.advanced.custom_generate``) may also
-        return a bare ``str`` or a legacy ``(script, err)`` tuple; the tuple
-        form is unpacked and warned about by ``execute_module``.
+        return a bare ``str``.
 
         Raises ``ModuleValidationException`` or ``ModuleExecutionException``
         on failure.

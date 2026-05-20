@@ -94,12 +94,11 @@ class Listener:
         """
         return ""
 
-    def validate_options(self) -> tuple[bool, str | None]:
+    def validate_options(self) -> None:
         """
         Validate all options for this listener.
         """
-
-        return True, None
+        pass
 
     def generate_launcher(
         self,

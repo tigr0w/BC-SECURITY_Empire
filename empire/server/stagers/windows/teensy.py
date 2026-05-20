@@ -1,6 +1,4 @@
-import logging
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -95,10 +93,9 @@ class Stager:
             if self.mainMenu.listenersv2.get_active_listener_by_name(
                 listener_name
             ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
-                log.error(
+                raise StagerGenerationException(
                     "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for C# and IronPython stagers."
                 )
-                return ""
 
             launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
                 language=language,
@@ -120,9 +117,8 @@ class Stager:
                 bypasses=self.options["Bypasses"]["Value"],
             )
 
-        if launcher == "":
-            log.error("[!] Error in launcher command generation.")
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         enc = launcher.split(" ")[-1]
         send_enc = 'Keyboard.print("'

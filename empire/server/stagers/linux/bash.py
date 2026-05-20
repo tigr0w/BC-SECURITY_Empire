@@ -1,6 +1,4 @@
-import logging
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -64,9 +62,8 @@ class Stager:
             bypasses=bypasses,
         )
 
-        if launcher == "":
-            log.error("Error in launcher command generation.")
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         script = "#!/bin/bash\n"
         script += f"{launcher}\n"

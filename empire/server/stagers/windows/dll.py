@@ -1,8 +1,5 @@
-import logging
-
 from empire.server.core.db.base import SessionLocal
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -102,28 +99,24 @@ class Stager:
         if not self.mainMenu.listenersv2.get_active_listener_by_name(
             listener_name
         ) and not self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name):
-            # not a valid listener, return nothing for the script
-            log.error(f"[!] Invalid listener: {listener_name}")
-            return ""
+            raise StagerGenerationException(f"Invalid listener: {listener_name}")
 
         obfuscate_script = False
         if obfuscate.lower() == "true":
             obfuscate_script = True
 
         if obfuscate_script and "launcher" in obfuscate_command.lower():
-            log.error(
+            raise StagerGenerationException(
                 "If using obfuscation, LAUNCHER obfuscation cannot be used in the dll stager."
             )
-            return ""
 
         if language in ["csharp", "ironpython"]:
             if self.mainMenu.listenersv2.get_active_listener_by_name(
                 listener_name
             ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
-                log.error(
+                raise StagerGenerationException(
                     "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for C# and IronPython stagers."
                 )
-                return ""
 
             launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
                 language=language,
@@ -147,9 +140,8 @@ class Stager:
                 bypasses=bypasses,
             )
 
-        if launcher == "":
-            log.error("[!] Error in launcher generation.")
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher generation.")
 
         launcher_code = launcher.split(" ")[-1]
         return self.mainMenu.stagergenv2.generate_dll(launcher_code, arch)

@@ -1,9 +1,7 @@
-import logging
 import re
 
 from empire.server.common import helpers
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -147,8 +145,9 @@ class Stager:
         )
 
         if pylauncher == "":
-            log.error("Error in python launcher command generation.")
-            return ""
+            raise StagerGenerationException(
+                "Error in python launcher command generation."
+            )
 
         # render python launcher into python payload
         pylauncher = pylauncher.replace('"', '""')
@@ -169,8 +168,9 @@ class Stager:
         )
 
         if poshlauncher == "":
-            log.error("Error in powershell launcher command generation.")
-            return ""
+            raise StagerGenerationException(
+                "Error in powershell launcher command generation."
+            )
 
         # render powershell launcher into powershell payload
         poshchunks = list(helpers.chunks(poshlauncher, 50))

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.exceptions import ListenerValidationException
 from empire.server.core.hooks import hooks
 from empire.server.utils.option_util import set_options, validate_options
 
@@ -287,14 +288,15 @@ class ListenerService:
 
         set_options(template_instance, cleaned_options)
 
-        # todo We should update the validate_options method to also return a string error
         self._normalize_listener_options(template_instance)
-        validated, err = template_instance.validate_options()
-        if not validated:
+        try:
+            template_instance.validate_options()
+        except ListenerValidationException as e:
+            log.warning(f"Listener validation failed: {e}")
             for key, value in revert_options.items():
                 template_instance.options[key]["Value"] = value
 
-            return None, err
+            return None, str(e)
 
         return template_instance, None
 

@@ -1,4 +1,4 @@
-from empire.server.common import helpers
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -64,8 +64,7 @@ class Stager:
             user_agent=user_agent,
         )
 
-        if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         return self.mainMenu.stagergenv2.generate_macho(launcher)

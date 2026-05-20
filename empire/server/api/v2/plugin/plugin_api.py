@@ -96,7 +96,7 @@ def execute_plugin(
     plugin_service: PluginServiceDep,
 ):
     try:
-        results, err = plugin_service.execute_plugin(
+        results = plugin_service.execute_plugin(
             db, plugin.loaded_plugin, plugin_req, current_user
         )
     except PluginValidationException as e:
@@ -104,8 +104,8 @@ def execute_plugin(
     except PluginExecutionException as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
-    if results is False or err:
-        raise HTTPException(500, err or "internal plugin error")
+    if results is False:
+        raise HTTPException(500, "internal plugin error")
 
     if results in [True, None]:
         return {"detail": "Plugin executed successfully"}

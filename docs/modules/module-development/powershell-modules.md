@@ -89,11 +89,9 @@ raise ModuleValidationException("Error Message")
 raise ModuleExecutionException("Error Message")
 ```
 
-**Deprecated**
-
-Previously, it was recommended that the generate function return a tuple of the script and the error. `handle_error_message` was provided as a helper function to handle this tuple.
-
-This is no longer recommended, but is still supported. Please migrate away from the tuple return type to raising exceptions. The tuple return type will be removed in a future major release.
+{% hint style="warning" %}
+In Empire 7.0, the deprecated `handle_error_message` helper and tuple return type for module `generate()` functions were removed. Modules must raise `ModuleValidationException` or `ModuleExecutionException` for error handling.
+{% endhint %}
 
 #### Functions
 
@@ -136,7 +134,7 @@ def generate(
     )
 
     if err:
-        return handle_error_message(err)
+        raise ModuleValidationException(err)
 
     # do stuff
     ...
@@ -144,7 +142,7 @@ def generate(
 
 `@auto_finalize` is a decorator that will automatically call `finalize_module` on the returned script from the decorated function.
 
-To use this decorator, the function must not utilize the deprecated tuple return type or the `handle_error_message` function. First migrate the function to raise exceptions before using this decorator.
+To use this decorator, the function must raise exceptions for error handling rather than returning error values.
 
 ```python
 @staticmethod

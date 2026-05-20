@@ -4,6 +4,7 @@ from empire.server.common.helpers import (
     strip_powershell_comments,
     strip_python_comments,
 )
+from empire.server.core.exceptions import StagerGenerationException
 from empire.server.utils.data_util import ps_convert_to_oneliner
 
 
@@ -139,10 +140,8 @@ class Stager:
                 bypasses=bypasses,
             )
 
-        if launcher == "":
-            return "[!] Error in launcher generation."
         if not launcher or launcher.lower() == "failed":
-            return "[!] Error in launcher command generation."
+            raise StagerGenerationException("Error in launcher command generation.")
 
         if language.lower() == "powershell":
             directory = self.mainMenu.stagergenv2.generate_powershell_exe(
@@ -159,4 +158,4 @@ class Stager:
             )
             return Path(directory).read_bytes()
 
-        return "[!] Invalid launcher language."
+        raise StagerGenerationException("Invalid launcher language.")

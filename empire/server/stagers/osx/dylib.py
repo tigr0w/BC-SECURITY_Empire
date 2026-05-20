@@ -1,8 +1,4 @@
-import logging
-
-from empire.server.common import helpers
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -70,8 +66,7 @@ class Stager:
         hijacker = self.options["Hijacker"]["Value"]
 
         if arch == "":
-            print(helpers.color("[!] Please select a valid architecture"))
-            return ""
+            raise StagerGenerationException("Please select a valid architecture.")
 
         launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
@@ -79,9 +74,8 @@ class Stager:
             user_agent=user_agent,
         )
 
-        if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         launcher = launcher.removeprefix("echo ")
         launcher = launcher.removesuffix(" | python3 &")

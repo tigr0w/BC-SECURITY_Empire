@@ -80,7 +80,7 @@ def test_plugin_execute_with_kwargs(session_local, install_path):
         plugin = plugin_holder.loaded_plugin
         with patch_plugin_execute(plugin, execute):
             req = PluginExecutePostRequest(options={"report": "session"})
-            res, _err = plugin_service.execute_plugin("db_session", plugin, req, 1)
+            res = plugin_service.execute_plugin("db_session", plugin, req, 1)
 
     assert res == execute(req.options, db="db_session", user=1)
 
@@ -155,9 +155,8 @@ def test_execute_plugin_file_option(install_path, session_local, models):
     ):
         req = PluginExecutePostRequest(options={"file_option": "9999"})
         with session_local.begin() as db:
-            res, err = plugin_service.execute_plugin(db, plugin, req, None)
+            res = plugin_service.execute_plugin(db, plugin, req, None)
 
-            assert err is None
             assert res == "success"
             mocked_execute.assert_called_once_with(
                 {"file_option": download},

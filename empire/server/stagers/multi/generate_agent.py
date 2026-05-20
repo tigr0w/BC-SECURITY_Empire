@@ -1,6 +1,4 @@
-import logging
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -115,12 +113,8 @@ class Stager:
                 bypasses=bypasses,
             )
 
-        if launcher == "":
-            log.error("[!] Error in launcher generation.")
-            return ""
         if not launcher or launcher.lower() == "failed":
-            log.error("[!] Error in launcher command generation.")
-            return ""
+            raise StagerGenerationException("Error in launcher command generation.")
 
         if obfuscate_script:
             if language == "powershell":

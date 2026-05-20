@@ -107,8 +107,7 @@ def test_create_listener_custom_validation_fails(client, admin_auth_header):
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
-        response.json()["detail"]
-        == "[!] Malleable profile not found: nonexistent.profile"
+        response.json()["detail"] == "Malleable profile not found: nonexistent.profile"
     )
 
 
@@ -449,8 +448,7 @@ def test_update_listener_reverts_if_custom_validation_fails(
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
-        response.json()["detail"]
-        == "[!] Malleable profile not found: nonexistent.profile"
+        response.json()["detail"] == "Malleable profile not found: nonexistent.profile"
     )
 
     response = client.get(

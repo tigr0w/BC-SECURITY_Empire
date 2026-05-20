@@ -4,8 +4,8 @@ import time
 
 # Empire imports
 from empire.server.common import helpers
+from empire.server.core.exceptions import ListenerValidationException
 from empire.server.utils import data_util
-from empire.server.utils.module_util import handle_validate_message
 
 
 class Listener:
@@ -142,7 +142,7 @@ class Listener:
         )
         return ""
 
-    def validate_options(self) -> tuple[bool, str | None]:
+    def validate_options(self) -> None:
         """
         Validate all options for this listener.
         """
@@ -151,9 +151,7 @@ class Listener:
             if self.options[key]["Required"] and (
                 str(self.options[key]["Value"]).strip() == ""
             ):
-                return handle_validate_message(f'[!] Option "{key}" is required.')
-
-        return True, None
+                raise ListenerValidationException(f'Option "{key}" is required.')
 
     def generate_launcher(
         self,

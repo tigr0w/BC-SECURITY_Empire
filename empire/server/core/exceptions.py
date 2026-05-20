@@ -16,3 +16,11 @@ class ModuleValidationException(Exception):
 
 class ModuleExecutionException(Exception):
     pass
+
+
+class ListenerValidationException(Exception):
+    pass
+
+
+class StagerGenerationException(Exception):
+    pass

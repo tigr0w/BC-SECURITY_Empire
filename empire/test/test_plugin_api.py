@@ -108,20 +108,6 @@ def test_execute_plugin_returns_false(client, admin_auth_header, main):
     assert response.json()["detail"] == "internal plugin error"
 
 
-def test_execute_plugin_returns_false_with_string(client, admin_auth_header, main):
-    with patch_plugin_execute(
-        main, "basic_reporting", lambda x, **kwargs: (False, "This is the message")
-    ):
-        response = client.post(
-            "/api/v2/plugins/basic_reporting/execute",
-            json={"options": {}},
-            headers=admin_auth_header,
-        )
-
-    assert response.status_code == HTTP_500_INTERNAL_SERVER_ERROR
-    assert response.json()["detail"] == "This is the message"
-
-
 def test_execute_plugin_returns_string(client, admin_auth_header, main):
     with patch_plugin_execute(
         main, "basic_reporting", lambda x, **kwargs: "Successful Execution"
@@ -146,21 +132,6 @@ def test_execute_plugin_returns_true(client, admin_auth_header, main):
 
     assert response.status_code == HTTP_200_OK
     assert response.json() == {"detail": "Plugin executed successfully"}
-
-
-def test_execute_plugin_returns_true_with_string(client, admin_auth_header, main):
-    # Since the second value represents an err, the first value is ignored and this is treated as an error.
-    with patch_plugin_execute(
-        main, "basic_reporting", lambda x, **kwargs: (True, "This is the message")
-    ):
-        response = client.post(
-            "/api/v2/plugins/basic_reporting/execute",
-            json={"options": {}},
-            headers=admin_auth_header,
-        )
-
-    assert response.status_code == HTTP_500_INTERNAL_SERVER_ERROR
-    assert response.json() == {"detail": "This is the message"}
 
 
 def test_execute_plugin_raises_plugin_validation_exception(
