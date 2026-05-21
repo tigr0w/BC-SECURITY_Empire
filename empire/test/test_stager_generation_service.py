@@ -13,6 +13,8 @@ from empire.server.core.exceptions import ModuleExecutionException
 from empire.server.stagers.multi.generate_agent import Stager
 from empire.server.utils.file_util import run_as_user
 
+_MIN_GO_BUILD_ARGS = 2
+
 is_arm = platform.machine().startswith("arm") or platform.machine().startswith(
     "aarch64"
 )
@@ -345,7 +347,11 @@ def test_compile_stager_preserves_main_go_on_build_failure(
     real_run = subprocess.run
 
     def fake_run(args, **kwargs):
-        if isinstance(args, list) and args[:2] == ["go", "build"]:
+        if (
+            isinstance(args, list)
+            and len(args) >= _MIN_GO_BUILD_ARGS
+            and args[1] == "build"
+        ):
             return subprocess.CompletedProcess(
                 args=args, returncode=1, stdout="", stderr="forced build failure"
             )
@@ -393,7 +399,11 @@ def test_compile_stager_build_error_propagates_when_preservation_fails(
     real_run = subprocess.run
 
     def fake_run(args, **kwargs):
-        if isinstance(args, list) and args[:2] == ["go", "build"]:
+        if (
+            isinstance(args, list)
+            and len(args) >= _MIN_GO_BUILD_ARGS
+            and args[1] == "build"
+        ):
             return subprocess.CompletedProcess(
                 args=args, returncode=1, stdout="", stderr="forced build failure"
             )

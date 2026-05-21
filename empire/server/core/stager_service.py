@@ -188,10 +188,21 @@ class StagerService:
         file_name = (
             empire_config.directories.downloads / "generated-stagers" / file_name
         )
-        file_name.parent.mkdir(parents=True, exist_ok=True)
-        mode = "w" if isinstance(resp, str) else "wb"
-        with file_name.open(mode) as f:
-            f.write(resp)
+        try:
+            file_name.parent.mkdir(parents=True, exist_ok=True)
+            mode = "w" if isinstance(resp, str) else "wb"
+            with file_name.open(mode) as f:
+                f.write(resp)
+        except OSError as write_err:
+            log.error(
+                "Stager generation for %s succeeded but writing output failed "
+                "(path=%s): %s",
+                type(template_instance).__name__,
+                file_name,
+                write_err,
+                exc_info=True,
+            )
+            return None, f"Failed to write generated stager to disk: {write_err}"
 
         return file_name, None
 

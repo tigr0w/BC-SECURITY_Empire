@@ -7,6 +7,7 @@ import pytest
 from starlette import status
 
 from empire.server.core.exceptions import ModuleExecutionException
+from empire.server.core.go import GoCompiler
 from empire.server.core.stager_service import StagerService
 
 
@@ -860,3 +861,40 @@ def test_windows_c_stager_download(client, admin_auth_header):
     assert len(response.content) > 0
 
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+
+
+@pytest.mark.slow
+def test_create_go_stager_compile_failure_returns_400_not_500(
+    client, admin_auth_header, monkeypatch
+):
+    """A ModuleExecutionException from compile_stager must produce a 400 Bad
+    Request with the error detail, not a 500 Internal Server Error.
+
+    Previously the exception escaped generate_stager unhandled and hit
+    FastAPI's default exception handler, giving operators an opaque 500 with
+    no actionable message in the UI.
+    """
+    monkeypatch.setattr(
+        GoCompiler,
+        "compile_stager",
+        lambda *a, **k: (_ for _ in ()).throw(
+            ModuleExecutionException("Go build failed (rc=1): injected failure")
+        ),
+    )
+
+    go_stager = {
+        "name": "test-go-compile-failure",
+        "template": "multi_go_exe",
+        "options": {"Listener": "new-listener-1"},
+    }
+
+    response = client.post(
+        "/api/v2/stagers/?save=false", headers=admin_auth_header, json=go_stager
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST, (
+        f"Expected 400 for compile failure, got {response.status_code}: {response.text}"
+    )
+    assert "Go build failed" in response.json().get("detail", ""), (
+        "Error detail must reach the API response so operators see it in the UI"
+    )
