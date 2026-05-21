@@ -64,8 +64,19 @@ class DotnetCompiler:
                 log.warning(f"Compiler stderr: {result.stderr.strip()}")
 
             if result.returncode != 0:
+                log.error(
+                    "EmpireCompiler failed (rc=%d)\nstdout: %s\nstderr: %s",
+                    result.returncode,
+                    result.stdout,
+                    result.stderr,
+                )
+                detail = (
+                    result.stderr.strip()
+                    or result.stdout.strip()
+                    or "<no output — likely killed by signal, check OOM/AV/cgroup limits>"
+                )
                 raise ModuleExecutionException(
-                    f"EmpireCompiler execution failed with error: {result.stderr.strip()}"
+                    f"EmpireCompiler execution failed (rc={result.returncode}): {detail}"
                 )
 
             if "Final Task Path:" not in result.stdout.strip():
@@ -111,8 +122,19 @@ class DotnetCompiler:
             )
 
             if result.returncode != 0:
+                log.error(
+                    "EmpireCompiler failed (rc=%d)\nstdout: %s\nstderr: %s",
+                    result.returncode,
+                    result.stdout,
+                    result.stderr,
+                )
+                detail = (
+                    result.stderr.strip()
+                    or result.stdout.strip()
+                    or "<no output — likely killed by signal, check OOM/AV/cgroup limits>"
+                )
                 raise ModuleExecutionException(
-                    f"EmpireCompiler execution failed with error: {result.stderr.strip()}"
+                    f"EmpireCompiler execution failed (rc={result.returncode}): {detail}"
                 )
 
             if "Final Task Path:" not in result.stdout.strip():

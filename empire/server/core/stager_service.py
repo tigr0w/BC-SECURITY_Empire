@@ -9,7 +9,10 @@ from sqlalchemy.orm import Session
 
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
-from empire.server.core.exceptions import StagerGenerationException
+from empire.server.core.exceptions import (
+    ModuleExecutionException,
+    StagerGenerationException,
+)
 from empire.server.utils.option_util import set_options, validate_options
 
 log = logging.getLogger(__name__)
@@ -164,8 +167,17 @@ class StagerService:
     def generate_stager(self, template_instance):
         try:
             resp = template_instance.generate()
-        except StagerGenerationException as e:
-            log.warning(f"Stager generation failed: {e}")
+        except (ModuleExecutionException, StagerGenerationException) as e:
+            # Convert compile/subprocess failures to a structured (None, err)
+            # result so the API surfaces a 400 with the message rather than a
+            # 500 stack trace. exc_info=True preserves the chained subprocess
+            # context (rc, cmd, stderr) for empire-side debugging.
+            log.error(
+                "Stager generation failed for template %s: %s",
+                type(template_instance).__name__,
+                e,
+                exc_info=True,
+            )
             return None, str(e)
 
         if not resp:
@@ -177,10 +189,21 @@ class StagerService:
         file_name = (
             empire_config.directories.downloads / "generated-stagers" / file_name
         )
-        file_name.parent.mkdir(parents=True, exist_ok=True)
-        mode = "w" if isinstance(resp, str) else "wb"
-        with file_name.open(mode) as f:
-            f.write(resp)
+        try:
+            file_name.parent.mkdir(parents=True, exist_ok=True)
+            mode = "w" if isinstance(resp, str) else "wb"
+            with file_name.open(mode) as f:
+                f.write(resp)
+        except OSError as write_err:
+            log.error(
+                "Stager generation for %s succeeded but writing output failed "
+                "(path=%s): %s",
+                type(template_instance).__name__,
+                file_name,
+                write_err,
+                exc_info=True,
+            )
+            return None, f"Failed to write generated stager to disk: {write_err}"
 
         return file_name, None
 
