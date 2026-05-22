@@ -50,8 +50,6 @@ from datetime import datetime
 
 import click
 
-from empire.server.utils.math_util import old_div
-
 log = logging.getLogger(__name__)
 
 
@@ -667,13 +665,13 @@ def get_file_size(file):
     Returns a string with the file size and highest rating.
     """
     byte_size = sys.getsizeof(file)
-    kb_size = old_div(byte_size, 1024)
+    kb_size = byte_size // 1024
     if kb_size == 0:
         return f"{byte_size} Bytes"
-    mb_size = old_div(kb_size, 1024)
+    mb_size = kb_size // 1024
     if mb_size == 0:
         return f"{kb_size} KB"
-    gb_size = old_div(mb_size, 1024) % (mb_size)
+    gb_size = mb_size // 1024
     if gb_size == 0:
         return f"{mb_size} MB"
     return f"{gb_size} GB"

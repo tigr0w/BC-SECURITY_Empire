@@ -340,30 +340,30 @@ def startup_db():
 
             # When Empire starts up for the first time, it will create the database and create
             # these default records.
-            if len(db.query(models.User).all()) == 0:
+            if db.query(models.User).first() is None:
                 log.info("Setting up database.")
                 log.info("Adding default user.")
                 db.add(get_default_user())
 
-            if len(db.query(models.Config).all()) == 0:
+            if db.query(models.Config).first() is None:
                 log.info("Adding database config.")
                 db.add(get_default_config())
 
-            if len(db.query(models.Keyword).all()) == 0:
+            if db.query(models.Keyword).first() is None:
                 log.info("Adding default keyword obfuscation functions.")
                 keywords = get_default_keyword_obfuscation()
 
                 for keyword in keywords:
                     db.add(keyword)
 
-            if len(db.query(models.ObfuscationConfig).all()) == 0:
+            if db.query(models.ObfuscationConfig).first() is None:
                 log.info("Adding default obfuscation config.")
                 obf_configs = get_default_obfuscation_config()
 
                 for config in obf_configs:
                     db.add(config)
 
-            if len(db.query(models.IP).all()) == 0:
+            if db.query(models.IP).first() is None:
                 ips = get_default_ips()
 
                 for ip in ips:
