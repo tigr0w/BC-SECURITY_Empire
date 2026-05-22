@@ -2,6 +2,7 @@ import fnmatch
 import logging
 import typing
 
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
@@ -39,11 +40,9 @@ class ProfileService:
             profile_name = malleable_split[1]
 
             # Check if module is in database and load new profiles
-            profile = (
-                db.query(models.Profile)
-                .filter(models.Profile.name == profile_name)
-                .first()
-            )
+            profile = db.scalars(
+                select(models.Profile).where(models.Profile.name == profile_name)
+            ).first()
             if not profile:
                 log.debug(f"Adding malleable profile: {profile_name}")
 
@@ -59,15 +58,19 @@ class ProfileService:
 
     @staticmethod
     def get_all(db: Session):
-        return db.query(models.Profile).all()
+        return db.scalars(select(models.Profile)).all()
 
     @staticmethod
     def get_by_id(db: Session, uid: int):
-        return db.query(models.Profile).filter(models.Profile.id == uid).first()
+        return db.scalars(
+            select(models.Profile).where(models.Profile.id == uid)
+        ).first()
 
     @staticmethod
     def get_by_name(db: Session, name: str):
-        return db.query(models.Profile).filter(models.Profile.name == name).first()
+        return db.scalars(
+            select(models.Profile).where(models.Profile.name == name)
+        ).first()
 
     @staticmethod
     def delete_profile(db: Session, profile: models.Profile):
@@ -98,5 +101,5 @@ class ProfileService:
 
     @staticmethod
     def delete_all_profiles(db: Session):
-        db.query(models.Profile).delete()
+        db.execute(delete(models.Profile))
         db.flush()

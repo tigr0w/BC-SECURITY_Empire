@@ -11,6 +11,7 @@ from textwrap import dedent
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from flask import Flask, make_response, render_template, request, send_from_directory
+from sqlalchemy import select
 from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, packets, templating
@@ -1166,8 +1167,11 @@ class Listener:
 
                     session_info = (
                         SessionLocal()
-                        .query(models.Agent)
-                        .filter(models.Agent.session_id == sessionID)
+                        .scalars(
+                            select(models.Agent).where(
+                                models.Agent.session_id == sessionID
+                            )
+                        )
                         .first()
                     )
                     if session_info.language == "ironpython":

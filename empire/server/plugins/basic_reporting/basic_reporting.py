@@ -2,6 +2,8 @@ import csv
 import io
 from typing import override
 
+from sqlalchemy import select
+
 from empire.server.core.db import models
 from empire.server.core.db.models import PluginTaskStatus
 from empire.server.core.plugins import BasePlugin
@@ -68,7 +70,7 @@ class Plugin(BasePlugin):
         out = io.StringIO()
         writer = csv.writer(out)
         writer.writerow(["SessionID", "Hostname", "User Name", "First Check-in"])
-        for row in db.query(models.Agent).all():
+        for row in db.scalars(select(models.Agent)).all():
             writer.writerow(
                 [row.session_id, row.hostname, row.username, row.firstseen_time]
             )
@@ -82,7 +84,7 @@ class Plugin(BasePlugin):
         out = io.StringIO()
         writer = csv.writer(out)
         writer.writerow(["Domain", "Username", "Host", "Cred Type", "Password"])
-        for row in db.query(models.Credential).all():
+        for row in db.scalars(select(models.Credential)).all():
             writer.writerow(
                 [row.domain, row.username, row.host, row.credtype, row.password]
             )
@@ -96,11 +98,9 @@ class Plugin(BasePlugin):
         out = io.StringIO()
         writer = csv.writer(out)
         writer.writerow(["Timestamp", "Username", "Message"])
-        for row in (
-            db.query(models.ChatMessage)
-            .order_by(models.ChatMessage.created_at.asc())
-            .all()
-        ):
+        for row in db.scalars(
+            select(models.ChatMessage).order_by(models.ChatMessage.created_at.asc())
+        ).all():
             writer.writerow(
                 [xstr(row.created_at), xstr(row.username), xstr(row.message)]
             )
@@ -114,7 +114,7 @@ class Plugin(BasePlugin):
         out = io.StringIO()
         out.write("Empire Master Taskings & Results Log by timestamp\n")
         out.write("=" * 50 + "\n\n")
-        for row in db.query(models.AgentTask).all():
+        for row in db.scalars(select(models.AgentTask)).all():
             row: models.AgentTask
             username = row.user.username if row.user else "None"
             out.write(

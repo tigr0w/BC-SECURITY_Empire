@@ -1,6 +1,7 @@
 import logging
 import typing
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
@@ -19,11 +20,12 @@ def get_listener_defaults(db: Session) -> tuple[str | None, list[str] | None]:
     """
     try:
         active = (
-            db.query(models.Listener)
-            .filter(models.Listener.enabled.is_(True))
-            .order_by(models.Listener.id)
-            .all()
-        )
+            db.scalars(
+                select(models.Listener)
+                .where(models.Listener.enabled.is_(True))
+                .order_by(models.Listener.id)
+            )
+        ).all()
         names = [listener.name for listener in active]
         return (names[0] if names else None), names
     except Exception:

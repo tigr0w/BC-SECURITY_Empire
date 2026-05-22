@@ -12,6 +12,7 @@ import requests
 import yaml
 from pydantic import BaseModel, ConfigDict
 from requests_file import FileAdapter
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_200_OK
 
@@ -312,7 +313,7 @@ class PluginService:
 
     def get_all(self, db):
         loaded_plugins = self.loaded_plugins
-        db_plugins = db.query(models.Plugin).all()
+        db_plugins = db.scalars(select(models.Plugin)).all()
 
         ret = []
         for db_plugin in db_plugins:
@@ -323,7 +324,9 @@ class PluginService:
 
     def get_by_id(self, db: SessionLocal, uid: str) -> PluginHolder | None:
         loaded_plugin = self.loaded_plugins.get(uid)
-        db_plugin = db.query(models.Plugin).filter(models.Plugin.id == uid).first()
+        db_plugin = db.scalars(
+            select(models.Plugin).where(models.Plugin.id == uid)
+        ).first()
 
         if not db_plugin:
             return None

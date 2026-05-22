@@ -2,6 +2,7 @@ import json
 import logging
 
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -40,7 +41,7 @@ def setup_socket_events(sio, empire_menu):  # noqa: PLR0915
         if user_id is None:
             return None
 
-        return db.query(models.User).filter(models.User.id == user_id).first()
+        return db.scalars(select(models.User).where(models.User.id == user_id)).first()
 
     @sio.on("connect")
     async def on_connect(sid, environ, auth):
@@ -156,11 +157,12 @@ def setup_socket_events(sio, empire_menu):  # noqa: PLR0915
         try:
             with SessionLocal() as db:
                 rows = (
-                    db.query(models.ChatMessage)
-                    .order_by(models.ChatMessage.created_at.desc())
-                    .limit(20)
-                    .all()
-                )
+                    db.scalars(
+                        select(models.ChatMessage)
+                        .order_by(models.ChatMessage.created_at.desc())
+                        .limit(20)
+                    )
+                ).all()
         except SQLAlchemyError:
             log.exception("Failed to load chat history")
             return
