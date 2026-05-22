@@ -5,6 +5,7 @@ import re
 import typing
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
@@ -37,15 +38,19 @@ class ListenerService:
 
     @staticmethod
     def get_all(db: Session) -> list[models.Listener]:
-        return db.query(models.Listener).all()
+        return db.scalars(select(models.Listener)).all()
 
     @staticmethod
     def get_by_id(db: Session, uid: int) -> models.Listener | None:
-        return db.query(models.Listener).filter(models.Listener.id == uid).first()
+        return db.scalars(
+            select(models.Listener).where(models.Listener.id == uid)
+        ).first()
 
     @staticmethod
     def get_by_name(db: Session, name: str) -> models.Listener | None:
-        return db.query(models.Listener).filter(models.Listener.name == name).first()
+        return db.scalars(
+            select(models.Listener).where(models.Listener.name == name)
+        ).first()
 
     def get_active_listeners(self):
         return self._active_listeners
@@ -213,11 +218,9 @@ class ListenerService:
 
     def start_existing_listeners(self):
         with SessionLocal.begin() as db:
-            listeners = (
-                db.query(models.Listener)
-                .filter(models.Listener.enabled == True)  # noqa: E712
-                .all()
-            )
+            listeners = db.scalars(
+                select(models.Listener).where(models.Listener.enabled.is_(True))
+            ).all()
             for listener in listeners:
                 self.start_existing_listener(db, listener)
 

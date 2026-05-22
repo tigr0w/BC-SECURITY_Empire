@@ -6,6 +6,7 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette import status
 
@@ -14,7 +15,7 @@ from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 
 # This all comes from the amazing fastapi docs: https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
-SECRET_KEY = SessionLocal().query(models.Config).first().jwt_secret_key
+SECRET_KEY = SessionLocal().scalars(select(models.Config)).first().jwt_secret_key
 ALGORITHM = "HS256"
 
 # Long token expiration until refresh token is implemented
@@ -47,7 +48,9 @@ def get_password_hash(plain_password: str) -> str:
 
 
 def get_user(db, username: str) -> models.User:
-    return db.query(models.User).filter(models.User.username == username).first()
+    return db.scalars(
+        select(models.User).where(models.User.username == username)
+    ).first()
 
 
 def authenticate_user(db: Session, username: str, password: str):

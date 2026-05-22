@@ -18,6 +18,7 @@ except ImportError:
 
 from packaging.version import parse
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from empire.server.api.v2.module.module_dto import (
@@ -82,19 +83,17 @@ class ModuleService:
     def update_module(
         self, db: Session, module: EmpireModule, module_req: ModuleUpdateRequest
     ):
-        db_module: models.Module = (
-            db.query(models.Module).filter(models.Module.id == module.id).first()
-        )
+        db_module: models.Module = db.scalars(
+            select(models.Module).where(models.Module.id == module.id)
+        ).first()
         db_module.enabled = module_req.enabled
 
         self.modules.get(module.id).enabled = module_req.enabled
 
     def update_modules(self, db: Session, module_req: ModuleBulkUpdateRequest):
-        db_modules: list[models.Module] = (
-            db.query(models.Module)
-            .filter(models.Module.id.in_(module_req.modules))
-            .all()
-        )
+        db_modules: list[models.Module] = db.scalars(
+            select(models.Module).where(models.Module.id.in_(module_req.modules))
+        ).all()
 
         for db_module in db_modules:
             db_module.enabled = module_req.enabled
@@ -787,7 +786,9 @@ class ModuleService:
         log.info(f"v2: Loading modules from: {root_path}")
 
         # Pre-load all existing module records to avoid per-module DB queries
-        existing_modules = {mod.id: mod for mod in db.query(models.Module).all()}
+        existing_modules = {
+            mod.id: mod for mod in db.scalars(select(models.Module)).all()
+        }
 
         for file_path in root_path.rglob("*.y*ml"):
             filename = file_path.name
@@ -902,9 +903,9 @@ class ModuleService:
         if existing_modules is not None:
             mod = existing_modules.get(my_model.id)
         else:
-            mod = (
-                db.query(models.Module).filter(models.Module.id == my_model.id).first()
-            )
+            mod = db.scalars(
+                select(models.Module).where(models.Module.id == my_model.id)
+            ).first()
 
         if not mod:
             mod = models.Module(
@@ -1131,9 +1132,9 @@ class ModuleService:
 
     def delete_all_modules(self, db: Session):
         for module in list(self.modules.values()):
-            db_module: models.Module = (
-                db.query(models.Module).filter(models.Module.id == module.id).first()
-            )
+            db_module: models.Module = db.scalars(
+                select(models.Module).where(models.Module.id == module.id)
+            ).first()
             if db_module:
                 db.delete(db_module)
             del self.modules[module.id]

@@ -5,6 +5,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from empire.server.core.config.config_manager import empire_config
@@ -33,15 +34,17 @@ class StagerService:
 
     @staticmethod
     def get_all(db: Session):
-        return db.query(models.Stager).all()
+        return db.scalars(select(models.Stager)).all()
 
     @staticmethod
     def get_by_id(db: Session, uid: int):
-        return db.query(models.Stager).filter(models.Stager.id == uid).first()
+        return db.scalars(select(models.Stager).where(models.Stager.id == uid)).first()
 
     @staticmethod
     def get_by_name(db: Session, name: str):
-        return db.query(models.Stager).filter(models.Stager.name == name).first()
+        return db.scalars(
+            select(models.Stager).where(models.Stager.name == name)
+        ).first()
 
     def validate_stager_options(
         self, db: Session, template: str, params: dict

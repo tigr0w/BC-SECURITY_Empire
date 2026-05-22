@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 from pydantic import BaseModel
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, joinedload, undefer
 
 from empire.server.api.v2.agent.agent_task_dto import (
@@ -59,22 +59,22 @@ class AgentTaskService:
         status: AgentTaskStatus | None = None,
         q: str | None = None,
     ):
-        query = db.query(
+        stmt = select(
             models.AgentTask, func.count(models.AgentTask.id).over().label("total")
         )
 
         if agents:
-            query = query.filter(models.AgentTask.agent_id.in_(agents))
+            stmt = stmt.where(models.AgentTask.agent_id.in_(agents))
 
         if users:
             user_filters = [models.AgentTask.user_id.in_(users)]
             if 0 in users:
                 user_filters.append(models.AgentTask.user_id.is_(None))
-            query = query.filter(or_(*user_filters))
+            stmt = stmt.where(or_(*user_filters))
 
         if tags:
             tags_split = [tag.split(":", 1) for tag in tags]
-            query = query.join(models.AgentTask.tags).filter(
+            stmt = stmt.join(models.AgentTask.tags).where(
                 and_(
                     models.Tag.name.in_([tag[0] for tag in tags_split]),
                     models.Tag.value.in_([tag[1] for tag in tags_split]),
@@ -91,16 +91,16 @@ class AgentTaskService:
             query_options.append(undefer(models.AgentTask.original_output))
         if include_output:
             query_options.append(undefer(models.AgentTask.output))
-        query = query.options(*query_options)
+        stmt = stmt.options(*query_options)
 
         if since:
-            query = query.filter(models.AgentTask.updated_at > since)
+            stmt = stmt.where(models.AgentTask.updated_at > since)
 
         if status:
-            query = query.filter(models.AgentTask.status == status)
+            stmt = stmt.where(models.AgentTask.status == status)
 
         if q:
-            query = query.filter(
+            stmt = stmt.where(
                 or_(
                     models.AgentTask.input.like(f"%{q}%"),
                     models.AgentTask.output.like(f"%{q}%"),
@@ -117,14 +117,14 @@ class AgentTaskService:
             order_by_prop = models.AgentTask.id
 
         if order_direction == OrderDirection.asc:
-            query = query.order_by(order_by_prop.asc())
+            stmt = stmt.order_by(order_by_prop.asc())
         else:
-            query = query.order_by(order_by_prop.desc())
+            stmt = stmt.order_by(order_by_prop.desc())
 
         if limit > 0:
-            query = query.limit(limit).offset(offset)
+            stmt = stmt.limit(limit).offset(offset)
 
-        results = query.all()
+        results = db.execute(stmt).all()
 
         total = 0 if not results else results[0].total
         results = [x[0] for x in results]
@@ -133,13 +133,11 @@ class AgentTaskService:
 
     @staticmethod
     def get_task_for_agent(db: Session, agent_id: str, uid: int):
-        return (
-            db.query(models.AgentTask)
-            .filter(
+        return db.scalars(
+            select(models.AgentTask).where(
                 and_(models.AgentTask.agent_id == agent_id, models.AgentTask.id == uid)
             )
-            .first()
-        )
+        ).first()
 
     def get_temporary_tasks_for_agent(self, agent_id: str, clear: bool = True):
         tasks = self.temporary_tasks[agent_id]
@@ -435,10 +433,10 @@ class AgentTaskService:
         log.info(message)
         self.agent_service.save_agent_log(agent.session_id, message)
 
-        pk = (
-            db.query(func.max(models.AgentTask.id))
-            .filter(models.AgentTask.agent_id == agent.session_id)
-            .first()[0]
+        pk = db.scalar(
+            select(func.max(models.AgentTask.id)).where(
+                models.AgentTask.agent_id == agent.session_id
+            )
         )
 
         if pk is None:

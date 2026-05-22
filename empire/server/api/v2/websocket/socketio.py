@@ -2,6 +2,7 @@ import json
 import logging
 
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from empire.server.api import jwt_auth
@@ -43,7 +44,7 @@ def setup_socket_events(sio, empire_menu):  # noqa: PLR0915
         if user_id is None:
             return None
 
-        return db.query(models.User).filter(models.User.id == user_id).first()
+        return db.scalars(select(models.User).where(models.User.id == user_id)).first()
 
     @sio.on("connect")
     async def on_connect(sid, environ, auth):

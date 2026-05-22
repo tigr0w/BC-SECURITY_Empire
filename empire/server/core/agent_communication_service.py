@@ -8,7 +8,7 @@ import typing
 from pathlib import Path
 
 from pydantic import ValidationError
-from sqlalchemy import and_, select
+from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
 
@@ -141,16 +141,14 @@ class AgentCommunicationService:
             # We join a Download to a Tasking
             # But we also join a Download to a AgentFile
             # This could be useful later on for showing files as downloaded directly in the file browser.
-            agent_file = (
-                db.query(models.AgentFile)
-                .filter(
+            agent_file = db.scalars(
+                select(models.AgentFile).where(
                     and_(
                         models.AgentFile.path == path,
                         models.AgentFile.session_id == session_id,
                     )
                 )
-                .first()
-            )
+            ).first()
 
             if agent_file:
                 agent_file.downloads.append(download)
@@ -213,9 +211,9 @@ class AgentCommunicationService:
         """
         self.agents.pop(session_id, None)
 
-        agent = (
-            db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
-        )
+        agent = db.scalars(
+            select(models.Agent).where(models.Agent.session_id == session_id)
+        ).first()
         if agent:
             db.delete(agent)
 
@@ -240,23 +238,23 @@ class AgentCommunicationService:
             # If there are any linked downloads, the association will be removed.
             # This function could be updated in the future to do updates instead
             # of clearing the whole tree on refreshes.
-            this_directory = (
-                db.query(models.AgentFile)
-                .filter(
+            this_directory = db.scalars(
+                select(models.AgentFile).where(
                     and_(
                         models.AgentFile.session_id == session_id,
                         models.AgentFile.path == response["directory_path"],
                     ),
                 )
-                .first()
-            )
+            ).first()
             if this_directory:
-                db.query(models.AgentFile).filter(
-                    and_(
-                        models.AgentFile.session_id == session_id,
-                        models.AgentFile.parent_id == this_directory.id,
+                db.execute(
+                    delete(models.AgentFile).where(
+                        and_(
+                            models.AgentFile.session_id == session_id,
+                            models.AgentFile.parent_id == this_directory.id,
+                        )
                     )
-                ).delete()
+                )
             else:  # if the directory doesn't exist we have to create one
                 # parent is None for now even though it might have one. This is self correcting.
                 # If it's true parent is scraped, then this entry will get rewritten
@@ -271,12 +269,14 @@ class AgentCommunicationService:
                 db.flush()
 
             for item in response["items"]:
-                db.query(models.AgentFile).filter(
-                    and_(
-                        models.AgentFile.session_id == session_id,
-                        models.AgentFile.path == item["path"],
+                db.execute(
+                    delete(models.AgentFile).where(
+                        and_(
+                            models.AgentFile.session_id == session_id,
+                            models.AgentFile.path == item["path"],
+                        )
                     )
-                ).delete()
+                )
                 db.add(
                     models.AgentFile(
                         name=item["name"],
@@ -308,35 +308,31 @@ class AgentCommunicationService:
         """
         Update an agent's system information.
         """
-        agent = (
-            db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
-        )
+        agent = db.scalars(
+            select(models.Agent).where(models.Agent.session_id == session_id)
+        ).first()
 
-        host = (
-            db.query(models.Host)
-            .filter(
+        host = db.scalars(
+            select(models.Host).where(
                 and_(
                     models.Host.name == hostname,
                     models.Host.internal_ip == internal_ip,
                 )
             )
-            .first()
-        )
+        ).first()
         if not host:
             host = models.Host(name=hostname, internal_ip=internal_ip)
             db.add(host)
             db.flush()
 
-        process = (
-            db.query(models.HostProcess)
-            .filter(
+        process = db.scalars(
+            select(models.HostProcess).where(
                 and_(
                     models.HostProcess.host_id == host.id,
                     models.HostProcess.process_id == process_id,
                 )
             )
-            .first()
-        )
+        ).first()
         if not process:
             process = models.HostProcess(
                 host_id=host.id,
@@ -1123,16 +1119,14 @@ class AgentCommunicationService:
         message = f"Agent {session_id} got results for task {task_id}"
         log.info(message)
 
-        tasking = (
-            db.query(models.AgentTask)
-            .filter(
+        tasking = db.scalars(
+            select(models.AgentTask).where(
                 and_(
                     models.AgentTask.id == task_id,
                     models.AgentTask.agent_id == session_id,
                 )
             )
-            .first()
-        )
+        ).first()
 
         # insert task results into the database, if it's not a file
         if (
@@ -1581,9 +1575,9 @@ class AgentCommunicationService:
         return tasking
 
     def autorun_tasks(self, db: Session, session_id):
-        agent = (
-            db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
-        )
+        agent = db.scalars(
+            select(models.Agent).where(models.Agent.session_id == session_id)
+        ).first()
 
         listener = self.listener_service.get_by_name(db, agent.listener)
 

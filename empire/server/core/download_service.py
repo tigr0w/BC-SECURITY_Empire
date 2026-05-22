@@ -4,7 +4,7 @@ from operator import and_
 from pathlib import Path
 
 from fastapi import UploadFile
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from empire.server.api.v2.download.download_dto import (
@@ -26,7 +26,9 @@ class DownloadService:
 
     @staticmethod
     def get_by_id(db: Session, uid: int):
-        return db.query(models.Download).filter(models.Download.id == uid).first()
+        return db.scalars(
+            select(models.Download).where(models.Download.id == uid)
+        ).first()
 
     @staticmethod
     def get_all(  # noqa: PLR0913 PLR0912
@@ -39,7 +41,7 @@ class DownloadService:
         order_by: DownloadOrderOptions = DownloadOrderOptions.updated_at,
         order_direction: OrderDirection = OrderDirection.desc,
     ) -> tuple[list[models.Download], int]:
-        query = db.query(
+        stmt = select(
             models.Download, func.count(models.Download.id).over().label("total")
         )
 
@@ -47,23 +49,23 @@ class DownloadService:
         sub = []
         if DownloadSourceFilter.agent_task in download_types:
             sub.append(
-                db.query(
+                select(
                     models.agent_task_download_assc.c.download_id.label("download_id")
                 )
             )
         if DownloadSourceFilter.agent_file in download_types:
             sub.append(
-                db.query(
+                select(
                     models.agent_file_download_assc.c.download_id.label("download_id")
                 )
             )
         if DownloadSourceFilter.stager in download_types:
             sub.append(
-                db.query(models.stager_download_assc.c.download_id.label("download_id"))
+                select(models.stager_download_assc.c.download_id.label("download_id"))
             )
         if DownloadSourceFilter.upload in download_types:
             sub.append(
-                db.query(models.upload_download_assc.c.download_id.label("download_id"))
+                select(models.upload_download_assc.c.download_id.label("download_id"))
             )
 
         subquery = None
@@ -74,10 +76,10 @@ class DownloadService:
             subquery = subquery.subquery()
 
         if subquery is not None:
-            query = query.join(subquery, subquery.c.download_id == models.Download.id)
+            stmt = stmt.join(subquery, subquery.c.download_id == models.Download.id)
 
         if q:
-            query = query.filter(
+            stmt = stmt.where(
                 or_(
                     models.Download.filename.like(f"%{q}%"),
                     models.Download.location.like(f"%{q}%"),
@@ -86,7 +88,7 @@ class DownloadService:
 
         if tags:
             tags_split = [tag.split(":", 1) for tag in tags]
-            query = query.join(models.Download.tags).filter(
+            stmt = stmt.join(models.Download.tags).where(
                 and_(
                     models.Tag.name.in_([tag[0] for tag in tags_split]),
                     models.Tag.value.in_([tag[1] for tag in tags_split]),
@@ -105,14 +107,14 @@ class DownloadService:
             order_by_prop = models.Download.updated_at
 
         if order_direction == OrderDirection.asc:
-            query = query.order_by(order_by_prop.asc())
+            stmt = stmt.order_by(order_by_prop.asc())
         else:
-            query = query.order_by(order_by_prop.desc())
+            stmt = stmt.order_by(order_by_prop.desc())
 
         if limit > 0:
-            query = query.limit(limit).offset(offset)
+            stmt = stmt.limit(limit).offset(offset)
 
-        results = query.all()
+        results = db.execute(stmt).all()
 
         total = 0 if not results else results[0].total
         results = [x[0] for x in results]
