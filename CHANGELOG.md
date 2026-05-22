@@ -99,6 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed the pre-existing typo `safe_checks = params["UserAgent"]` in `python/privesc/multi/sudo_spawn.py` by removing the line with the rest of the `SafeChecks` plumbing.
 -   Fixed `Profile._deserialize`/`HttpsCertificate._deserialize` using raw `bool(data.get(...))` for `host_stage`/`trust_x_forwarded_for`, which mapped `"false"` back to `True`. A centralized `_coerce_bool` helper now mirrors the parse-side vocabulary; the security-relevant `host_stage` flip could otherwise silently re-enable a disabled stager URI. `_coerce_optional_int` log-drops a malformed `validity` instead of killing listener startup.
 -   Fixed the malleable HTTP listener returning a Flask 500 (`AttributeError` on `extract_client`) for a request URI matching none of the configured `http-get`/`http-post`/`http-stager` URIs; it now returns the shared IIS 7.5 404, preserving the uniform fingerprint.
+-   Fixed `taskUri` vs `taskURI` variable name mismatch in HTTP malleable listener generated agent code that would cause a `NameError` on target.
 
 ## [Unreleased]
 
@@ -148,7 +149,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   `handlekatz` — LSASS dump via handle duplication to evade handle-based detection (T1003.001)
     -   `bofroast` — Kerberoasting as a BOF without .NET CLR dependency (T1558.003)
 -   Added multi-language stager support (powershell, csharp, ironpython, go) to UAC bypass privesc modules: `bypassuac`, `bypassuac_env`, `bypassuac_eventvwr`, `bypassuac_sdctlbypass`, `bypassuac_wscript`
--   Added `TagInvalidException` handling in server-side `parse_routing_packet` to gracefully reject non-agent traffic instead of raising unhandled exceptions
 -   Added configurable `obfuscation.timeout` setting (default: 300s, set to 0 to disable) for the PowerShell obfuscation subprocess, settable via `config.yaml` or `EMPIRE_OBFUSCATION__TIMEOUT` env var
 
 ### Changed
@@ -170,7 +170,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed event loop blocking across all API endpoints. Previously only stager, listener, and plugin endpoints were addressed; now all 216 handlers use `def` to prevent any synchronous DB call from blocking the event loop.
 -   Fixed `donut-shellcode` failing with "Cannot open file" when a root-owned `loader.bin` exists in the working directory, breaking all shellcode generation tests and stager paths. Donut calls now run in an isolated temp directory via a shared `donut_create()` utility with a threading lock for concurrency safety.
 -   Fixed unnecessary GitHub API call on every server startup when the compiler is already cached locally
--   Fixed `taskUri` vs `taskURI` variable name mismatch in HTTP malleable listener generated agent code that would cause a `NameError` on target
 -   Fixed unhandled `TagInvalidException` in `parse_routing_packet` that caused request crashes from stale agents or non-agent traffic
 -   Fixed `TypeError` in BOF module parameter packing when integer values were passed to options that require space-checking
 -   Fixed module option descriptions for `Obfuscate` and `ObfuscateCommand` that contained redundant text
@@ -183,11 +182,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed agent staging log messages displaying wrong language (e.g. "Python PUB key" for PowerShell agents, "PS" in C# block) by replacing hardcoded language names with the actual agent language
 -   Fixed incorrect log levels in agent communication: `log.error` for normal conditions (agent not active, agent exiting) downgraded to `log.debug`/`log.info`, `log.info` for invalid data (bad language spec, malformed sysinfo) upgraded to `log.warning`
 -   Fixed typo in SOCKS client error message ("failed to started" -> "failed to start")
-
-### Security
-
 -   Fixed double-obfuscation in PowerShell module script generation — when a module source was already obfuscated (via `get_module_source` or `auto_get_source`), `finalize_module` was re-obfuscating the entire combined script, spawning a redundant PowerShell subprocess per task. `finalize_module` now accepts `script_already_obfuscated` to skip the expensive re-obfuscation while still obfuscating the invoke command (`script_end`).
 -   Fixed obfuscation subprocess (`Invoke-Obfuscation`) running indefinitely with no timeout. Added 300s timeout, process group isolation (`start_new_session`), return code checking, and empty output validation. On failure, gracefully falls back to keyword-obfuscated script with error logging.
+-   Fixed background jobs for the python agent.
 
 ## [6.5.0] - 2026-03-08
 
