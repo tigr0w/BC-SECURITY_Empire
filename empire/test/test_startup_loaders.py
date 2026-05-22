@@ -18,9 +18,7 @@ def test_bypass_loader(monkeypatch):
     session_mock = MagicMock()
     monkeypatch.setattr("empire.server.core.bypass_service.SessionLocal", session_mock)
 
-    session_mock.begin.return_value.__enter__.return_value.query.return_value.first.return_value.install_path = "empire/server"
-
-    session_mock.begin.return_value.__enter__.return_value.query.return_value.filter.return_value.first.return_value = None
+    session_mock.begin.return_value.__enter__.return_value.scalars.return_value.first.return_value = None
 
     main_menu = Mock()
     main_menu.install_path = Path("empire/server")
@@ -41,11 +39,9 @@ def test_bypass_loader_skips_oneliner_for_non_powershell(monkeypatch):
     session_mock = MagicMock()
     monkeypatch.setattr("empire.server.core.bypass_service.SessionLocal", session_mock)
 
-    session_mock.begin.return_value.__enter__.return_value.query.return_value.first.return_value.install_path = "empire/server"
-    session_mock.begin.return_value.__enter__.return_value.query.return_value.filter.return_value.first.return_value = None
+    session_mock.begin.return_value.__enter__.return_value.scalars.return_value.first.return_value = None
 
     main_menu = Mock()
-    main_menu.installPath = "empire/server"
     main_menu.install_path = Path("empire/server")
 
     BypassService(main_menu)
@@ -124,9 +120,7 @@ def test_profile_loader(monkeypatch):
     session_mock = MagicMock()
     monkeypatch.setattr("empire.server.core.profile_service.SessionLocal", session_mock)
 
-    session_mock.begin.return_value.__enter__.return_value.query.return_value.first.return_value.install_path = "empire/server"
-
-    session_mock.begin.return_value.__enter__.return_value.query.return_value.filter.return_value.first.return_value = None
+    session_mock.begin.return_value.__enter__.return_value.scalars.return_value.first.return_value = None
 
     main_menu = Mock()
     main_menu.install_path = Path("empire/server")

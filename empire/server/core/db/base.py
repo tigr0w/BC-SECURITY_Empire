@@ -8,7 +8,14 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote_plus
 
-from sqlalchemy import Index, UniqueConstraint, create_engine, event, text
+from sqlalchemy import (
+    Index,
+    UniqueConstraint,
+    create_engine,
+    event,
+    select,
+    text,
+)
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import close_all_sessions, sessionmaker
@@ -260,11 +267,9 @@ def migrate_legacy_bcrypt_default_user(db) -> bool:
         get_default_hashed_password,
     )
 
-    default_user = (
-        db.query(models.User)
-        .filter(models.User.username == defaults_config.username)
-        .first()
-    )
+    default_user = db.scalars(
+        select(models.User).where(models.User.username == defaults_config.username)
+    ).first()
     if default_user is None:
         return False
     if not (default_user.hashed_password or "").startswith(_BCRYPT_HASH_PREFIXES):
@@ -416,30 +421,30 @@ def startup_db():
 
             # When Empire starts up for the first time, it will create the database and create
             # these default records.
-            if len(db.query(models.User).all()) == 0:
+            if db.scalar(select(models.User)) is None:
                 log.info("Setting up database.")
                 log.info("Adding default user.")
                 db.add(get_default_user())
 
-            if len(db.query(models.Config).all()) == 0:
+            if db.scalar(select(models.Config)) is None:
                 log.info("Adding database config.")
                 db.add(get_default_config())
 
-            if len(db.query(models.Keyword).all()) == 0:
+            if db.scalar(select(models.Keyword)) is None:
                 log.info("Adding default keyword obfuscation functions.")
                 keywords = get_default_keyword_obfuscation()
 
                 for keyword in keywords:
                     db.add(keyword)
 
-            if len(db.query(models.ObfuscationConfig).all()) == 0:
+            if db.scalar(select(models.ObfuscationConfig)) is None:
                 log.info("Adding default obfuscation config.")
                 obf_configs = get_default_obfuscation_config()
 
                 for config in obf_configs:
                     db.add(config)
 
-            if len(db.query(models.IP).all()) == 0:
+            if db.scalar(select(models.IP)) is None:
                 ips = get_default_ips()
 
                 for ip in ips:
@@ -454,7 +459,7 @@ def startup_db():
             # Checking that schema matches the db.
             # Some errors don't manifest until query time.
             for model in models.Base.__subclasses__():
-                db.query(model).first()
+                db.scalar(select(model))
 
     except Exception as e:
         log.error(e, exc_info=True)

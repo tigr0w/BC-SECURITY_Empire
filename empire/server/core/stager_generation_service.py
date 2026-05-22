@@ -13,6 +13,7 @@ except ModuleNotFoundError:
     donut = None
 
 import macholib.MachO
+from sqlalchemy import select
 
 from empire.server.common import helpers, packets
 from empire.server.core.db import models
@@ -93,9 +94,9 @@ class StagerGenerationService:
         with SessionLocal.begin() as db:
             bypasses_parsed = []
             for bypass in bypasses.split(" "):
-                db_bypass = (
-                    db.query(models.Bypass).filter(models.Bypass.name == bypass).first()
-                )
+                db_bypass = db.scalars(
+                    select(models.Bypass).where(models.Bypass.name == bypass)
+                ).first()
                 if db_bypass:
                     if db_bypass.language == language:
                         bypasses_parsed.append(db_bypass.code)

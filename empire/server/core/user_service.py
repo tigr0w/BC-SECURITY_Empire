@@ -1,6 +1,7 @@
 import typing
 
 from fastapi import UploadFile
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
@@ -17,15 +18,17 @@ class UserService:
 
     @staticmethod
     def get_all(db: Session):
-        return db.query(models.User).all()
+        return db.scalars(select(models.User)).all()
 
     @staticmethod
     def get_by_id(db: Session, uid: int) -> models.User:
-        return db.query(models.User).filter(models.User.id == uid).first()
+        return db.scalars(select(models.User).where(models.User.id == uid)).first()
 
     @staticmethod
     def get_by_name(db: Session, name: str):
-        return db.query(models.User).filter(models.User.username == name).first()
+        return db.scalars(
+            select(models.User).where(models.User.username == name)
+        ).first()
 
     def create_user(
         self, db: Session, username: str, hashed_password: str, admin: bool = False
