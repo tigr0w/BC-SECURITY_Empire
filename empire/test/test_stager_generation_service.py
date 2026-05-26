@@ -5,13 +5,17 @@ import platform
 import re
 import subprocess
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
 from empire.server.common import packets
 from empire.server.common.empire import MainMenu
 from empire.server.core.db.base import SessionLocal
-from empire.server.core.exceptions import ModuleExecutionException
+from empire.server.core.exceptions import (
+    ModuleExecutionException,
+    ModuleValidationException,
+)
 from empire.server.stagers.multi.generate_agent import Stager
 from empire.server.utils.file_util import run_as_user
 
@@ -630,6 +634,140 @@ def test_generate_go_exe_oneliner(
             r"powershell -noP -sta -w 1 -enc\s+[A-Za-z0-9+/=]+",
             launcher,
         ), f"Encoded launcher does not match expected structure: {launcher}"
+
+
+def test_stage0_url_for_raises_on_unsupported_listener_type(
+    stager_generation_service,
+):
+    """The sweep that removed the per-site allow-list at 13 call sites
+    must surface the same user-visible error from a centralized check —
+    otherwise listeners like `HTTP[S] Hop` and `Template` (which have
+    DefaultProfile + host_address but no real csharp/go stager support)
+    silently produce launchers that download nothing. Pre-sweep each
+    site emitted `log.error(...)` + `return ""` (or raised
+    ModuleValidationException). Post-sweep, that error MUST come from
+    `_stage0_url_for` so the surface stays consistent.
+    """
+    fake_hop = MagicMock()
+    fake_hop.info = {"Name": "HTTP[S] Hop"}
+
+    with pytest.raises(ModuleValidationException, match=r"HTTP\[S\] Hop"):
+        stager_generation_service._stage0_url_for(fake_hop, hop="")
+
+
+@pytest.mark.parametrize(
+    "listener_name",
+    ["HTTP[S]", "smb_pivot", "port_forward_pivot"],
+)
+def test_stage0_url_for_accepts_legacy_listener_types(
+    stager_generation_service, listener_name
+):
+    """The three legacy listener types in the pre-sweep allow-list must
+    still produce a working stage 0 URL through the routed helper. Pinned
+    here because the sweep removed the only previous coverage of
+    `smb_pivot` / `port_forward_pivot` — those branches used to short-
+    circuit the allow-list gate at every call site, but now flow through
+    `_stage0_url_for` and exercise `_get_request_uri` + `_build_stage0_url`
+    for the first time.
+    """
+    fake = MagicMock()
+    fake.info = {"Name": listener_name}
+    fake.host_address = "http://example.test/"
+    fake.options = {"DefaultProfile": {"Value": "/foo,/bar|Mozilla/5.0"}}
+    # Explicitly NO stager_url attr — forces the legacy DefaultProfile branch.
+    del fake.stager_url
+
+    url = stager_generation_service._stage0_url_for(fake, hop="")
+
+    assert url.startswith("http://example.test/"), f"unexpected url: {url!r}"
+    assert any(part in url for part in ("/foo", "/bar")), (
+        f"expected one of the DefaultProfile URIs to be embedded: {url!r}"
+    )
+
+
+@pytest.mark.parametrize(
+    ("listener_name", "must_contain_uri_substr", "must_not_contain_uri_substr"),
+    [
+        # Legacy HTTP listener — DefaultProfile carries the configured URI,
+        # routing helper must delegate to generate_exe_oneliner unchanged.
+        ("new-listener-1", None, None),
+        # Malleable listener — must hit the stager URI (the amazon profile's
+        # http-stager block falls back to the default "/init/"), NOT the post
+        # URI "/N4215/adj/amzn.us.sr.aps" or the get URI's "field-keywords".
+        ("malleable_listener_1", "/init/", "N4215"),
+    ],
+)
+def test_generate_exe_oneliner_routed_picks_stager_uri_for_malleable(
+    stager_generation_service,
+    listener_name,
+    must_contain_uri_substr,
+    must_not_contain_uri_substr,
+):
+    """The routed wrapper must produce a valid oneliner for both legacy
+    HTTP and malleable listeners. For malleable, the embedded download
+    URL must hit the stager URI so stage 0 reaches the listener's stager
+    dispatch (which serves the SharpireMalleable binary), not the POST
+    handler that would otherwise receive the request.
+    """
+    launcher = stager_generation_service.generate_exe_oneliner_routed(
+        language="powershell",
+        obfuscate=False,
+        obfuscation_command="",
+        encode=False,
+        listener_name=listener_name,
+    )
+
+    assert launcher, f"empty launcher for {listener_name}"
+    assert "System.Net.WebClient" in launcher
+    assert "DownloadData(" in launcher
+
+    if must_contain_uri_substr is not None:
+        assert must_contain_uri_substr in launcher, (
+            f"expected {must_contain_uri_substr!r} in malleable launcher, got: {launcher}"
+        )
+    if must_not_contain_uri_substr is not None:
+        assert must_not_contain_uri_substr not in launcher, (
+            f"unexpected {must_not_contain_uri_substr!r} (post/get URI) leaked "
+            f"into malleable launcher: {launcher}"
+        )
+
+
+@pytest.mark.parametrize(
+    ("listener_name", "must_contain_uri_substr", "must_not_contain_uri_substr"),
+    [
+        ("new-listener-1", None, None),
+        ("malleable_listener_1", "/init/", "N4215"),
+    ],
+)
+def test_generate_go_exe_oneliner_routed_picks_stager_uri_for_malleable(
+    stager_generation_service,
+    listener_name,
+    must_contain_uri_substr,
+    must_not_contain_uri_substr,
+):
+    """Mirror of the C# routed test for the Go path. The PowerShell wrapper
+    downloads a Go exe to disk and runs it — for malleable, the URL must
+    still hit the stager dispatch."""
+    launcher = stager_generation_service.generate_go_exe_oneliner_routed(
+        language="go",
+        listener_name=listener_name,
+        obfuscate=False,
+        obfuscation_command="",
+        encode=False,
+    )
+
+    assert launcher, f"empty launcher for {listener_name}"
+    assert "DownloadFile(" in launcher
+
+    if must_contain_uri_substr is not None:
+        assert must_contain_uri_substr in launcher, (
+            f"expected {must_contain_uri_substr!r} in malleable launcher, got: {launcher}"
+        )
+    if must_not_contain_uri_substr is not None:
+        assert must_not_contain_uri_substr not in launcher, (
+            f"unexpected {must_not_contain_uri_substr!r} (post/get URI) leaked "
+            f"into malleable launcher: {launcher}"
+        )
 
 
 def test_generate_dylib(stager_generation_service):

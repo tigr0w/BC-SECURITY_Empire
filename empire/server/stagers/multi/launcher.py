@@ -107,23 +107,8 @@ class Stager:
         if obfuscate.lower() == "true":
             invoke_obfuscation = True
 
-        if language == "csharp":
-            if self.mainMenu.listenersv2.get_active_listener_by_name(
-                listener_name
-            ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
-                raise StagerGenerationException(
-                    "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for C# stagers."
-                )
-
-            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
-                language=language,
-                obfuscate=invoke_obfuscation,
-                obfuscation_command=obfuscate_command,
-                encode=encode,
-                listener_name=listener_name,
-            )
-        elif language == "ironpython":
-            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
+        if language in ("csharp", "ironpython"):
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner_routed(
                 language=language,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
@@ -132,14 +117,7 @@ class Stager:
             )
 
         elif language == "go":
-            if self.mainMenu.listenersv2.get_active_listener_by_name(
-                listener_name
-            ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
-                raise StagerGenerationException(
-                    "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for Go stagers."
-                )
-
-            launcher = self.mainMenu.stagergenv2.generate_go_exe_oneliner(
+            launcher = self.mainMenu.stagergenv2.generate_go_exe_oneliner_routed(
                 language=language,
                 listener_name=listener_name,
                 encode=encode,

@@ -275,6 +275,50 @@ def test_create_malleable_stager_one_liner(client, admin_auth_header):
     client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
 
+def test_create_malleable_csharp_launcher_no_longer_blocked(client, admin_auth_header):
+    """Regression for the allow-list gate that blocked C# / IronPython /
+    Go stagers against the malleable HTTP listener even though Sharpire
+    and Gopire support it. The routing helper now dispatches to the
+    listener's stager endpoint instead of returning "" with an error.
+    Smoke: multi_launcher + csharp + malleable_listener_1 must produce
+    a non-empty stager download.
+    """
+    stager = get_base_stager_malleable()
+    stager["name"] = "MalleableCsharpSmoke"
+    stager["options"]["Language"] = "csharp"
+
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=stager
+    )
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    downloads = response.json().get("downloads", [])
+    assert downloads, "csharp launcher against malleable must produce a download link"
+
+    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
+
+
+def test_create_malleable_dll_csharp_no_longer_blocked(client, admin_auth_header):
+    """Same regression as the multi_launcher test above, but for one of the
+    11 wrapper stagers (windows_dll) that also had the gate. Spot-checks one
+    wrapper; the other 10 share the textually-identical patch (allow-list
+    block deleted, `generate_exe_oneliner_routed` substituted) so coverage
+    here implies coverage there.
+    """
+    stager = get_base_stager_dll()
+    stager["name"] = "MalleableDllSmoke"
+    stager["options"]["Listener"] = "malleable_listener_1"
+    stager["options"]["Language"] = "csharp"
+
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=stager
+    )
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    downloads = response.json().get("downloads", [])
+    assert downloads, "dll wrapper for csharp+malleable must produce a download link"
+
+    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
+
+
 def test_create_obfuscated_stager_one_liner(client, admin_auth_header):
     base_stager = get_base_stager()
     # test that it ignore extra params

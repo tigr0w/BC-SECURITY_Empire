@@ -111,14 +111,7 @@ class Stager:
             )
 
         if language in ["csharp", "ironpython"]:
-            if self.mainMenu.listenersv2.get_active_listener_by_name(
-                listener_name
-            ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
-                raise StagerGenerationException(
-                    "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for C# and IronPython stagers."
-                )
-
-            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner_routed(
                 language=language,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,

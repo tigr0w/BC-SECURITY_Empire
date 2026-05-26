@@ -47,14 +47,7 @@ class Module:
             # generate the PowerShell one-liner with all of the proper options set
 
             if agent_language in ["csharp", "ironpython"]:
-                if main_menu.listenersv2.get_active_listener_by_name(
-                    listener_name
-                ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
-                    raise ModuleValidationException(
-                        "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for C# and IronPython stagers."
-                    )
-
-                launcher = main_menu.stagergenv2.generate_exe_oneliner(
+                launcher = main_menu.stagergenv2.generate_exe_oneliner_routed(
                     language=agent_language,
                     obfuscate=launcher_obfuscate,
                     obfuscation_command=launcher_obfuscate_command,
@@ -62,14 +55,7 @@ class Module:
                     listener_name=listener_name,
                 )
             elif agent_language == "go":
-                if main_menu.listenersv2.get_active_listener_by_name(
-                    listener_name
-                ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
-                    raise ModuleValidationException(
-                        "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for Go stagers."
-                    )
-
-                launcher = main_menu.stagergenv2.generate_go_exe_oneliner(
+                launcher = main_menu.stagergenv2.generate_go_exe_oneliner_routed(
                     language=agent_language,
                     listener_name=listener_name,
                     encode=True,

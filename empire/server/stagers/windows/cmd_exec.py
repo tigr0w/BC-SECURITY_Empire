@@ -108,14 +108,7 @@ class Stager:
             invoke_obfuscation = True
 
         if language in ["csharp", "ironpython"]:
-            if self.main_menu.listenersv2.get_active_listener_by_name(
-                listener_name
-            ).info["Name"] not in ["HTTP[S]", "smb_pivot", "port_forward_pivot"]:
-                raise StagerGenerationException(
-                    "Only HTTP[S], smb_pivot, and port_forward_pivot listeners are supported for C# and IronPython stagers."
-                )
-
-            self.launcher = self.main_menu.stagergenv2.generate_exe_oneliner(
+            self.launcher = self.main_menu.stagergenv2.generate_exe_oneliner_routed(
                 language=language,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,

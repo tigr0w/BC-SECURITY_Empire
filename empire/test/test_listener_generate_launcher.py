@@ -275,6 +275,53 @@ def _assert_valid_malleable_profile_b64(b64: str):
         assert "server" in payload["sections"][section_name]
 
 
+def test_http_malleable_stager_url_uses_stager_uri_not_post_uri(
+    monkeypatch, main_menu_mock
+):
+    """C# / Go launcher oneliners must download stage 0 from a stager URI,
+    not the post URI that `DefaultProfile` carries. The amazon profile
+    declares only http-get and http-post URIs explicitly, so the http-stager
+    block falls back to the canonical `/init/` default — that's what
+    stager_url() must return joined with host_address.
+
+    Without this, the legacy stagergenv2 oneliners would extract a post
+    URI (from `profile.post.client.stringify()`) and stage 0 would route
+    into the listener's POST handler instead of returning the
+    SharpireMalleable / Gopire binary.
+    """
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+
+    url = listener.stager_url()
+
+    assert url.startswith(listener.host_address), (
+        f"stager_url must be rooted at host_address={listener.host_address!r}, got {url!r}"
+    )
+    # The post URI for amazon is `/N4215/adj/amzn.us.sr.aps`; the get URI is
+    # `/s/ref=nb_sb_noss_1/167-3294888-0262949/field-keywords=books`. Neither
+    # should appear — only the stager-default `/init/`.
+    assert "/init/" in url, f"expected stager URI '/init/' in {url!r}"
+    assert "N4215" not in url, f"post URI leaked into stager_url: {url!r}"
+    assert "field-keywords" not in url, f"get URI leaked into stager_url: {url!r}"
+
+
+def test_http_malleable_stager_url_raises_when_host_address_unset(
+    monkeypatch, main_menu_mock
+):
+    """stager_url() must NOT silently produce a string like 'None/init/' when
+    called before host_address is populated — that would propagate into the
+    launcher template at stager_generation_service.py and produce a
+    'http://None/...' download URL that fails silently on target. Guard
+    against the implicit ordering bug by raising explicitly.
+    """
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+    listener.host_address = None
+
+    with pytest.raises(RuntimeError, match="host_address"):
+        listener.stager_url()
+
+
 def test_http_malleable_generate_launcher_csharp(monkeypatch, main_menu_mock):
     main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
     listener = _build_malleable_listener(monkeypatch, main_menu_mock)
@@ -326,6 +373,61 @@ def test_http_malleable_generate_launcher_go(monkeypatch, main_menu_mock):
 
     assert result == "/tmp/gopire-build.exe"
     go_compile_mock.assert_called_once()
+
+
+def test_http_malleable_generate_stager_serves_csharp_binary_bytes(
+    monkeypatch, main_menu_mock, tmp_path
+):
+    """generate_stager(csharp) must return the SharpireMalleable binary
+    bytes so PowerShell launcher one-liners (DownloadData + Assembly.Load)
+    that point at a stager URI actually receive an executable payload.
+
+    Pre-fix the method returned "" with a "stageless — binary IS the stage"
+    comment, which was correct for the operator-direct workflow (run the
+    binary on target) but broken for the launcher flow (download bytes
+    from URL + Assembly.Load). The 15 wrapper stagers all assume the
+    launcher flow.
+    """
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    fake_bin = tmp_path / "sharpire-malleable.exe"
+    fake_bin.write_bytes(b"MZ" + b"\x00" * 100)
+    main_menu_mock.dotnet_compiler.compile_stager = MagicMock(
+        return_value=str(fake_bin)
+    )
+
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+    stage = listener.generate_stager(
+        language="csharp", listenerOptions=listener.options
+    )
+
+    assert isinstance(stage, bytes), f"expected bytes, got {type(stage).__name__}"
+    assert stage.startswith(b"MZ"), (
+        f"expected PE-format SharpireMalleable bytes, got {stage[:20]!r}"
+    )
+
+
+def test_http_malleable_generate_stager_serves_go_binary_bytes(
+    monkeypatch, main_menu_mock, tmp_path
+):
+    """Mirror of the C# test for the Go path. generate_stager(go) must
+    return the Gopire-malleable binary bytes by delegating to
+    stagergenv2.generate_go_stageless (the same helper generate_launcher
+    uses for the operator-direct flow) and reading its output.
+    """
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    fake_bin = tmp_path / "gopire-malleable.exe"
+    fake_bin.write_bytes(b"\x7fELF" + b"\x00" * 100)
+    main_menu_mock.stagergenv2.generate_go_stageless = MagicMock(
+        return_value=str(fake_bin)
+    )
+
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+    stage = listener.generate_stager(language="go", listenerOptions=listener.options)
+
+    assert isinstance(stage, bytes), f"expected bytes, got {type(stage).__name__}"
+    assert stage.startswith(b"\x7fELF"), (
+        f"expected Gopire binary bytes, got {stage[:20]!r}"
+    )
 
 
 def test_http_malleable_serialize_profile_for_agent(monkeypatch, main_menu_mock):
@@ -698,6 +800,65 @@ def test_host_stage_false_blocks_stager_uri_with_iis_404(
     assert len(gate_warnings) == expected_gate_warnings, (
         f"expected one gate WARNING per request, got {len(gate_warnings)}: "
         f"{[r.getMessage() for r in gate_warnings]}"
+    )
+
+
+def test_stager_uri_returns_csharp_binary_bytes_on_stage0(
+    monkeypatch, main_menu_mock, tmp_path
+):
+    """End-to-end Flask test_client coverage for the actual bug this PR
+    fixes: a request hitting the malleable listener's stager URI with a
+    STAGE0-shaped routing packet for csharp must receive the
+    SharpireMalleable binary bytes in the response body — not "" (the
+    pre-fix behavior) and not a 404.
+
+    The unit-level generate_stager() tests catch a revert to `return ""`,
+    but they do NOT catch a regression where Flask dispatch short-circuits
+    before reaching generate_stager. This test locks in the full path:
+    handle_request → agentcommsv2.handle_agent_data → STAGE0 branch →
+    generate_stager(csharp) → generate_launcher → compile → read_bytes →
+    Response body.
+    """
+    from fastapi import status
+
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+
+    fake_bin = tmp_path / "sharpire-malleable.exe"
+    expected_bytes = b"MZ" + b"\x00" * 32 + b"SMOKE-MARKER"
+    fake_bin.write_bytes(expected_bytes)
+    main_menu_mock.dotnet_compiler.compile_stager = MagicMock(
+        return_value=str(fake_bin)
+    )
+
+    # Drive the listener's handle_request closure to call generate_stager
+    # by short-circuiting the routing-packet decode: handle_agent_data
+    # returns a STAGE0 result for csharp, the listener then dispatches
+    # to generate_stager(csharp) which is what we want to exercise.
+    main_menu_mock.agentcommsv2.handle_agent_data = MagicMock(
+        return_value=[("csharp", b"STAGE0", "None")]
+    )
+    main_menu_mock.obfuscationv2.get_obfuscation_config = MagicMock(return_value=None)
+
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+    client = _drive_handle_request_setup(listener, monkeypatch)
+
+    # POST to the stager URI with a non-empty cookie so the malleable
+    # transaction's extract_client returns truthy agentInfo. The cookie
+    # contents don't matter — handle_agent_data is mocked.
+    response = client.post(
+        "/init/",
+        data=b"agent-info-payload",
+        headers={"Cookie": "session=cm91dGluZyBwYWNrZXQ="},
+    )
+
+    assert response.status_code == status.HTTP_200_OK, (
+        f"expected 200 with binary body, got {response.status_code}: "
+        f"{response.get_data()[:200]!r}"
+    )
+    assert b"SMOKE-MARKER" in response.get_data(), (
+        "stage 0 must return the SharpireMalleable binary bytes — pre-fix "
+        f"this would have been empty; got body of length "
+        f"{len(response.get_data())}: {response.get_data()[:200]!r}"
     )
 
 

