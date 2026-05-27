@@ -4,6 +4,7 @@ from empire.server.common.helpers import (
     strip_powershell_comments,
     strip_python_comments,
 )
+from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import StagerGenerationException
 from empire.server.utils.data_util import ps_convert_to_oneliner
 
@@ -114,9 +115,19 @@ class Stager:
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
 
-        obfuscate_script = False
-        if obfuscate.lower() == "true":
-            obfuscate_script = True
+        obfuscate_script = obfuscate.lower() == "true"
+
+        # The per-stager Obfuscate option is gated to powershell via DependsOn,
+        # so for csharp/ironpython fall back to the global ObfuscationConfig
+        # (keyed on "csharp", same as the listener stage-serving path).
+        if language.lower() in ("csharp", "ironpython"):
+            with SessionLocal.begin() as db:
+                obfuscation_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                    db, "csharp"
+                )
+                obfuscate_script = bool(
+                    obfuscation_config and obfuscation_config.enabled
+                )
 
         staged = self.options["Staged"]["Value"].lower() == "true"
 
