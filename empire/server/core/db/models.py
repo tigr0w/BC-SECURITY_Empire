@@ -31,12 +31,12 @@ from sqlalchemy.orm import (
     mapped_column,
     relationship,
 )
-from sqlalchemy_utc import UtcDateTime, utcnow
 
 from empire.server.core.config.config_manager import (
     PluginAutoExecuteConfig,
     empire_config,
 )
+from empire.server.core.db.utc_datetime import UtcDateTime, utcnow
 from empire.server.core.module_models import EmpireAuthor
 from empire.server.utils.datetime_util import is_stale
 

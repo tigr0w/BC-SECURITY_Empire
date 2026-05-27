@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 -   Dropped 4 unused/redundant Python dependencies to reduce supply-chain surface: `pycryptodome` (superseded by `cryptography` in the 2021 pycrypto migration; no `Crypto.*` imports remain), `pyOpenSSL` (last imports removed in 2020 cleanup, forgotten in `pyproject.toml`), `pytest-timeout` (the `@pytest.mark.timeout` markers that justified it have since been removed), and the redundant direct `coverage` pin (already pulled transitively by `pytest-cov`).
+-   Replaced `python-jose` with `pyjwt`. `python-jose` is effectively abandoned (last release 3.3.0 in 2022) and pulled unmaintained `ecdsa` / `rsa` transitive dependencies with a poor security history. `pyjwt` is the actively-maintained library FastAPI now recommends in its OAuth2/JWT tutorial; the call surface in `jwt_auth.py` is identical (`jwt.encode`/`jwt.decode`), with the exception type changing from `JWTError` to `jwt.InvalidTokenError`.
+-   Replaced the `SQLAlchemy-Utc` dependency with a 90-line vendored module (`empire/server/core/db/utc_datetime.py`) carrying the upstream MIT notice. The package shipped only two helpers (`UtcDateTime` column type + dialect-aware `utcnow()` SQL expression); behavior — including per-dialect SQL — is byte-identical so the existing schema and column defaults are unchanged.
 
 ### Fixed
 

@@ -2,9 +2,9 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 import bcrypt
+import jwt
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
-from jose import JWTError, jwt
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -109,7 +109,7 @@ def get_current_user_from_token(
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
-    except JWTError as e:
+    except jwt.InvalidTokenError as e:
         raise credentials_exception from e
     except HTTPException:
         # Re-raise HTTPExceptions from get_token_from_headers
