@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Replaced three large credential test fixtures with a tiny synthetic module to cut CI obfuscation time; production module sources are unchanged.
 -   Promoted the `main_menu_mock` and `module_service` fixtures in `test_modules.py` to module scope so the five tests share one `ModuleService`.
 
+### Removed
+
+-   Dropped 4 unused/redundant Python dependencies to reduce supply-chain surface: `pycryptodome` (superseded by `cryptography` in the 2021 pycrypto migration; no `Crypto.*` imports remain), `pyOpenSSL` (last imports removed in 2020 cleanup, forgotten in `pyproject.toml`), `pytest-timeout` (the `@pytest.mark.timeout` markers that justified it have since been removed), and the redundant direct `coverage` pin (already pulled transitively by `pytest-cov`).
+
 ### Fixed
 
 -   Preserved subprocess diagnostics across stager compile failures: the Go/Dotnet compilers now include the return code and fall back to stdout when stderr is empty, and `stager_service.generate_stager` surfaces a 400 instead of a 500 stack trace.
