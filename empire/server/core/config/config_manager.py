@@ -316,16 +316,12 @@ def _resolve_base_config_path() -> Path:
 DEFAULT_CONFIG = Path("empire/server/config.yaml")
 
 if os.environ.get("TEST_MODE"):
+    # Wipe semantics moved to root conftest.py::pytest_configure
+    # (see _reset_test_dirs). Outside pytest, this directory persists
+    # across invocations. If you change these paths, update
+    # _TEST_CONFIG_DIR / _TEST_DATA_DIR in the root conftest.py too.
     CONFIG_DIR = Path.home() / ".config" / "empire-test"
     DATA_DIR = Path.home() / ".local" / "share" / "empire-test"
-    shutil.rmtree(CONFIG_DIR, ignore_errors=True)
-    shutil.rmtree(DATA_DIR, ignore_errors=True)
-
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    test_registry_1 = Path("empire/test/test_registry_1.yaml")
-    test_registry_2 = Path("empire/test/test_registry_2.yaml")
-    shutil.copy(test_registry_1, DATA_DIR / "test_registry_1.yaml")
-    shutil.copy(test_registry_2, DATA_DIR / "test_registry_2.yaml")
 else:
     CONFIG_DIR = Path.home() / ".config" / "empire"
     DATA_DIR = Path.home() / ".local" / "share" / "empire"
