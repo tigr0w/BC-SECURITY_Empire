@@ -150,7 +150,7 @@ class DownloadService:
     def create_download(
         self,
         db: Session,
-        user: models.User,
+        user: models.User | None,
         file: UploadFile | Path,
         tags: list[str] | None = None,
     ):
@@ -158,12 +158,23 @@ class DownloadService:
         Upload the file to the downloads directory and save a reference to the db.
         Tags strings will be split on the first colon and the first part will be the
         name and the second part will be the value.
+
+        If ``user`` is None, the file is stored under ``uploads_system/`` for
+        system-attributed uploads (e.g. listener autorun tasks).
         """
         filename = file.name if isinstance(file, Path) else file.filename
 
-        location = (
-            empire_config.directories.downloads / "uploads" / user.username / filename
-        )
+        if user is not None:
+            location = (
+                empire_config.directories.downloads
+                / "uploads"
+                / user.username
+                / filename
+            )
+        else:
+            # System-attributed uploads (e.g. listener autorun_tasks) have no user.
+            # Kept outside uploads/<username>/ so no real username can collide.
+            location = empire_config.directories.downloads / "uploads_system" / filename
         location.parent.mkdir(parents=True, exist_ok=True)
 
         filename, location = self._increment_filename(location)

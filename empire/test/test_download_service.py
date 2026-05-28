@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.download_service import DownloadService
 
 
@@ -40,3 +41,23 @@ def test_create_download_from_path(main, session_local, models):
         assert download.location.endswith(".yaml")
 
         db.delete(download)
+
+
+def test_create_download_from_path_no_user(main, session_local):
+    test_upload = Path(__file__).parent / "test-upload.yaml"
+    download_service: DownloadService = main.downloadsv2
+    with session_local() as db:
+        download = download_service.create_download(db, None, test_upload)
+
+        location = Path(download.location)
+        try:
+            assert download.id > 0
+            assert download.filename.startswith("test-upload")
+            assert (
+                location.parent
+                == empire_config.directories.downloads / "uploads_system"
+            )
+            assert location.read_bytes() == test_upload.read_bytes()
+        finally:
+            db.delete(download)
+            location.unlink(missing_ok=True)
