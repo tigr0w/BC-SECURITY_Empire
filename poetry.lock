@@ -1905,21 +1905,6 @@ socks = ["PySocks (>=1.5.6,!=1.5.7)"]
 use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
-name = "requests-file"
-version = "3.0.1"
-description = "File transport adapter for Requests"
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "requests_file-3.0.1-py2.py3-none-any.whl", hash = "sha256:d0f5eb94353986d998f80ac63c7f146a307728be051d4d1cd390dbdb59c10fa2"},
-    {file = "requests_file-3.0.1.tar.gz", hash = "sha256:f14243d7796c588f3521bd423c5dea2ee4cc730e54a3cac9574d78aca1272576"},
-]
-
-[package.dependencies]
-requests = ">=1.0.0"
-
-[[package]]
 name = "ruff"
 version = "0.15.2"
 description = "An extremely fast Python linter and code formatter, written in Rust."
@@ -2238,4 +2223,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<3.15"
-content-hash = "559e8f1f216dc2ade86ab8f91f9d055f4b4c3306105924010fd6167646456e9a"
+content-hash = "703faf45fdbb6ab9ceffbc01d0aec8fe78364bb17fc1dd0af7df0fb2ed6d5843"
