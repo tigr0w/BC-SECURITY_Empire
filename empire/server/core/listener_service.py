@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from empire.server.core import protocol_constants as proto
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.hooks import hooks
@@ -305,7 +306,7 @@ class ListenerService:
             if option_name == "StagingKey":
                 # if the staging key isn't 32 characters, assume we're md5 hashing it
                 value = str(value).strip()
-                if len(value) != 32:  # noqa: PLR2004
+                if len(value) != proto.STAGING_KEY_LENGTH:
                     staging_key_hash = hashlib.md5(value.encode("UTF-8")).hexdigest()
                     log.warning(
                         f"Warning: staging key not 32 characters, using hash of staging key instead: {staging_key_hash}"

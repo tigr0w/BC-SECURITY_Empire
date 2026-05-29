@@ -16,6 +16,7 @@ from empire.server.api.v2.agent.agent_task_dto import ModulePostRequest
 from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
 from empire.server.common import encryption, helpers, packets
 from empire.server.common.encryption import AESCipher
+from empire.server.core import protocol_constants as proto
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
@@ -447,7 +448,7 @@ class AgentCommunicationService:
 
             if language.lower() == "powershell":
                 # Expect: client DH pub (exact 768 bytes, big-endian) || agent_cert (64 bytes)
-                if len(message) < 832:  # noqa: PLR2004
+                if len(message) < proto.STAGE0_MIN_BYTES:
                     log.error(f"Invalid {lang_name} stage0 length from {session_id}")
                     return f"ERROR: Invalid {lang_name} stage0"
 
@@ -464,7 +465,7 @@ class AgentCommunicationService:
                     return f"ERROR: Invalid {lang_name} DH public key"
 
                 # Only verify the agent cert if its actually present (not all zeros)
-                if any(agent_cert) and len(agent_cert) == 64:  # noqa: PLR2004
+                if any(agent_cert) and len(agent_cert) == proto.AGENT_CERT_SIZE:
                     try:
                         if not encryption.checkvalid(
                             agent_cert, b"SIGNATURE", agent_cert_public_key
@@ -528,7 +529,7 @@ class AgentCommunicationService:
             if language.lower() == "csharp":
                 # check that we recieved a valid certificate size. Message less then 832 can not contain a valid cert
                 # 832 comes from public key size + agent cert
-                if len(message) < 832:  # noqa: PLR2004
+                if len(message) < proto.STAGE0_MIN_BYTES:
                     log.error(f"Invalid {lang_name} stage0 length from {session_id}")
                     return f"ERROR: Invalid {lang_name} stage0"
 
@@ -545,7 +546,7 @@ class AgentCommunicationService:
                     return f"ERROR: Invalid {lang_name} DH public key"
 
                 # Only verify the agent cert if its actually present (not all zeros)
-                if any(agent_cert) and len(agent_cert) == 64:  # noqa: PLR2004
+                if any(agent_cert) and len(agent_cert) == proto.AGENT_CERT_SIZE:
                     try:
                         if not encryption.checkvalid(
                             agent_cert, b"SIGNATURE", agent_cert_public_key
@@ -601,7 +602,9 @@ class AgentCommunicationService:
                 )
 
             if language.lower() == "python":
-                if (len(message) < 830) or (len(message) > 2500):  # noqa: PLR2004
+                if (len(message) < proto.STAGE0_PYTHON_GO_MIN_BYTES) or (
+                    len(message) > proto.STAGE0_PYTHON_GO_MAX_BYTES
+                ):
                     return (
                         f"Error: Invalid {lang_name} key post format from {session_id}"
                     )
@@ -679,7 +682,9 @@ class AgentCommunicationService:
 
             if language.lower() == "go":
                 # check that message has a valid block size
-                if (len(str(message)) < 830) or (len(str(message)) > 2500):  # noqa: PLR2004
+                if (len(str(message)) < proto.STAGE0_PYTHON_GO_MIN_BYTES) or (
+                    len(str(message)) > proto.STAGE0_PYTHON_GO_MAX_BYTES
+                ):
                     message = f"Invalid {lang_name} key post format from {session_id}"
                     log.error(message)
                     return (
@@ -771,7 +776,7 @@ class AgentCommunicationService:
                 message = AESCipher.decrypt_and_verify(session_key, enc_data)
                 parts = message.split(b"|")
 
-                if len(parts) < 12:  # noqa: PLR2004
+                if len(parts) < proto.SYSINFO_MIN_PARTS:
                     message = f"Agent {session_id} posted invalid sysinfo checkin format: {message}"
                     log.warning(message)
                     # remove the agent from the cache/database
@@ -872,7 +877,7 @@ class AgentCommunicationService:
         Abstracted out sufficiently for any listener module to use.
         """
 
-        if len(routing_packet) < 20:  # noqa: PLR2004
+        if len(routing_packet) < proto.ROUTING_PACKET_MIN_BYTES:
             message = f"handle_agent_data(): routingPacket wrong length: {len(routing_packet)}"
             log.error(message)
             return None
@@ -1220,7 +1225,7 @@ class AgentCommunicationService:
             # sys info response -> update the host info
             data = data.decode("utf-8")
             parts = data.split("|")
-            if len(parts) < 12:  # noqa: PLR2004
+            if len(parts) < proto.SYSINFO_MIN_PARTS:
                 message = f"Invalid sysinfo response from {session_id}"
                 log.error(message)
             else:
@@ -1315,7 +1320,7 @@ class AgentCommunicationService:
                 data = data.decode("UTF-8")
 
             parts = data.split("|")
-            if len(parts) != 4:  # noqa: PLR2004
+            if len(parts) != proto.DOWNLOAD_RESPONSE_PARTS:
                 message = f"Received invalid file download response from {session_id}"
                 log.error(message)
             else:
@@ -1515,7 +1520,7 @@ class AgentCommunicationService:
             if isinstance(data, str):
                 data = data.encode("UTF-8")
             parts = data.split(b"\n")
-            if len(parts) > 10:  # noqa: PLR2004
+            if len(parts) > proto.MIMIKATZ_OUTPUT_MIN_LINES:
                 date_time = helpers.get_datetime()
                 if parts[0].startswith(b"Hostname:"):
                     # if we get Invoke-Mimikatz output, try to parse it and add
