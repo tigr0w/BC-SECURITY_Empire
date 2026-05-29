@@ -1063,32 +1063,31 @@ class AgentCommunicationService:
 
             # process the packet and extract necessary data
             responsePackets = packets.parse_result_packets(packet)
-            results = False
-            # process each result packet
-            for (
-                responseName,
-                _totalPacket,
-                _packetNum,
-                taskID,
-                _length,
-                data,
-            ) in responsePackets:
-                # process the agent's response
-                with SessionLocal.begin() as db:
-                    if update_lastseen:
-                        self.agent_service.update_agent_lastseen(db, session_id)
+            # One session/transaction per agent callback regardless of N packets.
+            taskings_to_hook = []
+            with SessionLocal.begin() as db:
+                if update_lastseen:
+                    self.agent_service.update_agent_lastseen(db, session_id)
 
+                for (
+                    responseName,
+                    _totalPacket,
+                    _packetNum,
+                    taskID,
+                    _length,
+                    data,
+                ) in responsePackets:
                     tasking = self._process_agent_packet(
                         db, session_id, responseName, taskID, data
                     )
                     db.flush()
                     if tasking is not None:
                         db.expunge(tasking)
+                        taskings_to_hook.append(tasking)
 
-                # Fire AFTER_TASKING_RESULT_HOOK outside the session block
-                if tasking is not None:
-                    hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, None, tasking)
-                results = True
+            results = bool(responsePackets)
+            for tasking in taskings_to_hook:
+                hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, None, tasking)
             if results:
                 # signal that this agent returned results
                 message = f"Agent {session_id} returned results."
