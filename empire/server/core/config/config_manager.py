@@ -132,6 +132,10 @@ class DatabaseConfig(EmpireBaseModel):
 
 class DirectoriesConfig(EmpireBaseModel):
     downloads: Path = Path("downloads")
+    # Persistent on-disk caches (e.g. Go build cache). Relative paths land under
+    # DATA_DIR (~/.local/share/empire/.cache) via EmpireBaseModel.set_path;
+    # operators can override to an absolute path in YAML.
+    cache: Path = Path(".cache")
 
 
 class LoggingConfig(EmpireBaseModel):

@@ -8,6 +8,7 @@ from pathlib import Path
 import jinja2
 
 from empire.server.common.helpers import random_string
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.exceptions import ModuleExecutionException
 
 log = logging.getLogger(__name__)
@@ -102,9 +103,11 @@ class GoCompiler:
         return rendered_content
 
     def compile_stager(self, template_vars, task_name, goos="windows", goarch="amd64"):
-        # Use install_path-relative cache so it persists across runs and is
-        # the same path regardless of which user (root vs the application user) runs the server.
-        go_cache = str(self.install_path / ".go-build-cache")
+        # Persistent Go build cache lives under DATA_DIR/.cache/go-build by
+        # default (see DirectoriesConfig.cache). Anchored to a configured user-data
+        # path rather than the repo or Path.home() so it survives across server
+        # restarts and is the same path regardless of which user runs the server.
+        go_cache = str(empire_config.directories.cache / "go-build")
         Path(go_cache).mkdir(parents=True, exist_ok=True)
         env = {
             "GOOS": goos,

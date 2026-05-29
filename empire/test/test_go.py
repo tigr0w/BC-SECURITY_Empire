@@ -179,11 +179,13 @@ def test_compile_stager_uses_resolved_binary_not_literal_go(tmp_path, monkeypatc
 
 
 def test_compile_stager_env_has_required_go_vars(tmp_path, monkeypatch):
-    """GOTOOLCHAIN=local, a GOCACHE under install_path, and GONOSUMDB=* must
-    all be present in every go build invocation.
+    """GOTOOLCHAIN=local, a stable GOCACHE under DATA_DIR/.cache/go-build, and
+    GONOSUMDB=* must all be present in every go build invocation.
 
     Missing GOTOOLCHAIN caused Go to auto-download a nonexistent toolchain.
-    Wrong GOCACHE meant the server running as root always got a cold cache.
+    Wrong GOCACHE (e.g. ``Path.home()/.cache/...``) meant the server running as
+    root always got a cold cache — the cache must anchor on the configured
+    user-data path, not the runtime user's home.
     """
     compiler = _make_compiler(tmp_path)
     calls = _patch_compile_stager_subprocess(monkeypatch)
@@ -201,8 +203,13 @@ def test_compile_stager_env_has_required_go_vars(tmp_path, monkeypatch):
     assert env.get("GOTOOLCHAIN") == "local", (
         "GOTOOLCHAIN=local must be set to prevent phantom toolchain downloads"
     )
-    assert ".go-build-cache" in env.get("GOCACHE", ""), (
-        "GOCACHE must point to the install_path cache, not Path.home()/.cache/…"
+    gocache = env.get("GOCACHE", "")
+    assert gocache.endswith("/go-build"), (
+        f"GOCACHE must end in /go-build (the configured cache subdir), got: {gocache!r}"
+    )
+    assert ".cache/go-build" in gocache, (
+        "GOCACHE must live under DirectoriesConfig.cache (default DATA_DIR/.cache), "
+        f"not the install_path or Path.home()/.cache/…; got: {gocache!r}"
     )
     assert env.get("GONOSUMDB") == "*", (
         "GONOSUMDB=* must be set to avoid sum-database network calls"
