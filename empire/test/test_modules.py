@@ -138,6 +138,18 @@ def test_load_modules(main_menu_mock, models, session_local):
                     if str(e) == "csharpserver plugin not running":
                         pass
 
+        # Lazy-loading custom_generate modules deferred their import +
+        # Module() construction out of boot. Sweep them here so that a
+        # broken in-tree custom_generate .py (syntax error, missing
+        # `Module` class, ImportError) still fails CI rather than only
+        # blowing up when a user runs that specific module.
+        for key, module in module_service.modules.items():
+            if module.advanced.custom_generate:
+                module_service._load_custom_generate_class(module)
+                assert module.advanced.generate_class is not None, (
+                    f"custom_generate module {key} did not produce a generate_class"
+                )
+
 
 def test_execute_custom_generate(
     module_service, session_local, agent, models, install_path

@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Bounded the dynamic-PowerShell helper caches with `lru_cache` and made script generation deterministic, cutting `test_load_modules` from ~54s to ~1s on CI.
 -   Trimmed agent-comms SQL hot paths: dropped `lazy="joined"` on `Agent.host`, and used `db.get(Agent, session_id)` / a scalar `select(Agent.hostname)` in the hot request paths.
 -   Collapsed the per-result-packet `SessionLocal.begin()` loop in `_handle_agent_response` so one agent callback opens a single transaction regardless of how many result packets it carries. Per-callback wall time roughly halves for multi-packet batches on MySQL (e.g. 2.0x at N=10, 2.2x at N=25); N=1 is unchanged. Trade-off: a mid-batch failure now rolls back the whole batch instead of partially committing.
+-   Indexed columns the agent-comms / auth hot paths filter on: composite `(listener, archived)` on `Agent`, single-column `AgentFile.session_id`, `AgentFile.parent_id`, and `User.username`. Model-only via `index=True`; fresh databases pick the indexes up automatically.
+-   `profile_service.load_malleable_profiles` preloads existing `Profile` names once and dedupes in-memory instead of one `SELECT` per file (mirrors `module_service.load_modules`). Duplicate names across categories now log a warning naming the conflicting file instead of being silently caught at commit time.
+-   Lazy-loaded `custom_generate` module classes. The `importlib.spec_from_file_location` + `Module()` instantiation now happens on first execute and is cached, so boot skips the file-by-file import work for modules that may never run in a given session.
 -   Replaced three large credential test fixtures with a tiny synthetic module to cut CI obfuscation time; production module sources are unchanged.
 -   Promoted the `main_menu_mock` and `module_service` fixtures in `test_modules.py` to module scope so the five tests share one `ModuleService`.
 

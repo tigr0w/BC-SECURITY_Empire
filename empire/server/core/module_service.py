@@ -80,6 +80,37 @@ class ModuleService:
     def get_by_id(self, uid: str):
         return self.modules.get(uid)
 
+    def _load_custom_generate_class(self, module: EmpireModule):
+        """
+        Lazily import the .py file referenced by `module.advanced.custom_generate_path`
+        and instantiate its `Module` class. Subsequent calls reuse the cached instance.
+        Import / instantiation errors are re-raised as `ModuleValidationException`
+        so the caller surfaces a specific user-facing message instead of the
+        generic "Error generating script." fallback.
+
+        Intentionally not thread-safe: two concurrent first-execute calls for
+        the same module can both run `exec_module`. Last write wins, both
+        threads get a valid instance. The in-tree custom_generate modules use
+        a `@staticmethod` `generate`, so the duplicate instantiation is benign.
+        """
+        if module.advanced.generate_class is not None:
+            return module.advanced.generate_class
+        path = module.advanced.custom_generate_path
+        spec = importlib.util.spec_from_file_location(f"{module.id}.py", path)
+        if spec is None or spec.loader is None:
+            raise ModuleValidationException(
+                f"custom_generate module {module.id!r}: cannot build import spec for {path}"
+            )
+        try:
+            imp_mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(imp_mod)
+            module.advanced.generate_class = imp_mod.Module()
+        except Exception as e:
+            raise ModuleValidationException(
+                f"custom_generate module {module.id!r}: failed to load {path}: {e}"
+            ) from e
+        return module.advanced.generate_class
+
     def update_module(
         self, db: Session, module: EmpireModule, module_req: ModuleUpdateRequest
     ):
@@ -378,7 +409,8 @@ class ModuleService:
                 kwargs = {}
                 if module.language == LanguageEnum.bof:
                     kwargs["agent_language"] = agent_language
-                return module.advanced.generate_class.generate(
+                generate_class = self._load_custom_generate_class(module)
+                return generate_class.generate(
                     self.main_menu,
                     module,
                     params,
@@ -872,14 +904,12 @@ class ModuleService:
             my_model = EmpireModule(**yaml_module)
 
         if my_model.advanced.custom_generate:
-            if not file_path.with_suffix(".py").exists():
+            custom_py = file_path.with_suffix(".py")
+            if not custom_py.exists():
                 raise Exception("No File to use for custom generate.")
-            spec = importlib.util.spec_from_file_location(
-                module_name + ".py", file_path.with_suffix(".py")
-            )
-            imp_mod = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(imp_mod)
-            my_model.advanced.generate_class = imp_mod.Module()
+            # Defer the importlib + Module() construction to first execute.
+            # See _load_custom_generate_class below.
+            my_model.advanced.custom_generate_path = str(custom_py)
         elif my_model.script_path:
             script_path = self.module_source_path / my_model.script_path
             if not script_path.exists():
