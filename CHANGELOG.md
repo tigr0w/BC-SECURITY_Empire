@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added `nonpaged_ldapsearch` BOF module (`bof/situational_awareness/nonpaged_ldapsearch`) wrapping the TrustedSec nonpagedldapsearch BOF. Performs synchronous non-paged LDAP queries via `ldap_search_s` against a domain controller — useful when standard paged LDAP queries are throttled or restricted. Refreshed in-repo `.o` files (x64/x86) to current upstream build.
 -   `./ps-empire update` now applies pending Alembic migrations as part of the upgrade flow (prompts to back up first, `-y` to auto-confirm), so a schema mismatch no longer crashes the server on next start. Idempotent; backup failure warns but still migrates.
 -   Smoothed the bcrypt → PBKDF2 upgrade (PR #1236): a bcrypt-shaped default-user hash is auto-reset to PBKDF2 on startup (logged with recovery steps), non-default bcrypt users are left untouched, and `verify_password()` logs a targeted error instead of an opaque trace. **Manual recovery:** an admin `POST /api/v2/users/{id}/password` (or Starkiller) stores a PBKDF2 hash on next login.
 -   Added `./ps-empire update` subcommand that moves the checkout to the latest release tag, refreshes `config.yaml` from the template, and fast-forwards the Starkiller/plugin-registry clones and Empire-Compiler binary. Skips the source step on dev branches. **BREAKING:** the base `config.yaml` is overwritten on every update — move local customizations to `~/.config/empire/config.user.yaml`.
