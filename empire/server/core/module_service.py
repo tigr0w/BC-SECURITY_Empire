@@ -503,10 +503,8 @@ class ModuleService:
             confuse=obfuscate,
         )
 
-        filtered_params = {
-            key: (
-                value if value != "" else " "
-            )  # Replace empty values with a blank space
+        arg_list = [
+            str(value)
             for key, value in params.items()
             if key.lower()
             not in [
@@ -515,19 +513,12 @@ class ModuleService:
                 "architecture",
                 "entrypoint",
             ]
-        }
-
-        formatted_args = " ".join(
-            f'"{value}"' if " " in str(value) else str(value)
-            for value in filtered_params.values()
-        )
+        ]
 
         params_dict = {}
         params_dict["Entrypoint"] = module.bof.entry_point or "go"
         params_dict["File"] = b64_bof_data
-        params_dict["HexData"] = process_arguments(
-            module.bof.format_string, formatted_args
-        )
+        params_dict["HexData"] = process_arguments(module.bof.format_string, arg_list)
 
         final_base64_json = base64.b64encode(
             json.dumps(params_dict).encode("utf-8")
@@ -601,10 +592,8 @@ class ModuleService:
         bof_data = script_path.read_bytes()
         b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
 
-        filtered_params = {
-            key: (
-                value if value != "" else " "
-            )  # Replace empty values with a blank space
+        arg_list = [
+            str(value)
             for key, value in params.items()
             if key.lower()
             not in [
@@ -613,18 +602,13 @@ class ModuleService:
                 "architecture",
                 "entrypoint",
             ]
-        }
-
-        formatted_args = " ".join(
-            f'"{value}"' if " " in str(value) else str(value)
-            for value in filtered_params.values()
-        )
+        ]
 
         if not skip_params:
             params_dict = {}
             params_dict["File"] = b64_bof_data
             params_dict["HexData"] = process_arguments(
-                module.bof.format_string, formatted_args
+                module.bof.format_string, arg_list
             )
         else:
             params_dict = params
