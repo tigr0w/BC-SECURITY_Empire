@@ -47,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added `SafeChecksPS` / `SafeChecksPython` bypass YAMLs consolidating the snippets the removed `SafeChecks` option used to inject. Opt in via a stager's `Bypasses` parameter.
 -   Parser support for the Cobalt Strike `http-config` block (`trust_x_forwarded_for`, `block_useragents`, `header`, `set headers`). The malleable HTTP listener wires three knobs at boot: `trust_x_forwarded_for` (default **False**) derives the client IP from `X-Forwarded-For` with validation; `block_useragents` matches fnmatch globs (not regex) and returns the shared IIS 7.5 404; `header` directives merge into every response via `after_request`. `set headers` ordering is stored but not yet enforced. Captured at listener start.
 -   Parser support for the Cobalt Strike `https-certificate` block (`CN`, `O`, `OU`, `C`, `L`, `ST`, `validity`, `keystore`, `password`). **Parse-only** — Empire still loads the cert from `CertPath`; an HTTPS listener declaring this block logs a startup WARNING. Runtime cert generation is deferred to a follow-up.
+-   Added a `language` query parameter to the bypasses list endpoint, filtering bypasses to a single execution language so clients can show only the bypasses that apply to a given payload language.
+-   Added a computed `bypass_language_map` to stager-template options, exposing—per payload `Language`—which execution language its bypasses run in, so Starkiller's bypass picker can filter correctly. Stagers declare it via a `BypassLanguage` default plus sparse `BypassLanguageOverrides` (omitted ⇒ each language maps to itself).
 
 ### Changed
 
@@ -88,6 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 -   Fixed agent listener name not updating in the database on rename, causing Starkiller to show the old name.
+-   Fixed the csharp/ironpython/go EXE-oneliner stagers silently dropping the operator's `Bypasses` selection; the PowerShell downloader they emit now prepends the selected PowerShell bypasses.
+-   Fixed `windows/launcher_bat` ignoring the operator's `Bypasses` for PowerShell payloads on non-HTTP listeners, and silently emitting a do-nothing `.bat` for csharp/ironpython/go on non-HTTP listeners; bypasses now apply and unsupported language/listener combinations raise `StagerGenerationException`.
 -   Fixed bounds validation in routing-packet parsing: replaced the unreachable `length < 0` check with a proper `length > available data` check in both the Python server and Go agent.
 -   Fixed Go agent `ParseRoutingPacket` to use the offset when reading the nonce from multi-packet payloads.
 -   Fixed silent error swallowing in agent `aesgcm.py` `process_tasking`/`process_job_tasking` — bare `except Exception: pass` replaced with specific handling and error reporting to C2.

@@ -51,6 +51,7 @@ class CustomOptionSchema(BaseModel):
     value_type: ValueType
     internal: bool
     depends_on: list[DependentOption] = []
+    bypass_language_map: dict[str, str] | None = None
 
 
 class OrderDirection(StrEnum):

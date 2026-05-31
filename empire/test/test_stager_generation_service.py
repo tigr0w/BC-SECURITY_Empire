@@ -17,6 +17,8 @@ from empire.server.core.exceptions import (
     ModuleValidationException,
 )
 from empire.server.stagers.multi.generate_agent import Stager
+from empire.server.stagers.multi.launcher import Stager as MultiLauncherStager
+from empire.server.stagers.windows.launcher_bat import Stager as LauncherBatStager
 from empire.server.utils.file_util import run_as_user
 
 _MIN_GO_BUILD_ARGS = 2
@@ -127,7 +129,7 @@ def test_generate_launcher_filters_bypass_by_language(
     matching = [
         r
         for r in caplog.records
-        if "Invalid bypass language" in r.message and r.levelname == "WARNING"
+        if "Dropping bypass" in r.message and r.levelname == "WARNING"
     ]
     assert matching, "Expected WARNING-level language-mismatch log was not emitted"
 
@@ -191,6 +193,100 @@ def test_generate_exe_oneliner(stager_generation_service, obfuscate, encode):
     assert meta == "STAGE0"
     assert additional == "NONE"
     assert enc_data == b""
+
+
+def test_load_bypass_codes_case_insensitive_language_match(
+    stager_generation_service, main
+):
+    """A bypass record stored with mixed-case language must match a lowercase
+    request, so latent case drift in the YAML/DB doesn't silently hide bypasses."""
+    with SessionLocal.begin() as db:
+        original = main.bypassesv2.get_by_name(db, "mattifestation")
+        assert original is not None
+        original_language = original.language
+        original.language = "PowerShell"
+
+    try:
+        codes = stager_generation_service._load_bypass_codes(
+            "mattifestation", "powershell"
+        )
+        assert len(codes) == 1
+        assert codes[0]
+    finally:
+        with SessionLocal.begin() as db:
+            restored = main.bypassesv2.get_by_name(db, "mattifestation")
+            restored.language = original_language
+
+
+def test_generate_exe_oneliner_embeds_ps_bypass(stager_generation_service):
+    """Routed and non-routed PS-wrapping oneliners must accept PS bypasses, since
+    they execute as a PowerShell command regardless of payload language."""
+    marker_a = "Expect100Continue=0"
+    marker_b = "PSVersionTable.PSVersion.Major -lt 3"
+
+    baseline = stager_generation_service.generate_exe_oneliner(
+        language="csharp",
+        obfuscate=False,
+        obfuscation_command="",
+        encode=False,
+        listener_name="new-listener-1",
+        bypasses="",
+    )
+    assert baseline is not None
+    assert marker_a not in baseline
+
+    with_bypass = stager_generation_service.generate_exe_oneliner(
+        language="csharp",
+        obfuscate=False,
+        obfuscation_command="",
+        encode=False,
+        listener_name="new-listener-1",
+        bypasses="SafeChecksPS",
+    )
+    assert with_bypass is not None
+    assert marker_a in with_bypass
+    assert marker_b in with_bypass
+
+    routed = stager_generation_service.generate_exe_oneliner_routed(
+        language="csharp",
+        obfuscate=False,
+        obfuscation_command="",
+        encode=False,
+        listener_name="new-listener-1",
+        bypasses="SafeChecksPS",
+    )
+    assert routed is not None
+    assert marker_a in routed
+
+
+def test_generate_go_exe_oneliner_routed_embeds_ps_bypass(stager_generation_service):
+    """The routed Go oneliner emits a PowerShell downloader, so it must embed
+    selected PowerShell bypasses (pins the bypass_prefix in
+    generate_go_exe_oneliner_routed, the one routed branch the csharp test above
+    doesn't cover)."""
+    marker = "Expect100Continue=0"
+
+    baseline = stager_generation_service.generate_go_exe_oneliner_routed(
+        language="go",
+        listener_name="new-listener-1",
+        obfuscate=False,
+        obfuscation_command="",
+        encode=False,
+        bypasses="",
+    )
+    assert baseline is not None
+    assert marker not in baseline
+
+    with_bypass = stager_generation_service.generate_go_exe_oneliner_routed(
+        language="go",
+        listener_name="new-listener-1",
+        obfuscate=False,
+        obfuscation_command="",
+        encode=False,
+        bypasses="SafeChecksPS",
+    )
+    assert with_bypass is not None
+    assert marker in with_bypass
 
 
 @pytest.mark.parametrize(
@@ -934,3 +1030,44 @@ def test_generate_shellcode(stager_generation_service, language):
         f"Shellcode should be bytes, but got {type(shellcode)}"
     )
     assert len(shellcode) > 100, f"Shellcode is too short: {len(shellcode)} bytes"  # noqa: PLR2004
+
+
+def _decode_ps_enc(text: str) -> str:
+    m = re.search(r"-enc\s+([A-Za-z0-9+/=]+)", text)
+    if not m:
+        return text
+    return base64.b64decode(m.group(1)).decode("utf-16le", errors="strict")
+
+
+def test_multi_launcher_csharp_embeds_ps_bypass(main):
+    """End-to-end: the multi launcher with Language=csharp emits a PS oneliner
+    that contains the PS bypass code (defended by BypassLanguage map)."""
+    stager = MultiLauncherStager(main)
+    stager.options["Language"]["Value"] = "csharp"
+    stager.options["Listener"]["Value"] = "new-listener-1"
+    stager.options["Base64"]["Value"] = "True"
+    stager.options["Bypasses"]["Value"] = "SafeChecksPS"
+
+    launcher = stager.generate()
+    assert isinstance(launcher, str)
+    assert launcher
+    decoded = _decode_ps_enc(launcher)
+    assert "Expect100Continue=0" in decoded
+    assert "Reflection.Assembly" in decoded
+
+
+def test_launcher_bat_go_embeds_ps_bypass(main):
+    """windows/launcher_bat with Language=go uses the non-routed go oneliner;
+    PS bypasses still must land in the emitted PS downloader."""
+    stager = LauncherBatStager(main)
+    stager.options["Language"]["Value"] = "go"
+    stager.options["Listener"]["Value"] = "new-listener-1"
+    stager.options["Bypasses"]["Value"] = "SafeChecksPS"
+    stager.options["Delete"]["Value"] = "False"
+
+    bat = stager.generate()
+    assert isinstance(bat, str)
+    assert bat
+    decoded = _decode_ps_enc(bat)
+    assert "Expect100Continue=0" in decoded
+    assert "DownloadFile(" in decoded

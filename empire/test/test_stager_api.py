@@ -195,6 +195,39 @@ def test_get_stager_template(client, admin_auth_header):
     assert isinstance(response.json()["options"], dict)
 
 
+def test_stager_template_bypass_language_map(client, admin_auth_header):
+    response = client.get(
+        "/api/v2/stager-templates/multi_launcher",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    bypasses = response.json()["options"]["Bypasses"]
+    assert bypasses["bypass_language_map"] == {
+        "powershell": "powershell",
+        "python": "python",
+        "ironpython": "powershell",
+        "csharp": "powershell",
+        "go": "powershell",
+    }
+
+    response = client.get(
+        "/api/v2/stager-templates/windows_launcher_bat",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    bat_bypasses = response.json()["options"]["Bypasses"]
+    assert bat_bypasses["bypass_language_map"] == {
+        "powershell": "powershell",
+        "csharp": "powershell",
+        "ironpython": "powershell",
+        "go": "powershell",
+    }
+
+    # Listener options never carry a bypass language map.
+    listener_field = response.json()["options"]["Listener"]
+    assert listener_field["bypass_language_map"] is None
+
+
 def test_create_stager_validation_fails_required_field(client, admin_auth_header):
     base_stager = get_base_stager()
     base_stager["options"]["Listener"] = ""

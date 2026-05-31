@@ -20,6 +20,26 @@ def domain_to_dto_template(
     default_listener: str | None = None,
     listener_names: list[str] | None = None,
 ):
+    def _bypass_language_map(name, opt):
+        """Compute the per-payload-language bypass execution-language map for the
+        Bypasses option from the stager's Language values plus the option's
+        ``BypassLanguage`` default and sparse ``BypassLanguageOverrides``.
+        Languages without an override inherit ``BypassLanguage``; if no default is
+        declared they map to themselves (identity), matching stagers that deliver
+        bypasses in the payload's own language. Returns None for non-Bypasses
+        options and single-language stagers (nothing to filter on)."""
+        if name.lower() != "bypasses":
+            return None
+        languages = (stager.options.get("Language") or {}).get("SuggestedValues") or []
+        if len(languages) <= 1:
+            return None
+        default = opt.get("BypassLanguage")
+        overrides = opt.get("BypassLanguageOverrides") or {}
+        return {
+            lang: overrides.get(lang, default if default is not None else lang)
+            for lang in languages
+        }
+
     def _option_entry(name, opt):
         is_listener = name.lower() in LISTENER_OPTION_NAMES
         value = opt["Value"]
@@ -39,6 +59,7 @@ def domain_to_dto_template(
             "value_type": to_value_type(value, opt.get("Type")),
             "depends_on": opt["DependsOn"] if opt["DependsOn"] is not None else [],
             "internal": opt["Internal"] if opt["Internal"] is not None else False,
+            "bypass_language_map": _bypass_language_map(name, opt),
         }
 
     options = {name: _option_entry(name, opt) for name, opt in stager.options.items()}

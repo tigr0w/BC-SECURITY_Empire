@@ -285,6 +285,7 @@ def test_plugin_settings(client, admin_auth_header, main):
             "value_type": "STRING",
             "internal": False,
             "depends_on": [],
+            "bypass_language_map": None,
         },
         "SomeNonEditableSetting": {
             "editable": False,
@@ -296,6 +297,7 @@ def test_plugin_settings(client, admin_auth_header, main):
             "value_type": "STRING",
             "internal": False,
             "depends_on": [],
+            "bypass_language_map": None,
         },
     }
 

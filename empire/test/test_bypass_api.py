@@ -151,3 +151,81 @@ def test_bypass_defaults(client, admin_auth_header):
     assert all(
         (b["name"] in {"etw", "mattifestation"}) == b["is_default"] for b in records
     )
+
+
+def test_get_bypasses_language_filter(client, admin_auth_header):
+    ps_resp = client.post(
+        "/api/v2/bypasses",
+        headers=admin_auth_header,
+        json={"name": "Lang Filter PS", "code": "ps=1;", "language": "powershell"},
+    )
+    py_resp = client.post(
+        "/api/v2/bypasses",
+        headers=admin_auth_header,
+        json={"name": "Lang Filter PY", "code": "py=1;", "language": "python"},
+    )
+    assert ps_resp.status_code == status.HTTP_201_CREATED
+    assert py_resp.status_code == status.HTTP_201_CREATED
+    ps_id = ps_resp.json()["id"]
+    py_id = py_resp.json()["id"]
+
+    try:
+        ps_only = client.get(
+            "/api/v2/bypasses?language=powershell", headers=admin_auth_header
+        )
+        assert ps_only.status_code == status.HTTP_200_OK
+        ps_names = {b["name"] for b in ps_only.json()["records"]}
+        assert "Lang Filter PS" in ps_names
+        assert "Lang Filter PY" not in ps_names
+        assert all(b["language"] == "powershell" for b in ps_only.json()["records"])
+
+        py_only = client.get(
+            "/api/v2/bypasses?language=python", headers=admin_auth_header
+        )
+        assert py_only.status_code == status.HTTP_200_OK
+        py_names = {b["name"] for b in py_only.json()["records"]}
+        assert "Lang Filter PY" in py_names
+        assert "Lang Filter PS" not in py_names
+
+        mixed_case = client.get(
+            "/api/v2/bypasses?language=PowerShell", headers=admin_auth_header
+        )
+        assert mixed_case.status_code == status.HTTP_200_OK
+        mixed_names = {b["name"] for b in mixed_case.json()["records"]}
+        assert "Lang Filter PS" in mixed_names
+        assert "Lang Filter PY" not in mixed_names
+
+        unfiltered = client.get("/api/v2/bypasses", headers=admin_auth_header)
+        unfiltered_names = {b["name"] for b in unfiltered.json()["records"]}
+        assert {"Lang Filter PS", "Lang Filter PY"}.issubset(unfiltered_names)
+
+        empty_lang = client.get("/api/v2/bypasses?language=", headers=admin_auth_header)
+        assert empty_lang.status_code == status.HTTP_200_OK
+        assert {b["name"] for b in empty_lang.json()["records"]} == unfiltered_names
+
+        whitespace_lang = client.get(
+            "/api/v2/bypasses?language=%20%20", headers=admin_auth_header
+        )
+        assert whitespace_lang.status_code == status.HTTP_200_OK
+        whitespace_names = {b["name"] for b in whitespace_lang.json()["records"]}
+        assert whitespace_names == unfiltered_names
+
+        unknown = client.get(
+            "/api/v2/bypasses?language=bogus", headers=admin_auth_header
+        )
+        assert unknown.status_code == status.HTTP_200_OK
+        assert unknown.json()["records"] == []
+
+        ps_defaults = client.get(
+            "/api/v2/bypasses?default=true&language=powershell",
+            headers=admin_auth_header,
+        )
+        assert ps_defaults.status_code == status.HTTP_200_OK
+        ps_default_records = ps_defaults.json()["records"]
+        assert len(ps_default_records) > 0
+        assert all(b["is_default"] for b in ps_default_records)
+        assert all(b["language"] == "powershell" for b in ps_default_records)
+        assert "Lang Filter PS" not in {b["name"] for b in ps_default_records}
+    finally:
+        client.delete(f"/api/v2/bypasses/{ps_id}", headers=admin_auth_header)
+        client.delete(f"/api/v2/bypasses/{py_id}", headers=admin_auth_header)

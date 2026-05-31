@@ -9,6 +9,7 @@ class LanguageEnum(StrEnum):
     powershell = "powershell"
     csharp = "csharp"
     ironpython = "ironpython"
+    go = "go"
     bof = "bof"
 
 

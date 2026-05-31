@@ -70,6 +70,7 @@ class Stager:
                 "Description": "Bypasses as a space separated list to be prepended to the launcher",
                 "Required": False,
                 "Value": "",
+                "BypassLanguage": "powershell",
             },
         }
 
@@ -97,6 +98,7 @@ class Stager:
                 obfuscation_command=obfuscate_command,
                 encode=encode,
                 listener_name=listener_name,
+                bypasses=self.options["Bypasses"]["Value"],
             )
 
         elif language == "powershell":
