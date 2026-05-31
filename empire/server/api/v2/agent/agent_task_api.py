@@ -317,21 +317,20 @@ def create_task_module(
         resp, err = agent_task_service.create_task_module(
             db, db_agent, module_request, current_user
         )
-
-        # This is for backwards compatibility with modules returning
-        # tuples for exceptions. All modules should remove returning
-        # tuples in favor of raising exceptions by Empire 6.0
-        if err:
-            raise HTTPException(status_code=400, detail=err)
-    except HTTPException as e:
-        # Propagate the HTTPException from above
-        raise e from None
+    except HTTPException:
+        raise
     except ModuleValidationException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except ModuleExecutionException as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+    # This is for backwards compatibility with modules returning
+    # tuples for exceptions. All modules should remove returning
+    # tuples in favor of raising exceptions by Empire 6.0
+    if err:
+        raise HTTPException(status_code=400, detail=err)
 
     return domain_to_dto_task(resp)
 

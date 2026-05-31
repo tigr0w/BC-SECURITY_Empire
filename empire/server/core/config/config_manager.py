@@ -85,18 +85,18 @@ def valid_ip(v: str):
             netaddr.IPNetwork(v)
         else:
             netaddr.IPAddress(v)
-
-        return v
     except AddrFormatError as e:
         raise ValueError(
             f"Invalid IP address {v}. Must be a valid IP Address, Range, or CIDR."
         ) from e
+    else:
+        return v
 
 
 class DatabaseDefaultsConfig(EmpireBaseModel):
     staging_key: str = ""
     username: str = "empireadmin"
-    password: str = "password123"
+    password: str = "password123"  # noqa: S105 - documented default admin password, overridden via config.yaml / env
     obfuscation: list[DatabaseDefaultObfuscationConfig] = []
     keyword_obfuscation: list[str] = []
     bypasses: list[str] = []

@@ -118,8 +118,8 @@ class PluginService:
         for plugin_dir in self._list_plugin_directories():
             try:
                 plugin_config = self._validate_plugin(plugin_dir)
-            except PluginValidationException as e:
-                log.error(f"Failed to load plugin {plugin_dir.name}: {e}")
+            except PluginValidationException:
+                log.exception(f"Failed to load plugin {plugin_dir.name}")
                 continue
 
             self.load_plugin(db, plugin_dir, plugin_config)
@@ -207,20 +207,22 @@ class PluginService:
                     ) as fileobj,
                     tarfile.open(fileobj=fileobj, mode="r|*") as tar,
                 ):
-                    tar.extractall(path=temp_dir)
+                    # filter="data" guards against path traversal in the plugin archive.
+                    tar.extractall(path=temp_dir, filter="data")
             except OSError as e:
                 raise PluginValidationException(
                     f"Failed to download plugin: {e}"
                 ) from e
             return temp_dir
 
-        response = requests.get(tar_url, stream=True)
+        response = requests.get(tar_url, stream=True, timeout=30)
         if response.status_code != HTTP_200_OK:
             raise PluginValidationException(
                 f"Failed to download plugin: {response.text}"
             )
         with tarfile.open(fileobj=response.raw, mode="r|*") as tar:
-            tar.extractall(path=temp_dir)
+            # filter="data" guards against path traversal in the plugin archive.
+            tar.extractall(path=temp_dir, filter="data")
         return temp_dir
 
     def install_plugin_from_git(  # noqa: PLR0913
@@ -292,15 +294,16 @@ class PluginService:
 
         try:
             res = plugin.execute(cleaned_options, db=db, user=user)
+        except (PluginValidationException, PluginExecutionException):
+            raise
+        except Exception as e:
+            log.exception(f"Plugin {plugin.info.name} failed to run")
+            return False, str(e)
+        else:
             # Tuple is deprecated. Will be removed in 7.x
             if isinstance(res, tuple):
                 return res
             return res, None
-        except (PluginValidationException, PluginExecutionException) as e:
-            raise e
-        except Exception as e:
-            log.error(f"Plugin {plugin.info.name} failed to run: {e}", exc_info=True)
-            return False, str(e)
 
     def plugin_socketio_message(self, plugin_name, msg):
         """

@@ -73,8 +73,8 @@ class BypassService:
                     ).first()
                     existing.is_default = is_default
                 db.flush()
-            except Exception as e:
-                log.error(e)
+            except Exception:
+                log.exception("Error loading default bypass from %s", file_path)
 
     @staticmethod
     def get_all(db: Session, default: bool | None = None):

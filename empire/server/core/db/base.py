@@ -48,11 +48,10 @@ def try_create_engine(engine_url: str, *args, **kwargs) -> Engine:
     try:
         with engine.connect():
             pass
-    except OperationalError as e:
-        log.error(e, exc_info=True)
-        log.error(f"Failed connecting to database using {engine_url}")
-        log.error("Perhaps the MySQL service is not running.")
-        log.error("Try executing: sudo systemctl start mysql")
+    except OperationalError:
+        log.exception(f"Failed connecting to database using {engine_url}")
+        log.info("Perhaps the MySQL service is not running.")
+        log.info("Try executing: sudo systemctl start mysql")
         sys.exit(1)
 
     return engine
@@ -236,7 +235,7 @@ def backup_db() -> Path | None:
                     dst_conn.close()
                     src_conn.close()
             except Exception:
-                log.error("SQLite backup failed.", exc_info=True)
+                log.exception("SQLite backup failed.")
                 dst.unlink(missing_ok=True)
                 return None
             log.info(f"SQLite database backed up to {dst}")
@@ -284,7 +283,7 @@ def backup_db() -> Path | None:
                         check=False,
                     )
                 except FileNotFoundError:
-                    log.error(
+                    log.exception(
                         "mysqldump not found on PATH. Install mysql-client "
                         "to enable MySQL backups."
                     )
@@ -299,7 +298,7 @@ def backup_db() -> Path | None:
             )
             dst.unlink(missing_ok=True)
         except Exception:
-            log.error("MySQL backup failed unexpectedly.", exc_info=True)
+            log.exception("MySQL backup failed unexpectedly.")
             dst.unlink(missing_ok=True)
         finally:
             if cnf_path is not None:
@@ -381,10 +380,9 @@ def startup_db():
             for model in models.Base.__subclasses__():
                 db.scalar(select(model))
 
-    except Exception as e:
-        log.error(e, exc_info=True)
-        log.error("Failed to setup database.")
-        log.error(
+    except Exception:
+        log.exception("Failed to setup database.")
+        log.info(
             "If you have recently updated Empire, please run 'server --clean' to reset the database."
         )
         sys.exit(1)

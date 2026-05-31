@@ -366,7 +366,7 @@ class Listener:
                     launcherBase += listener_util.python_safe_checks()
             except Exception as e:
                 p = f"{listener_name}: Error setting LittleSnitch in stager: {e!s}"
-                log.error(p)
+                log.exception(p)
 
             if user_agent.lower() == "default":
                 profile = self.options["DefaultProfile"]["Value"]

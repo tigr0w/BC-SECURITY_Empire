@@ -145,10 +145,11 @@ def sync_empire_compiler(compiler_config: EmpireCompilerConfig):
         log.info(f"Empire Compiler: fetching and unarchiving {url}")
         compiler_dir.mkdir(parents=True, exist_ok=True)
         with (
-            requests.get(url, stream=True) as resp,
+            requests.get(url, stream=True, timeout=30) as resp,
             tarfile.open(fileobj=resp.raw, mode="r|gz") as tar,
         ):
-            tar.extractall(compiler_dir)
+            # filter="data" guards against path traversal in the downloaded archive.
+            tar.extractall(compiler_dir, filter="data")
 
     extracted_folder = compiler_dir / name
     return _configure_compiler(compiler_config, extracted_folder)

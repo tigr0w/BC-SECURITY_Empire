@@ -80,7 +80,7 @@ class GoCompiler:
             loader=jinja2.FileSystemLoader(
                 str(self.install_path / "data/agent/gopire")
             ),
-            autoescape=False,
+            autoescape=False,  # noqa: S701 - renders attack payloads/scripts, not HTML; autoescaping would corrupt output
         )
         self._go_binary = _resolve_go_binary()
         log.info("GoCompiler: using go binary at %s", self._go_binary)

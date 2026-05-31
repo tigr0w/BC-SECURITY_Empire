@@ -176,7 +176,7 @@ class ListenerService:
             success = template_instance.start()
         except Exception as e:
             msg = f"Failed to start listener '{name}': {e}"
-            log.error(msg)
+            log.exception(msg)
             return None, msg
 
         return self._finish_create(
@@ -307,7 +307,12 @@ class ListenerService:
                 # if the staging key isn't 32 characters, assume we're md5 hashing it
                 value = str(value).strip()
                 if len(value) != proto.STAGING_KEY_LENGTH:
-                    staging_key_hash = hashlib.md5(value.encode("UTF-8")).hexdigest()
+                    # md5 is required here: its 32-char hex digest derives the
+                    # protocol-required 32-char staging key from a shorter
+                    # passphrase. Not an integrity check.
+                    staging_key_hash = hashlib.md5(  # noqa: S324
+                        value.encode("UTF-8")
+                    ).hexdigest()
                     log.warning(
                         f"Warning: staging key not 32 characters, using hash of staging key instead: {staging_key_hash}"
                     )

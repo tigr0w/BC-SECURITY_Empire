@@ -2,7 +2,7 @@ import base64
 import contextlib
 import json
 import logging
-import random
+import secrets
 import string
 import typing
 from pathlib import Path
@@ -378,11 +378,11 @@ class AgentCommunicationService:
 
             for task in tasks:
                 task.status = AgentTaskStatus.pulled
-
-            return tasks
         except AttributeError:
             log.debug("Agent checkin during initialization.")
             return []
+        else:
+            return tasks
 
     def _get_queued_agent_temporary_tasks(self, session_id):
         """
@@ -443,7 +443,7 @@ class AgentCommunicationService:
             except Exception:
                 # if we have an error during decryption
                 message = f"HMAC verification failed from '{session_id}'"
-                log.error(message, exc_info=True)
+                log.exception(message)
                 return "ERROR: HMAC verification failed"
 
             if language.lower() == "powershell":
@@ -614,7 +614,7 @@ class AgentCommunicationService:
                     int(int.from_bytes(message[:768], byteorder="big", signed=False))
                 except Exception:
                     message = f"Invalid {lang_name} key post format from {session_id}"
-                    log.error(message)
+                    log.exception(message)
                     return message
 
                 # Need to split message of form:
@@ -696,7 +696,7 @@ class AgentCommunicationService:
                     int(int.from_bytes(message[:768], byteorder="big", signed=False))
                 except Exception:
                     message = f"Invalid {lang_name} key post format from {session_id}"
-                    log.error(message)
+                    log.exception(message)
                     return message
 
                 # Need to split message of form:
@@ -812,7 +812,7 @@ class AgentCommunicationService:
                 message = (
                     f"Exception in agents.handle_agent_staging() for {session_id} : {e}"
                 )
-                log.error(message, exc_info=True)
+                log.exception(message)
                 self._remove_agent(db, session_id)
                 return f"Error: Exception in agents.handle_agent_staging() for {session_id} : {e}"
 
@@ -1098,13 +1098,13 @@ class AgentCommunicationService:
                 message = f"Agent {session_id} returned results."
                 log.info(message)
 
-            # return a 200/valid
-            return "VALID"
-
         except Exception as e:
             message = f"Error processing result packet from {session_id} : {e}"
-            log.error(message, exc_info=True)
+            log.exception(message)
             return None
+        else:
+            # return a 200/valid
+            return "VALID"
 
     def _process_agent_packet(  # noqa: PLR0912 PLR0915
         self, db: Session, session_id, response_name, task_id, data
@@ -1592,10 +1592,10 @@ class AgentCommunicationService:
                     self.agent_task_service.create_task_module(
                         db, agent, module_request
                     )
-                except ValidationError as e:
-                    log.error(f"Error parsing module request: {e}")
+                except ValidationError:
+                    log.exception("Error parsing module request")
 
     def generate_sessionid(self):
         return "".join(
-            random.choice(string.ascii_uppercase + string.digits) for _ in range(8)
+            secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8)
         )

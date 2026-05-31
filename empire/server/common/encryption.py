@@ -458,6 +458,7 @@ def checkvalid(s: bytes, m: bytes, pk: bytes) -> bool:
     """
     try:
         _Ed25519PublicKey.from_public_bytes(bytes(pk)).verify(bytes(s), bytes(m))
-        return True
     except Exception:
         return False
+    else:
+        return True

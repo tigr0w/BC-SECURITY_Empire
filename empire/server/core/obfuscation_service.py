@@ -123,6 +123,11 @@ class ObfuscationService:
             install_path = self.main_menu.install_path
             toObfuscateFile.seek(0)
             try:
+                # shell=True with an interpolated command line (S602): the only
+                # non-static input is obfuscation_command, which comes from the
+                # authenticated operator's ObfuscationConfig (server-side, trusted),
+                # not from agents or the network. If that ever becomes settable by a
+                # lower-trust principal this turns into command injection.
                 result = subprocess.run(
                     f'{data_util.get_powershell_name()} -C \'$ErrorActionPreference = "SilentlyContinue";Import-Module {install_path}/data/Invoke-Obfuscation/Invoke-Obfuscation.psd1;Invoke-Obfuscation -ScriptPath {toObfuscateFile.name} -Command "{self._convert_obfuscation_command(obfuscation_command)}" -Quiet | Out-File -Encoding ASCII {obfuscatedFile.name}\'',
                     shell=True,
@@ -132,7 +137,7 @@ class ObfuscationService:
                     capture_output=True,
                 )
             except subprocess.TimeoutExpired:
-                log.error(
+                log.exception(
                     "Obfuscation subprocess timed out after %ds. "
                     "Consider pre-obfuscating modules or increasing the timeout.",
                     timeout,
