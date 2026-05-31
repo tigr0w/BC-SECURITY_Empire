@@ -33,7 +33,11 @@ def setup_socket_events(sio, empire_menu):  # noqa: PLR0915
 
     async def get_user_from_token(sid, token, db: Session):
         user = jwt_auth.get_current_user_from_token(db, token)
-        if user is None:
+        # get_current_user_from_token only validates the token, not account
+        # state, and tokens stay valid until they expire. Mirror the REST
+        # get_current_active_user check so a user disabled mid-session can't
+        # (re)open a socket with a still-valid token.
+        if user is None or not user.enabled:
             return False
         sid_to_user[sid] = user.id
 

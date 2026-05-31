@@ -1,4 +1,3 @@
-import math
 from typing import Annotated
 
 from fastapi import Depends, File, HTTPException, Query, UploadFile
@@ -13,7 +12,7 @@ from empire.server.api.v2.download.download_dto import (
     DownloadSourceFilter,
     domain_to_dto_download,
 )
-from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
+from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession, paginate
 from empire.server.api.v2.shared_dto import (
     BadRequestResponse,
     NotFoundResponse,
@@ -111,10 +110,11 @@ def read_downloads(
 
     downloads_converted = [domain_to_dto_download(x) for x in downloads]
 
+    page, total_pages = paginate(total, page, limit)
     return Downloads(
         records=downloads_converted,
         page=page,
-        total_pages=math.ceil(total / limit) if limit > 0 else page,
+        total_pages=total_pages,
         limit=limit,
         total=total,
     )

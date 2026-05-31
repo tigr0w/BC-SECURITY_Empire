@@ -24,7 +24,6 @@ from empire.server.core import protocol_constants as proto
 log = logging.getLogger(__name__)
 
 random_function = ssl.RAND_bytes
-random_provider = "Python SSL"
 ct_compare_digest = hmac.compare_digest
 
 
@@ -97,9 +96,9 @@ class AESCipher:
             mac = data[-10:]
             data_ = data[:-10]
             expected = hmac.new(key, data_, digestmod=hashlib.sha256).digest()[0:10]
-            return (
-                hmac.new(key, expected, digestmod=hashlib.sha256).digest()
-                == hmac.new(key, mac, digestmod=hashlib.sha256).digest()
+            return ct_compare_digest(
+                hmac.new(key, expected, digestmod=hashlib.sha256).digest(),
+                hmac.new(key, mac, digestmod=hashlib.sha256).digest(),
             )
         return False
 
