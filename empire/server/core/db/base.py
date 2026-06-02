@@ -174,6 +174,20 @@ def _alembic_cfg():
     return cfg
 
 
+def _get_head_revision() -> str:
+    """Return the head revision from versions/; raise RuntimeError if directory is empty."""
+    from alembic.script import ScriptDirectory
+
+    head = ScriptDirectory.from_config(_alembic_cfg()).get_current_head()
+    if head is None:
+        raise RuntimeError(
+            "Alembic: no head revision found. The versions/ directory is "
+            "empty or missing. This indicates a broken install — reinstall "
+            "Empire or restore empire/server/core/db/alembic/versions/."
+        )
+    return head
+
+
 def _get_alembic_revision():
     """Return the current Alembic revision, or None if untracked."""
     from alembic.migration import MigrationContext
@@ -271,7 +285,11 @@ def backup_db() -> Path | None:
                 host,
             ]
             if len(parts) > 1:
-                cmd.extend(["-P", parts[1]])
+                # MySQL clients special-case `-h localhost` and use the Unix
+                # socket regardless of `-P`. Force TCP whenever a port is
+                # specified so the connection lands on the intended server,
+                # not whatever (if any) MySQL is bound to the host's socket.
+                cmd.extend(["-P", parts[1], "--protocol=tcp"])
             cmd.append(database_config.database_name)
 
             with dst.open("w") as outfile:

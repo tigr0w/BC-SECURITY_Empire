@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-   Performance indexes migration (0002) — apply with `poetry run alembic -c alembic.ini upgrade head` (from the Empire root) on existing databases.
+
 ### Changed
 
 -   Migrated the data-access layer from the SQLAlchemy 1.x Query API to the 2.0 `select()` idiom across the core services, `data_util`, `jwt_auth`, the `http`/`http_malleable` listeners, and `basic_reporting`. Behavior-preserving and still synchronous; `db.query()` no longer appears in `empire/server`.
