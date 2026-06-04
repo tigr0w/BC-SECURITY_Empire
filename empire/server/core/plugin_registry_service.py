@@ -82,7 +82,9 @@ class PluginRegistryService:
             try:
                 registry = PluginRegistry.model_validate(registry_data)
             except ValidationError as e:
-                log.error(f"Plugin registry {r.name} has invalid schema: {e.errors()}")
+                log.exception(
+                    f"Plugin registry {r.name} has invalid schema: {e.errors()}"
+                )
                 continue
 
             if registry.schema_version != SCHEMA_VERSION:

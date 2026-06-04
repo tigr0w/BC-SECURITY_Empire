@@ -8,6 +8,7 @@ from pathlib import Path
 import jinja2
 
 from empire.server.common.helpers import random_string
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.exceptions import ModuleExecutionException
 
 log = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ class GoCompiler:
             loader=jinja2.FileSystemLoader(
                 str(self.install_path / "data/agent/gopire")
             ),
-            autoescape=False,
+            autoescape=False,  # noqa: S701 - renders attack payloads/scripts, not HTML; autoescaping would corrupt output
         )
         self._go_binary = _resolve_go_binary()
         log.info("GoCompiler: using go binary at %s", self._go_binary)
@@ -109,9 +110,11 @@ class GoCompiler:
         goarch="amd64",
         build_tags=None,
     ):
-        # Use install_path-relative cache so it persists across runs and is
-        # the same path regardless of which user (root vs the application user) runs the server.
-        go_cache = str(self.install_path / ".go-build-cache")
+        # Persistent Go build cache lives under DATA_DIR/.cache/go-build by
+        # default (see DirectoriesConfig.cache). Anchored to a configured user-data
+        # path rather than the repo or Path.home() so it survives across server
+        # restarts and is the same path regardless of which user runs the server.
+        go_cache = str(empire_config.directories.cache / "go-build")
         Path(go_cache).mkdir(parents=True, exist_ok=True)
         env = {
             "GOOS": goos,

@@ -23,5 +23,5 @@ def get_random_string(length=-1, charset=string.ascii_letters):
     A character set can be specified, defaulting to just alpha letters.
     """
     if length == -1:
-        length = secrets.randbelow(10) + 6
-    return "".join(secrets.choice(charset) for x in range(length))
+        length = secrets.choice(range(6, 16))
+    return "".join(secrets.choice(charset) for _ in range(length))

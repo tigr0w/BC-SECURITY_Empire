@@ -155,6 +155,7 @@ def sync_empire_compiler(compiler_config: EmpireCompilerConfig):
             requests.get(url, stream=True, timeout=(30, 300)) as resp,
             tarfile.open(fileobj=resp.raw, mode="r|gz") as tar,
         ):
+            # filter="data" guards against path traversal in the downloaded archive.
             tar.extractall(compiler_dir, filter="data")
 
     extracted_folder = compiler_dir / name

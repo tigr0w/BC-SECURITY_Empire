@@ -114,6 +114,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-   Performance indexes migration (0002) — apply with `poetry run alembic -c alembic.ini upgrade head` (from the Empire root) on existing databases.
+
 ### Changed
 
 -   Migrated the data-access layer from the SQLAlchemy 1.x Query API to the 2.0 `select()` idiom across the core services, `data_util`, `jwt_auth`, the `http`/`http_malleable` listeners, and `basic_reporting`. Behavior-preserving and still synchronous; `db.query()` no longer appears in `empire/server`.
@@ -121,8 +125,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Modernization quick wins (no behavior change): timezone-aware `datetime.now(UTC)` in `jwt_auth`, O(1) startup existence checks in `core/db/base.py`, removal of the Python-2 `old_div` shim and unused `math_util.py`, and a `ruff` pre-commit bump to match `pyproject.toml`.
 -   Bounded the dynamic-PowerShell helper caches with `lru_cache` and made script generation deterministic, cutting `test_load_modules` from ~54s to ~1s on CI.
 -   Trimmed agent-comms SQL hot paths: dropped `lazy="joined"` on `Agent.host`, and used `db.get(Agent, session_id)` / a scalar `select(Agent.hostname)` in the hot request paths.
+-   Collapsed the per-result-packet `SessionLocal.begin()` loop in `_handle_agent_response` so one agent callback opens a single transaction regardless of how many result packets it carries. Per-callback wall time roughly halves for multi-packet batches on MySQL (e.g. 2.0x at N=10, 2.2x at N=25); N=1 is unchanged. Trade-off: a mid-batch failure now rolls back the whole batch instead of partially committing.
+-   Indexed columns the agent-comms / auth hot paths filter on: composite `(listener, archived)` on `Agent`, single-column `AgentFile.session_id`, `AgentFile.parent_id`, and `User.username`. Model-only via `index=True`; fresh databases pick the indexes up automatically.
+-   `profile_service.load_malleable_profiles` preloads existing `Profile` names once and dedupes in-memory instead of one `SELECT` per file (mirrors `module_service.load_modules`). Duplicate names across categories now log a warning naming the conflicting file instead of being silently caught at commit time.
+-   Lazy-loaded `custom_generate` module classes. The `importlib.spec_from_file_location` + `Module()` instantiation now happens on first execute and is cached, so boot skips the file-by-file import work for modules that may never run in a given session.
 -   Replaced three large credential test fixtures with a tiny synthetic module to cut CI obfuscation time; production module sources are unchanged.
 -   Promoted the `main_menu_mock` and `module_service` fixtures in `test_modules.py` to module scope so the five tests share one `ModuleService`.
+
+### Removed
+
+-   Dropped 4 unused/redundant Python dependencies to reduce supply-chain surface: `pycryptodome` (superseded by `cryptography` in the 2021 pycrypto migration; no `Crypto.*` imports remain), `pyOpenSSL` (last imports removed in 2020 cleanup, forgotten in `pyproject.toml`), `pytest-timeout` (the `@pytest.mark.timeout` markers that justified it have since been removed), and the redundant direct `coverage` pin (already pulled transitively by `pytest-cov`).
+-   Replaced `python-jose` with `pyjwt`. `python-jose` is effectively abandoned (last release 3.3.0 in 2022) and pulled unmaintained `ecdsa` / `rsa` transitive dependencies with a poor security history. `pyjwt` is the actively-maintained library FastAPI now recommends in its OAuth2/JWT tutorial; the call surface in `jwt_auth.py` is identical (`jwt.encode`/`jwt.decode`), with the exception type changing from `JWTError` to `jwt.InvalidTokenError`.
+-   Replaced the `SQLAlchemy-Utc` dependency with a 90-line vendored module (`empire/server/core/db/utc_datetime.py`) carrying the upstream MIT notice. The package shipped only two helpers (`UtcDateTime` column type + dialect-aware `utcnow()` SQL expression); behavior — including per-dialect SQL — is byte-identical so the existing schema and column defaults are unchanged.
+-   Replaced `requests-file` with inline `file://` dispatch in `plugin_service._download_tar` using stdlib `urllib.parse` + `Path.open`. The dependency existed solely to mount a `FileAdapter` on a `requests.Session` for one method; HTTP downloads now use `requests.get(...)` directly and `file://` URLs are handled with a short scheme check.
+-   Modernized the vendored `malleable/` profile parser from Py2/Py3 compatibility (`six.moves.urllib.*` + `six.moves.range`) to Py3 stdlib (`urllib.parse` + builtin `range`). Mechanical change — `six.moves.urllib.parse` ↔ `urllib.parse` is a 1:1 rename, and `six.moves.range` is just the Py3 builtin. Drops the `six` direct dep that was added back when `python-jose` was removed.
 
 ### Fixed
 
@@ -257,6 +273,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed malleable HTTP listener stagers failing after server restart due to random URI regeneration in `Stager._defaults()`
 -   Fix null-safety bug in `_process_agent_packet` when `save_module_file` returns None on skywalker exploit detection
 -   Fixed stop-job handlers in PowerShell and Python agents crashing when the target job doesn't exist
+-   Fixed execution of powershell module Get-FoxDump
 -   Fixed powerview add-netuser
 -   Fixed the `docs/quickstart/installation/README.md` file to specify a previously missing reference to Ubuntu
 -   Fixed 9 malformed MITRE ATT&CK technique IDs across PowerShell, Python, and C# modules

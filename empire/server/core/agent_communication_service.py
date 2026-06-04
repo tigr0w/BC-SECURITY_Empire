@@ -15,6 +15,7 @@ from zlib_wrapper import decompress
 from empire.server.api.v2.agent.agent_task_dto import ModulePostRequest
 from empire.server.common import credential_parsers, encryption, helpers, packets
 from empire.server.common.encryption import AESCipher
+from empire.server.core import protocol_constants as proto
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
@@ -454,11 +455,11 @@ class AgentCommunicationService:
 
             for task in tasks:
                 task.status = AgentTaskStatus.pulled
-
-            return tasks
         except AttributeError:
             log.debug("Agent checkin during initialization.")
             return []
+        else:
+            return tasks
 
     def _get_queued_agent_temporary_tasks(self, session_id):
         """
@@ -519,12 +520,12 @@ class AgentCommunicationService:
             except Exception:
                 # if we have an error during decryption
                 message = f"HMAC verification failed from '{session_id}'"
-                log.error(message, exc_info=True)
+                log.exception(message)
                 return "ERROR: HMAC verification failed"
 
             if language.lower() == "powershell":
                 # Expect: client DH pub (exact 768 bytes, big-endian) || agent_cert (64 bytes)
-                if len(message) < 832:  # noqa: PLR2004
+                if len(message) < proto.STAGE0_MIN_BYTES:
                     log.error(f"Invalid {lang_name} stage0 length from {session_id}")
                     return f"ERROR: Invalid {lang_name} stage0"
 
@@ -541,7 +542,7 @@ class AgentCommunicationService:
                     return f"ERROR: Invalid {lang_name} DH public key"
 
                 # Only verify the agent cert if its actually present (not all zeros)
-                if any(agent_cert) and len(agent_cert) == 64:  # noqa: PLR2004
+                if any(agent_cert) and len(agent_cert) == proto.AGENT_CERT_SIZE:
                     try:
                         if not encryption.checkvalid(
                             agent_cert, b"SIGNATURE", agent_cert_public_key
@@ -605,7 +606,7 @@ class AgentCommunicationService:
             if language.lower() == "csharp":
                 # check that we recieved a valid certificate size. Message less then 832 can not contain a valid cert
                 # 832 comes from public key size + agent cert
-                if len(message) < 832:  # noqa: PLR2004
+                if len(message) < proto.STAGE0_MIN_BYTES:
                     log.error(f"Invalid {lang_name} stage0 length from {session_id}")
                     return f"ERROR: Invalid {lang_name} stage0"
 
@@ -622,7 +623,7 @@ class AgentCommunicationService:
                     return f"ERROR: Invalid {lang_name} DH public key"
 
                 # Only verify the agent cert if its actually present (not all zeros)
-                if any(agent_cert) and len(agent_cert) == 64:  # noqa: PLR2004
+                if any(agent_cert) and len(agent_cert) == proto.AGENT_CERT_SIZE:
                     try:
                         if not encryption.checkvalid(
                             agent_cert, b"SIGNATURE", agent_cert_public_key
@@ -678,7 +679,9 @@ class AgentCommunicationService:
                 )
 
             if language.lower() == "python":
-                if (len(message) < 830) or (len(message) > 2500):  # noqa: PLR2004
+                if (len(message) < proto.STAGE0_PYTHON_GO_MIN_BYTES) or (
+                    len(message) > proto.STAGE0_PYTHON_GO_MAX_BYTES
+                ):
                     return (
                         f"Error: Invalid {lang_name} key post format from {session_id}"
                     )
@@ -688,7 +691,7 @@ class AgentCommunicationService:
                     int(int.from_bytes(message[:768], byteorder="big", signed=False))
                 except Exception:
                     message = f"Invalid {lang_name} key post format from {session_id}"
-                    log.error(message)
+                    log.exception(message)
                     return message
 
                 # Need to split message of form:
@@ -756,7 +759,9 @@ class AgentCommunicationService:
 
             if language.lower() == "go":
                 # check that message has a valid block size
-                if (len(str(message)) < 830) or (len(str(message)) > 2500):  # noqa: PLR2004
+                if (len(str(message)) < proto.STAGE0_PYTHON_GO_MIN_BYTES) or (
+                    len(str(message)) > proto.STAGE0_PYTHON_GO_MAX_BYTES
+                ):
                     message = f"Invalid {lang_name} key post format from {session_id}"
                     log.error(message)
                     return (
@@ -768,7 +773,7 @@ class AgentCommunicationService:
                     int(int.from_bytes(message[:768], byteorder="big", signed=False))
                 except Exception:
                     message = f"Invalid {lang_name} key post format from {session_id}"
-                    log.error(message)
+                    log.exception(message)
                     return message
 
                 # Need to split message of form:
@@ -848,7 +853,7 @@ class AgentCommunicationService:
                 message = AESCipher.decrypt_and_verify(session_key, enc_data)
                 parts = message.split(b"|")
 
-                if len(parts) < 13:  # noqa: PLR2004
+                if len(parts) < proto.SYSINFO_MIN_PARTS:
                     message = f"Agent {session_id} posted invalid sysinfo checkin format: {message}"
                     log.warning(message)
                     # remove the agent from the cache/database
@@ -885,7 +890,7 @@ class AgentCommunicationService:
                 message = (
                     f"Exception in agents.handle_agent_staging() for {session_id} : {e}"
                 )
-                log.error(message, exc_info=True)
+                log.exception(message)
                 self._remove_agent(db, session_id)
                 return f"Error: Exception in agents.handle_agent_staging() for {session_id} : {e}"
 
@@ -950,7 +955,7 @@ class AgentCommunicationService:
         Abstracted out sufficiently for any listener module to use.
         """
 
-        if len(routing_packet) < 20:  # noqa: PLR2004
+        if len(routing_packet) < proto.ROUTING_PACKET_MIN_BYTES:
             message = f"handle_agent_data(): routingPacket wrong length: {len(routing_packet)}"
             log.error(message)
             return None
@@ -1141,44 +1146,43 @@ class AgentCommunicationService:
 
             # process the packet and extract necessary data
             responsePackets = packets.parse_result_packets(packet)
-            results = False
-            # process each result packet
-            for (
-                responseName,
-                _totalPacket,
-                _packetNum,
-                taskID,
-                _length,
-                data,
-            ) in responsePackets:
-                # process the agent's response
-                with SessionLocal.begin() as db:
-                    if update_lastseen:
-                        self.agent_service.update_agent_lastseen(db, session_id)
+            # One session/transaction per agent callback regardless of N packets.
+            taskings_to_hook = []
+            with SessionLocal.begin() as db:
+                if update_lastseen:
+                    self.agent_service.update_agent_lastseen(db, session_id)
 
+                for (
+                    responseName,
+                    _totalPacket,
+                    _packetNum,
+                    taskID,
+                    _length,
+                    data,
+                ) in responsePackets:
                     tasking = self._process_agent_packet(
                         db, session_id, responseName, taskID, data
                     )
                     db.flush()
                     if tasking is not None:
                         db.expunge(tasking)
+                        taskings_to_hook.append(tasking)
 
-                # Fire AFTER_TASKING_RESULT_HOOK outside the session block
-                if tasking is not None:
-                    hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, None, tasking)
-                results = True
+            results = bool(responsePackets)
+            for tasking in taskings_to_hook:
+                hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, None, tasking)
             if results:
                 # signal that this agent returned results
                 message = f"Agent {session_id} returned results."
                 log.info(message)
 
-            # return a 200/valid
-            return "VALID"
-
         except Exception as e:
             message = f"Error processing result packet from {session_id} : {e}"
-            log.error(message, exc_info=True)
+            log.exception(message)
             return None
+        else:
+            # return a 200/valid
+            return "VALID"
 
     def _process_agent_packet(  # noqa: PLR0912 PLR0915
         self, db: Session, session_id, response_name, task_id, data
@@ -1302,7 +1306,7 @@ class AgentCommunicationService:
             # sys info response -> update the host info
             data = data.decode("utf-8")
             parts = data.split("|")
-            if len(parts) < 13:  # noqa: PLR2004
+            if len(parts) < proto.SYSINFO_MIN_PARTS:
                 message = f"Invalid sysinfo response from {session_id}"
                 log.error(message)
             else:
@@ -1402,7 +1406,7 @@ class AgentCommunicationService:
                 data = data.decode("UTF-8")
 
             parts = data.split("|")
-            if len(parts) != 4:  # noqa: PLR2004
+            if len(parts) != proto.DOWNLOAD_RESPONSE_PARTS:
                 message = f"Received invalid file download response from {session_id}"
                 log.error(message)
             else:
@@ -1569,8 +1573,8 @@ class AgentCommunicationService:
                     self.agent_task_service.create_task_module(
                         db, agent, module_request
                     )
-                except ValidationError as e:
-                    log.error(f"Error parsing module request: {e}")
+                except ValidationError:
+                    log.exception("Error parsing module request")
 
     def generate_sessionid(self):
         return "".join(
