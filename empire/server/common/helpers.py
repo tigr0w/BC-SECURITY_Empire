@@ -74,9 +74,10 @@ def validate_ip(IP):
     """
     try:
         ipaddress.ip_address(IP)
-        return True
     except Exception:
         return False
+    else:
+        return True
 
 
 def validate_ntlm(data):
@@ -99,8 +100,8 @@ def random_string(length=-1, charset=string.ascii_letters):
     A character set can be specified, defaulting to just alpha letters.
     """
     if length == -1:
-        length = secrets.randbelow(10) + 6
-    return "".join(secrets.choice(charset) for x in range(length))
+        length = secrets.choice(range(6, 16))
+    return "".join(secrets.choice(charset) for _ in range(length))
 
 
 def obfuscate_call_home_address(data):
@@ -231,7 +232,7 @@ def get_powerview_psreflect_overhead(script):
     try:
         return strip_powershell_comments(pattern.findall(script)[0])
     except Exception:
-        log.error("Error extracting psreflect overhead from script!")
+        log.exception("Error extracting psreflect overhead from script!")
         return ""
 
 
@@ -316,7 +317,7 @@ def find_all_dependent_functions(
             )
         except Exception:
             functionDependencies = []
-            log.error(
+            log.exception(
                 f"Error in retrieving dependencies for function {requiredFunction} !"
             )
 
@@ -416,7 +417,7 @@ def _generate_dynamic_powershell_script_cached(
         try:
             new_script += functions[function_dependency] + "\n"
         except Exception:
-            log.error(f"Key error with function {function_dependency} !")
+            log.exception(f"Key error with function {function_dependency} !")
 
     # if any psreflect methods are needed, add in the overhead at the end
     if any(el in set(psreflect_functions) for el in function_dependencies):

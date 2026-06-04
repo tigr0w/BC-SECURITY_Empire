@@ -3,6 +3,7 @@ import logging
 import secrets
 import shutil
 import subprocess
+import tempfile
 import typing
 from itertools import cycle
 from pathlib import Path
@@ -828,7 +829,9 @@ class StagerGenerationService:
             if not app_name:
                 app_name = "launcher"
 
-            tmpdir = Path(f"/tmp/application/{app_name}.app")
+            build_root = Path(tempfile.mkdtemp(prefix="empire-launcher-"))
+            app_root = build_root / "application"
+            tmpdir = app_root / f"{app_name}.app"
             shutil.copytree(app_dir, tmpdir)
             macos_dir = tmpdir / "Contents/MacOS"
             with (macos_dir / "launcher").open("wb") as f:
@@ -907,13 +910,12 @@ class StagerGenerationService:
 """
             (tmpdir / "Contents/Info.plist").write_text(appPlist)
 
-            shutil.make_archive("/tmp/launcher", "zip", "/tmp/application")
-            shutil.rmtree("/tmp/application")
-
-            launcher_zip = Path("/tmp/launcher.zip")
-            zipbundle = launcher_zip.read_bytes()
-            launcher_zip.unlink()
-            return zipbundle
+            launcher_base = build_root / "launcher"
+            shutil.make_archive(str(launcher_base), "zip", app_root)
+            try:
+                return launcher_base.with_suffix(".zip").read_bytes()
+            finally:
+                shutil.rmtree(build_root, ignore_errors=True)
 
         log.error("Unable to patch application")
         return None

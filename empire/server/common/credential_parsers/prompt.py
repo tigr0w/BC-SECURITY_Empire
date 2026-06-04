@@ -37,7 +37,7 @@ class PromptParser:
         try:
             user_raw, password_raw = parts[1].split(b":", 1)
         except ValueError:
-            log.error("Error in parsing prompted credential output.")
+            log.exception("Error in parsing prompted credential output.")
             return []
 
         username = user_raw.strip().decode("UTF-8", errors="replace")

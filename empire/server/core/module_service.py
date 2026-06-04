@@ -13,7 +13,11 @@ try:
     from yaml import CSafeDumper as Dumper
     from yaml import CSafeLoader as Loader
 except ImportError:
-    from yaml import Dumper, Loader
+    # Fall back to the pure-Python safe loader/dumper when libyaml is
+    # unavailable. These must stay Safe* variants: module YAML is loaded with
+    # them and the full Loader allows arbitrary object instantiation (S506).
+    from yaml import SafeDumper as Dumper
+    from yaml import SafeLoader as Loader
 
 from packaging.version import parse
 from pydantic import BaseModel
@@ -86,6 +90,37 @@ class ModuleService:
 
     def get_by_id(self, uid: str):
         return self.modules.get(uid)
+
+    def _load_custom_generate_class(self, module: EmpireModule):
+        """
+        Lazily import the .py file referenced by `module.advanced.custom_generate_path`
+        and instantiate its `Module` class. Subsequent calls reuse the cached instance.
+        Import / instantiation errors are re-raised as `ModuleValidationException`
+        so the caller surfaces a specific user-facing message instead of the
+        generic "Error generating script." fallback.
+
+        Intentionally not thread-safe: two concurrent first-execute calls for
+        the same module can both run `exec_module`. Last write wins, both
+        threads get a valid instance. The in-tree custom_generate modules use
+        a `@staticmethod` `generate`, so the duplicate instantiation is benign.
+        """
+        if module.advanced.generate_class is not None:
+            return module.advanced.generate_class
+        path = module.advanced.custom_generate_path
+        spec = importlib.util.spec_from_file_location(f"{module.id}.py", path)
+        if spec is None or spec.loader is None:
+            raise ModuleValidationException(
+                f"custom_generate module {module.id!r}: cannot build import spec for {path}"
+            )
+        try:
+            imp_mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(imp_mod)
+            module.advanced.generate_class = imp_mod.Module()
+        except Exception as e:
+            raise ModuleValidationException(
+                f"custom_generate module {module.id!r}: failed to load {path}: {e}"
+            ) from e
+        return module.advanced.generate_class
 
     def update_module(
         self, db: Session, module: EmpireModule, module_req: ModuleUpdateRequest
@@ -445,7 +480,8 @@ class ModuleService:
                 kwargs = {}
                 if module.language == LanguageEnum.bof:
                     kwargs["agent_language"] = agent_language
-                return module.advanced.generate_class.generate(
+                generate_class = self._load_custom_generate_class(module)
+                return generate_class.generate(
                     self.main_menu,
                     module,
                     params,
@@ -813,10 +849,10 @@ class ModuleService:
                 data=f"{script_file}|,{base64_json}",
                 files=[script_file],
             )
-        except (ModuleValidationException, ModuleExecutionException) as e:
-            raise e
+        except (ModuleValidationException, ModuleExecutionException):
+            raise
         except Exception as e:
-            log.error(f"dotnet compile error: {e}")
+            log.exception("dotnet compile error")
             raise ModuleExecutionException("dotnet compile error") from e
 
     def _create_modified_module(self, module: EmpireModule, modified_input: str):
@@ -855,8 +891,8 @@ class ModuleService:
                 self._load_module(
                     db, yaml_module, root_path, file_path, existing_modules
                 )
-            except Exception as e:
-                log.error(f"Error loading module {filename}: {e}")
+            except Exception:
+                log.exception(f"Error loading module {filename}")
 
     def _load_module(  # noqa: PLR0912
         self,
@@ -938,14 +974,12 @@ class ModuleService:
             my_model = EmpireModule(**yaml_module)
 
         if my_model.advanced.custom_generate:
-            if not file_path.with_suffix(".py").exists():
+            custom_py = file_path.with_suffix(".py")
+            if not custom_py.exists():
                 raise Exception("No File to use for custom generate.")
-            spec = importlib.util.spec_from_file_location(
-                module_name + ".py", file_path.with_suffix(".py")
-            )
-            imp_mod = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(imp_mod)
-            my_model.advanced.generate_class = imp_mod.Module()
+            # Defer the importlib + Module() construction to first execute.
+            # See _load_custom_generate_class below.
+            my_model.advanced.custom_generate_path = str(custom_py)
         elif my_model.script_path:
             script_path = self.module_source_path / my_model.script_path
             if not script_path.exists():
@@ -1038,12 +1072,13 @@ class ModuleService:
             # Use regular/unobfuscated code
             module_path = self.module_source_path / module_name
             module_code = module_path.read_text()
-            return module_code, None
         except Exception:
             return (
                 None,
                 f"[!] Could not read module source path at: {self.module_source_path}",
             )
+        else:
+            return module_code, None
 
     def preobfuscate_modules(self, language: str, reobfuscate=False):
         """
@@ -1117,7 +1152,7 @@ class ModuleService:
         try:
             module_code = module_source.read_text()
         except Exception:
-            log.error(f"Could not read module source path at: {module_source}")
+            log.exception(f"Could not read module source path at: {module_source}")
             return ""
 
         # Get the random function name generated at install and patch the stager with the proper function name
@@ -1135,7 +1170,7 @@ class ModuleService:
             obfuscated_source.parent.mkdir(parents=True, exist_ok=True)
             obfuscated_source.write_text(obfuscated_code)
         except Exception:
-            log.error(
+            log.exception(
                 f"Could not write obfuscated module source path at: {obfuscated_source}"
             )
             return ""

@@ -4,7 +4,6 @@ import logging
 import string
 
 from pyparsing import *
-from six.moves import range
 
 from .implementation import Get, Post, Stager
 from .transaction import MalleableRequest, MalleableResponse

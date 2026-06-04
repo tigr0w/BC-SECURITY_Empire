@@ -18,6 +18,7 @@ from empire.server.api.v2.agent.agent_task_dto import (
     ModulePostRequest,
 )
 from empire.server.api.v2.shared_dto import OrderDirection
+from empire.server.core import protocol_constants as proto
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.models import AgentTaskStatus
@@ -206,11 +207,10 @@ class AgentTaskService:
             with Path(file_location).open("rb") as f:
                 chunk_0 = f.read(chunk_size)
         except OSError as e:
-            log.error(
-                "Failed to read first chunk from %s for agent %s: %s",
+            log.exception(
+                "Failed to read first chunk from %s for agent %s",
                 file_location,
                 agent.session_id,
-                e,
             )
             return None, f"Failed to read upload file: {e}"
         chunk_0_b64 = base64.b64encode(chunk_0).decode("utf-8")
@@ -308,14 +308,13 @@ class AgentTaskService:
             with Path(pending["file_location"]).open("rb") as f:
                 f.seek(offset)
                 raw_bytes = f.read(pending["chunk_size"])
-        except OSError as e:
-            log.error(
-                "Failed to read chunk %d/%d from %s for agent %s: %s",
+        except OSError:
+            log.exception(
+                "Failed to read chunk %d/%d from %s for agent %s",
                 index + 1,
                 total,
                 pending["file_location"],
                 session_id,
-                e,
             )
             self._cancel_upload_if_current(session_id, upload_id)
             return
@@ -657,8 +656,8 @@ class AgentTaskService:
                 data_dict = json.loads(decoded_arguments)
                 base64_data = data_dict.get("base64_bof_data", "")
                 truncated_base64_data = (
-                    base64_data[:15] + "..."
-                    if len(base64_data) > 10  # noqa: PLR2004
+                    base64_data[: proto.BOF_INPUT_LOG_KEPT_CHARS] + "..."
+                    if len(base64_data) > proto.BOF_INPUT_LOG_TRUNCATE_THRESHOLD_CHARS
                     else base64_data
                 )
                 data_dict["base64_bof_data"] = truncated_base64_data

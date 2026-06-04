@@ -58,7 +58,7 @@ class AgentSocksService:
                 self._socksthreads[session_id].start()
                 log.info(f'SOCKS client for "{agent.name}" successfully started')
             except Exception:
-                log.error(f'SOCKS client for "{agent.name}" failed to start')
+                log.exception(f'SOCKS client for "{agent.name}" failed to start')
         else:
             log.info("SOCKS server already exists")
 

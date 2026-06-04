@@ -39,11 +39,11 @@ def ensure_user_ownership(path: Path, user: str | None = None) -> None:
     log.info(f"Fixing ownership of {path} -> {user}:{user}")
     try:
         os.chown(path, uid, gid)
-    except (PermissionError, OSError) as e:
+    except (PermissionError, OSError):
         # Surfacing this matters: if chown fails, the downstream git commands
         # will hit "dubious ownership" again, and callers should know why.
-        log.error(
-            f"ensure_user_ownership: chown on {path} failed ({e}); "
+        log.exception(
+            f"ensure_user_ownership: chown on {path} failed; "
             "downstream git operations may fail with 'dubious ownership'. "
             f"Fix ownership manually (e.g. `sudo chown -R $USER {path}`)."
         )
@@ -98,20 +98,19 @@ def run_as_user(  # noqa: PLR0913
             text=text,
             capture_output=capture_output,
         )
-
+    except subprocess.CalledProcessError as e:
+        log.exception("Failed to execute command")
+        log.info(
+            "Try running the command manually: %s", " ".join([str(c) for c in command])
+        )
+        if e.stdout:
+            log.warning("Command output: %s", e.stdout)
+        if e.stderr:
+            log.warning("Command error output: %s", e.stderr)
+        raise
+    else:
         log.debug("Command executed successfully: %s", " ".join(map(str, command)))
 
         if capture_output:
             return result.stdout.strip()
         return None
-
-    except subprocess.CalledProcessError as e:
-        log.error("Failed to execute command: %s", e, exc_info=True)
-        log.error(
-            "Try running the command manually: %s", " ".join([str(c) for c in command])
-        )
-        if e.stdout:
-            log.error("Command output: %s", e.stdout)
-        if e.stderr:
-            log.error("Command error output: %s", e.stderr)
-        raise

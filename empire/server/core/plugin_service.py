@@ -106,8 +106,8 @@ class PluginService:
             req = PluginExecutePostRequest(options=auto_execute.options)
             try:
                 results = self.execute_plugin(db, plugin, req, None)
-            except (PluginValidationException, PluginExecutionException) as e:
-                log.error(f"Plugin failed to run: {plugin_name}: {e}")
+            except (PluginValidationException, PluginExecutionException):
+                log.exception(f"Plugin failed to run: {plugin_name}")
                 continue
 
             if results is False:
@@ -124,8 +124,8 @@ class PluginService:
         for plugin_dir in self._list_plugin_directories():
             try:
                 plugin_config = self._validate_plugin(plugin_dir)
-            except PluginValidationException as e:
-                log.error(f"Failed to load plugin {plugin_dir.name}: {e}")
+            except PluginValidationException:
+                log.exception(f"Failed to load plugin {plugin_dir.name}")
                 continue
 
             self.load_plugin(db, plugin_dir, plugin_config)
@@ -206,7 +206,8 @@ class PluginService:
                 f"Failed to download plugin: {response.text}"
             )
         with tarfile.open(fileobj=response.raw, mode="r|*") as tar:
-            tar.extractall(path=temp_dir)
+            # filter="data" guards against path traversal in the downloaded plugin archive.
+            tar.extractall(path=temp_dir, filter="data")
         return temp_dir
 
     def install_plugin_from_git(  # noqa: PLR0913
@@ -278,8 +279,8 @@ class PluginService:
 
         try:
             return plugin.execute(cleaned_options, db=db, user=user)
-        except (PluginValidationException, PluginExecutionException) as e:
-            raise e
+        except (PluginValidationException, PluginExecutionException):
+            raise
         except Exception as e:
             log.error(f"Plugin {plugin.info.name} failed to run: {e}", exc_info=True)
             raise PluginExecutionException(str(e)) from e

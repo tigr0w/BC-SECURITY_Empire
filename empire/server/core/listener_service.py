@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from empire.server.core import protocol_constants as proto
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import ListenerValidationException
@@ -184,7 +185,7 @@ class ListenerService:
             success = template_instance.start()
         except Exception as e:
             msg = f"Failed to start listener '{name}': {e}"
-            log.error(msg)
+            log.exception(msg)
             return None, msg
 
         return self._finish_create(
@@ -318,10 +319,10 @@ class ListenerService:
                 if not value:
                     msg = "StagingKey cannot be empty"
                     raise ValueError(msg)
-                if len(value) != 32:  # noqa: PLR2004
+                if len(value) != proto.STAGING_KEY_LENGTH:
                     staging_key_hash = hashlib.sha256(
                         value.encode("UTF-8")
-                    ).hexdigest()[:32]
+                    ).hexdigest()[: proto.STAGING_KEY_LENGTH]
                     log.warning(
                         "Staging key is %d characters (expected 32), deriving key.",
                         len(value),

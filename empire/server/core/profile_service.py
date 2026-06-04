@@ -28,6 +28,11 @@ class ProfileService:
         malleable_path = self.main_menu.install_path / "data/profiles"
         log.info(f"v2: Loading malleable profiles from: {malleable_path}")
 
+        # Pre-load existing profile names once instead of issuing a
+        # SELECT per file (mirrors module_service.load_modules).
+        db_existing_names = set(db.scalars(select(models.Profile.name)).all())
+        added_in_loop: dict[str, str] = {}
+
         for file_path in malleable_path.rglob("*.profile"):
             filename = file_path.name
 
@@ -39,22 +44,28 @@ class ProfileService:
             profile_category = malleable_split[0]
             profile_name = malleable_split[1]
 
-            # Check if module is in database and load new profiles
-            profile = db.scalars(
-                select(models.Profile).where(models.Profile.name == profile_name)
-            ).first()
-            if not profile:
-                log.debug(f"Adding malleable profile: {profile_name}")
-
-                profile_data = file_path.read_text()
-                db.add(
-                    models.Profile(
-                        file_path=str(file_path),
-                        name=profile_name,
-                        category=profile_category,
-                        data=profile_data,
-                    )
+            if profile_name in db_existing_names:
+                continue
+            if profile_name in added_in_loop:
+                log.warning(
+                    "Duplicate malleable profile name %r at %s; keeping first occurrence at %s",
+                    profile_name,
+                    file_path,
+                    added_in_loop[profile_name],
                 )
+                continue
+
+            log.debug(f"Adding malleable profile: {profile_name}")
+            profile_data = file_path.read_text()
+            db.add(
+                models.Profile(
+                    file_path=str(file_path),
+                    name=profile_name,
+                    category=profile_category,
+                    data=profile_data,
+                )
+            )
+            added_in_loop[profile_name] = str(file_path)
 
     @staticmethod
     def get_all(db: Session):

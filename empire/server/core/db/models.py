@@ -13,6 +13,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
     Integer,
     Sequence,
     String,
@@ -31,12 +32,12 @@ from sqlalchemy.orm import (
     mapped_column,
     relationship,
 )
-from sqlalchemy_utc import UtcDateTime, utcnow
 
 from empire.server.core.config.config_manager import (
     PluginAutoExecuteConfig,
     empire_config,
 )
+from empire.server.core.db.utc_datetime import UtcDateTime, utcnow
 from empire.server.core.module_models import EmpireAuthor
 from empire.server.utils.datetime_util import is_stale
 
@@ -199,7 +200,9 @@ class PluginInfo(BaseModel):
 class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Sequence("user_id_seq"), primary_key=True)
-    username: Mapped[str] = mapped_column(String(255))
+    # Indexed for the per-request login lookup in jwt_auth.get_user
+    # and user_service.get_by_name.
+    username: Mapped[str] = mapped_column(String(255), index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
     api_token: Mapped[str | None] = mapped_column(String(50))
     enabled: Mapped[bool]
@@ -276,6 +279,9 @@ class AgentCheckIn(Base):
 
 class Agent(Base):
     __tablename__ = "agents"
+    # Covers AgentService.get_for_listener (listener + archived filter,
+    # called on every per-listener active-agents fetch).
+    __table_args__ = (Index("ix_agents_listener_archived", "listener", "archived"),)
     session_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     name: Mapped[str] = mapped_column(String(255))
     host_id: Mapped[int | None] = mapped_column(ForeignKey("hosts.id"))
@@ -375,12 +381,16 @@ class Agent(Base):
 class AgentFile(Base):
     __tablename__ = "agent_files"
     id: Mapped[int] = mapped_column(primary_key=True)
-    session_id: Mapped[str | None] = mapped_column(String(50))
+    # Indexed for AgentFileService / AgentCommunicationService lookups
+    # by agent session_id (file-tree navigation + download wiring).
+    session_id: Mapped[str | None] = mapped_column(String(50), index=True)
     name: Mapped[str] = mapped_column(Text)
     path: Mapped[str] = mapped_column(Text)
     is_file: Mapped[bool]
+    # Indexed for the parent_id == ? child-listing filter in
+    # agent_file_service / agent_communication_service.
     parent_id: Mapped[int | None] = mapped_column(
-        ForeignKey("agent_files.id", ondelete="CASCADE")
+        ForeignKey("agent_files.id", ondelete="CASCADE"), index=True
     )
     downloads: Mapped[list["Download"]] = relationship(
         secondary=agent_file_download_assc

@@ -103,6 +103,7 @@ def get_staging_key():
 
     if not staging_key:
         log.info("Generating random staging key")
+        # Staging key is agent<->server crypto material, so use a CSPRNG.
         return "".join(secrets.choice(valid_chars) for _ in range(expected_length))
 
     log.info("Using preset staging key")

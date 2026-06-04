@@ -48,9 +48,10 @@ def _validate_host(host, field_name: str) -> str:
         candidate = candidate[1:-1]
     try:
         ipaddress.ip_address(candidate)
-        return host
     except ValueError:
         pass
+    else:
+        return host
     if len(host) > 253:
         raise ValueError(f"{field_name}: hostname too long ({len(host)} > 253)")
     labels = host.split(".")
@@ -773,8 +774,8 @@ class Listener:
                     connect_host = _validate_host(connect_host, "Host")
                     listen_port = _validate_port(listen_port, "ListenPort")
                     connect_port = _validate_port(connect_port, "Port")
-                except ValueError as ve:
-                    log.error(f"{listenerName}: invalid listener config: {ve}")
+                except ValueError:
+                    log.exception(f"{listenerName}: invalid listener config")
                     return False
                 language = agent.language.lower()
 

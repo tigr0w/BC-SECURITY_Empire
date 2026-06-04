@@ -19,10 +19,11 @@ from cryptography.hazmat.primitives.ciphers.aead import (
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
+from empire.server.core import protocol_constants as proto
+
 log = logging.getLogger(__name__)
 
 random_function = ssl.RAND_bytes
-random_provider = "Python SSL"
 ct_compare_digest = hmac.compare_digest
 
 
@@ -78,7 +79,7 @@ class AESCipher:
     @staticmethod
     def decrypt(key, data):
         """Decrypt IV+ciphertext (CBC) and depad."""
-        if len(data) > 16:  # noqa: PLR2004
+        if len(data) > proto.AES_IV_SIZE:
             IV = data[0:16]
             cipher = Cipher(algorithms.AES(key), modes.CBC(IV))
             decryptor = cipher.decryptor()
@@ -207,7 +208,7 @@ class DiffieHellman:
         Since a safe prime is used, verify that the Legendre symbol == 1
         """
         return bool(
-            otherKey > 2  # noqa: PLR2004
+            otherKey > proto.DH_MIN_VALID_PUBLIC_KEY
             and otherKey < self.prime - 1
             and pow(otherKey, (self.prime - 1) // 2, self.prime) == 1
         )
@@ -340,6 +341,7 @@ def checkvalid(s: bytes, m: bytes, pk: bytes) -> bool:
     """
     try:
         _Ed25519PublicKey.from_public_bytes(bytes(pk)).verify(bytes(s), bytes(m))
-        return True
     except Exception:
         return False
+    else:
+        return True
