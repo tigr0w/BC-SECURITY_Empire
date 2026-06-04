@@ -7,8 +7,9 @@ Revises: 0002
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-import sqlalchemy_utc
 from alembic import op
+
+from empire.server.core.db.utc_datetime import UtcDateTime, utcnow
 
 revision: str = "0003"
 down_revision: str | None = "0002"
@@ -28,8 +29,8 @@ def upgrade() -> None:
             sa.Column("message", sa.Text, nullable=False),
             sa.Column(
                 "created_at",
-                sqlalchemy_utc.UtcDateTime(),
-                server_default=sqlalchemy_utc.utcnow(),
+                UtcDateTime(),
+                server_default=utcnow(),
                 nullable=False,
             ),
         )

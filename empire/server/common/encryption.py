@@ -96,7 +96,13 @@ class AESCipher:
             mac = data[-16:]
             data_ = data[:-16]
             expected = hmac.new(key, data_, digestmod=hashlib.sha256).digest()[0:16]
-            return ct_compare_digest(expected, mac)
+            # Double-HMAC blinding: compare HMACs of both values rather than the
+            # raw tags, so the equality check leaks nothing through timing even if
+            # the underlying compare isn't perfectly constant-time.
+            return ct_compare_digest(
+                hmac.new(key, expected, digestmod=hashlib.sha256).digest(),
+                hmac.new(key, mac, digestmod=hashlib.sha256).digest(),
+            )
         return False
 
     @staticmethod

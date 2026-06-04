@@ -6,12 +6,13 @@ import sys
 import tarfile
 import tempfile
 import typing
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 import requests
 import yaml
 from pydantic import BaseModel, ConfigDict
-from requests_file import FileAdapter
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_200_OK
@@ -38,9 +39,6 @@ if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
-
-s = requests.Session()
-s.mount("file://", FileAdapter())
 
 
 class PluginHolder(BaseModel):
@@ -196,17 +194,38 @@ class PluginService:
         self.load_plugin(db, plugin_dir, plugin_config, version_name)
 
     def _download_tar(self, tar_url):
-        """Download and extract a tar archive. Returns the temp directory."""
+        """Download and extract a tar archive. Returns the temp directory.
+
+        Supports ``file://`` URIs (for local-path plugin installs) directly via
+        the stdlib instead of mounting a third-party ``requests`` adapter.
+        """
         temp_dir = (
             Path(tempfile.gettempdir()) / Path(tar_url.rsplit("/", maxsplit=1)[-1]).stem
         )
-        response = s.get(tar_url, stream=True)
+        parsed = urllib.parse.urlparse(tar_url)
+        if parsed.scheme == "file":
+            try:
+                with (
+                    Path(urllib.request.url2pathname(parsed.path)).open(
+                        "rb"
+                    ) as fileobj,
+                    tarfile.open(fileobj=fileobj, mode="r|*") as tar,
+                ):
+                    # filter="data" guards against path traversal in the plugin archive.
+                    tar.extractall(path=temp_dir, filter="data")
+            except OSError as e:
+                raise PluginValidationException(
+                    f"Failed to download plugin: {e}"
+                ) from e
+            return temp_dir
+
+        response = requests.get(tar_url, stream=True, timeout=30)
         if response.status_code != HTTP_200_OK:
             raise PluginValidationException(
                 f"Failed to download plugin: {response.text}"
             )
         with tarfile.open(fileobj=response.raw, mode="r|*") as tar:
-            # filter="data" guards against path traversal in the downloaded plugin archive.
+            # filter="data" guards against path traversal in the plugin archive.
             tar.extractall(path=temp_dir, filter="data")
         return temp_dir
 
