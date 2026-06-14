@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added `InjectSelf` option to `bof/management/inject_amsi_bypass` and `bof/management/inject_etw_bypass` modules. When `true` (default), the server automatically resolves the agent's own PID and injects the bypass into the current process — no manual PID entry required. Set to `false` to target a specific remote PID as before.
 -   Added addmachineaccount BOF module (lateral_movement) — fixes #1432.
 -   Added `nonpaged_ldapsearch` BOF module (`bof/situational_awareness/nonpaged_ldapsearch`) wrapping the TrustedSec nonpagedldapsearch BOF. Performs synchronous non-paged LDAP queries via `ldap_search_s` against a domain controller — useful when standard paged LDAP queries are throttled or restricted. Refreshed in-repo `.o` files (x64/x86) to current upstream build.
 -   `./ps-empire update` now applies pending Alembic migrations as part of the upgrade flow (prompts to back up first, `-y` to auto-confirm), so a schema mismatch no longer crashes the server on next start. Idempotent; backup failure warns but still migrates.

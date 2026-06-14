@@ -50,6 +50,7 @@ def module_service(main_menu_mock):
 def agent_mock():
     agent_mock = Mock()
     agent_mock.session_id = "ABC123"
+    agent_mock.process_id = None
     return agent_mock
 
 

@@ -19,10 +19,23 @@ min_language_version: ''
 comments:
   - https://github.com/sliverarmory/injectAmsiBypass
 options:
+  - name: InjectSelf
+    description: Inject the AMSI bypass into the agent's own process. Set to False
+      to target a specific remote PID.
+    required: true
+    value: true
+    strict: true
+    suggested_values:
+      - true
+      - false
   - name: Pid
     description: Process ID of the remote process to inject the AMSI bypass into.
+      Only used when InjectSelf is False.
     required: true
     value: ''
+    depends_on:
+      - name: InjectSelf
+        values: ['False']
 bof:
   x86: ''
   x64: bof/injectAmsiBypass/inject-amsiBypass.x64.o

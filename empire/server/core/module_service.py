@@ -61,6 +61,13 @@ if typing.TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+# BOF modules where InjectSelf=True resolves Pid to the agent's own process ID.
+# Credential BOFs (handlekatz, credman) also have a Pid option but target a
+# different process (LSASS, token donor) — they must never appear here.
+_SELF_INJECT_PID_MODULES = frozenset(
+    {"bof_management_inject_amsi_bypass", "bof_management_inject_etw_bypass"}
+)
+
 
 class ModuleExecutionRequest(BaseModel):
     command: str
@@ -415,6 +422,21 @@ class ModuleService:
 
         if err:
             return None, err
+
+        # When InjectSelf is enabled, resolve Pid to the agent's own process ID.
+        # Done after validate_options so the value lands in the output options dict
+        # regardless of the depends_on gate that hides Pid in the UI.
+        if (
+            module.id in _SELF_INJECT_PID_MODULES
+            and str(options.get("InjectSelf", "True")).lower() == "true"
+        ):
+            if agent.process_id is None:
+                return (
+                    None,
+                    "InjectSelf is enabled but the agent has not reported its process ID yet. "
+                    "Wait for the agent to check in, or set InjectSelf to False and supply a Pid manually.",
+                )
+            options["Pid"] = str(agent.process_id)
 
         if not ignore_language_version_check and module.language == agent.language:
             module_version = parse(module.min_language_version or "0")
