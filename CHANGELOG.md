@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added sprayad BOF module (credentials) — fixes #1436.
 -   Added `findLoadedModule` BOF module (`bof/situational_awareness/findLoadedModule`) wrapping the TrustedSec findLoadedModule BOF. Enumerates processes that have a given module (DLL substring) loaded — useful for locating clean injection targets (e.g. processes loading `clr.dll`) and fingerprinting EDR by injected DLLs. Optionally scoped to a process-name substring — fixes #1368.
 -   Added `vssenum` BOF module (`bof/situational_awareness/vssenum`) wrapping the TrustedSec vssenum BOF. Enumerates Volume Shadow Copies exposed on a host's SMB share via `FSCTL_SRV_ENUMERATE_SNAPSHOTS` — useful for locating shadow copies holding offline SAM/SYSTEM/NTDS hives for later credential extraction — fixes #1367.
 -   Added `InjectSelf` option to `bof/management/inject_amsi_bypass` and `bof/management/inject_etw_bypass` modules. When `true` (default), the server automatically resolves the agent's own PID and injects the bypass into the current process — no manual PID entry required. Set to `false` to target a specific remote PID as before.
