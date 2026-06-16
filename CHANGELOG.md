@@ -27,6 +27,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added `netuse_add`, `netuse_list`, and `netuse_delete` BOF modules (`bof/situational_awareness/netuse_*`) wrapping the three operation modes (CMD_ADD/CMD_LIST/CMD_DELETE) of the TrustedSec netuse BOF. Splits a single complex BOF into three focused modules: add maps a share via WNetAddConnection2, list enumerates connections via WNetEnumResource, delete disconnects via WNetCancelConnection2 — closes #1369.
+-   Added `sc_enum` BOF module (`bof/situational_awareness/sc_enum`) wrapping the TrustedSec sc_enum BOF. Bulk-enumerates all services on a local or remote host via SCM, returning configuration, query, failure, and trigger data in one call — fixes #1362.
+-   Added `sc_qc` BOF module (`bof/situational_awareness/sc_qc`) wrapping the TrustedSec sc_qc BOF. Queries the configuration of a named Windows service (binary path, start type, account, dependencies) via SCM without touching disk — fixes #1363.
+-   Added `sc_qdescription` BOF module (`bof/situational_awareness/sc_qdescription`) wrapping the TrustedSec sc_qdescription BOF. Queries the human-readable description of a named Windows service via SCM — fixes #1364.
+-   Added `sc_qfailure` BOF module (`bof/situational_awareness/sc_qfailure`) wrapping the TrustedSec sc_qfailure BOF. Queries the failure actions (restart, run command, reboot) configured for a named Windows service via SCM — fixes #1365.
+-   Added `sc_qtriggerinfo` BOF module (`bof/situational_awareness/sc_qtriggerinfo`) wrapping the TrustedSec sc_qtriggerinfo BOF. Queries the trigger events (device events, network events) that automatically start or stop a named Windows service — fixes #1366.
+-   Added `netuserenum` BOF module (`bof/situational_awareness/netuserenum`) wrapping the TrustedSec netuserenum BOF. Enumerates all user accounts on the local system or domain via `NetUserEnum` with configurable filter — fixes #1370.
+-   Added `nslookup` BOF module (`bof/situational_awareness/nslookup`) wrapping the TrustedSec nslookup BOF. Performs DNS lookups via the Windows DNS client API with optional custom DNS server and record type selection — fixes #1371.
+-   Added `notepad` BOF module (`bof/situational_awareness/notepad`) enumerating open Notepad and Notepad++ windows and extracting the displayed file path or in-memory text — fixes #1372.
 -   Added sprayad BOF module (credentials) — fixes #1436.
 -   Added `findLoadedModule` BOF module (`bof/situational_awareness/findLoadedModule`) wrapping the TrustedSec findLoadedModule BOF. Enumerates processes that have a given module (DLL substring) loaded — useful for locating clean injection targets (e.g. processes loading `clr.dll`) and fingerprinting EDR by injected DLLs. Optionally scoped to a process-name substring — fixes #1368.
 -   Added `vssenum` BOF module (`bof/situational_awareness/vssenum`) wrapping the TrustedSec vssenum BOF. Enumerates Volume Shadow Copies exposed on a host's SMB share via `FSCTL_SRV_ENUMERATE_SNAPSHOTS` — useful for locating shadow copies holding offline SAM/SYSTEM/NTDS hives for later credential extraction — fixes #1367.

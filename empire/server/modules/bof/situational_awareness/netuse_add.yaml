@@ -1,0 +1,72 @@
+name: netuse_add
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: Maps a remote network share (UNC path) to an optional local drive letter
+  via WNetAddConnection2. Supports optional credentials and persistent/private-connection
+  flags. Useful for accessing remote shares in-beacon without spawning net.exe.
+software: ''
+tactics: [TA0008]
+techniques: [T1021.002]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/trustedsec/CS-Situational-Awareness-BOF
+options:
+  - name: Architecture
+    description: Architecture of the beacon_funcs.o to generate with (x64 or x86).
+    required: true
+    value: x64
+    strict: true
+    suggested_values:
+      - x64
+      - x86
+  - name: SharePath
+    description: UNC path of the remote share to connect to (e.g. \\server\share).
+    required: true
+    value: ''
+  - name: Username
+    description: Username for authentication. Leave blank to use current token credentials.
+    required: false
+    value: ''
+  - name: Password
+    description: Password for authentication. Leave blank to use current token credentials.
+    required: false
+    value: ''
+  - name: DeviceName
+    description: Local drive letter to map the share to (e.g. Z:). Leave blank for
+      a connection with no drive letter.
+    required: false
+    value: ''
+  - name: Persist
+    description: Make the connection persistent across logons. False for a session-only
+      connection.
+    required: true
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+  - name: RequirePrivacy
+    description: Require encryption on the connection (CONNECT_REQUIRE_PRIVACY).
+      False allows an unencrypted connection.
+    required: true
+    value: false
+    strict: true
+    suggested_values:
+      - true
+      - false
+bof:
+  x86: bof/situational_awareness/netuse/netuse.x86.o
+  x64: bof/situational_awareness/netuse/netuse.x64.o
+  entry_point: ''
+  format_string: sZZZZss
+script_path: ''
+script_end: ''
+advanced:
+  custom_generate: true
