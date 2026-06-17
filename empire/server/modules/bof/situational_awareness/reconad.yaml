@@ -1,0 +1,76 @@
+name: reconad
+authors:
+  - name: Cornelis de Plaa
+    handle: '@Cneelis'
+    link: https://github.com/outflanknl/C2-Tool-Collection
+  - name: BC Security
+description: |
+  Beacon Object File (BOF) that performs ADSI-based Active Directory reconnaissance
+  from within the beacon using LDAP or the Global Catalog. Set Objects to 'users',
+  'groups', or 'computers' to target a specific class, or leave blank to query all
+  types. Filter narrows by sAMAccountName (use '*' for all). Attributes is a
+  comma-separated list of LDAP attributes to return; leave blank for defaults.
+  MaxResults limits output (0 = no limit). Set UseGC to 1 to query the Global
+  Catalog on port 3268 for cross-domain enumeration. Server pins the query to a
+  specific domain controller; leave blank to auto-resolve.
+software: ''
+tactics: [TA0007]
+techniques: [T1087.002]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/outflanknl/C2-Tool-Collection
+  - 'Pinned SHA: e371a38c717edaf1650923575ab33bee0dd3e0ee'
+options:
+  - name: Architecture
+    description: Architecture of the beacon_funcs.o to generate with (x64 or x86).
+    required: true
+    value: x64
+    strict: true
+    suggested_values:
+      - x64
+      - x86
+  - name: Objects
+    description: Object type to enumerate. One of 'users', 'groups', 'computers',
+      or blank to query all types.
+    required: false
+    value: 'users'
+  - name: Filter
+    description: Filter value matched against sAMAccountName. Use '*' for all objects
+      of the specified type.
+    required: false
+    value: '*'
+  - name: Attributes
+    description: Comma-separated list of LDAP attributes to return. Leave blank for
+      the default attribute set for the selected object type.
+    required: false
+    value: ''
+  - name: MaxResults
+    description: Maximum number of results to return. Set to 0 to return all results.
+    required: true
+    value: '100'
+  - name: UseGC
+    description: Query the Global Catalog on port 3268 for cross-domain enumeration
+      (1), or use standard LDAP (0).
+    required: true
+    value: '0'
+    strict: true
+    suggested_values:
+      - '0'
+      - '1'
+  - name: Server
+    description: Domain controller or LDAP server to query. Leave blank to auto-resolve
+      from the current domain context.
+    required: false
+    value: ''
+bof:
+  x86: bof/situational_awareness/reconad/reconad.x86.o
+  x64: bof/situational_awareness/reconad/reconad.x64.o
+  entry_point: ''
+  format_string: 'ZZZiiZ'
+script_path: ''
+script_end: ''

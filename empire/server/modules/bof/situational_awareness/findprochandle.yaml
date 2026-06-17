@@ -1,0 +1,47 @@
+name: findprochandle
+authors:
+  - name: Cornelis de Plaa
+    handle: '@Cneelis'
+    link: https://github.com/outflanknl/C2-Tool-Collection
+  - name: BC Security
+description: |
+  Beacon Object File (BOF) that enumerates system handles across all running
+  processes to find which processes hold a handle to a named object (file, key,
+  event, mutex, etc.). Enables SeDebugPrivilege to access all processes. Useful for
+  identifying which process holds an exclusive lock on a file, or locating processes
+  with handles open to specific protected resources such as lsass.exe.
+  Compiled from FindProcHandle.c in the Outflank FindObjects directory.
+software: ''
+tactics: [TA0007]
+techniques: [T1057]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/outflanknl/C2-Tool-Collection
+  - 'Pinned SHA: e371a38c717edaf1650923575ab33bee0dd3e0ee'
+  - 'Source file: BOF/FindObjects/SOURCE/FindProcHandle.c'
+options:
+  - name: Architecture
+    description: Architecture of the beacon_funcs.o to generate with (x64 or x86).
+    required: true
+    value: x64
+    strict: true
+    suggested_values:
+      - x64
+      - x86
+  - name: HandleName
+    description: Name of the object to search for across all process handles, e.g.
+      lsass.exe or \Device\HarddiskVolume1.
+    required: true
+    value: ''
+bof:
+  x86: bof/situational_awareness/findprochandle/findprochandle.x86.o
+  x64: bof/situational_awareness/findprochandle/findprochandle.x64.o
+  entry_point: ''
+  format_string: 'Z'
+script_path: ''
+script_end: ''

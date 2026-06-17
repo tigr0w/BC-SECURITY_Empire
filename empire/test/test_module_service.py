@@ -1520,3 +1520,118 @@ def test_load_custom_generate_class_wraps_import_error(module_service, tmp_path)
     with pytest.raises(ModuleValidationException, match="failed to load") as excinfo:
         module_service._load_custom_generate_class(mod)
     assert isinstance(excinfo.value.__cause__, RuntimeError)
+
+
+def test_execute_module_bof_startwebclient(module_service, agent_mock):
+    """StartWebClient BOF: arg-less lateral_movement module triggers WebClient service."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+    }
+    module_id = "bof_management_startwebclient"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof_domaininfo(module_service, agent_mock):
+    """Domaininfo BOF: arg-less situational_awareness module enumerates domain membership."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+    }
+    module_id = "bof_situational_awareness_domaininfo"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof_smbinfo(module_service, agent_mock):
+    """Smbinfo BOF: single-arg situational_awareness module queries SMB host info."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "Computername": ".",
+    }
+    module_id = "bof_situational_awareness_smbinfo"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof_lapsdump(module_service, agent_mock):
+    """Lapsdump BOF: credentials module reads LAPS passwords from AD via LDAP."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "Computername": "*",
+    }
+    module_id = "bof_credentials_lapsdump"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof_findmodule(module_service, agent_mock):
+    """FindModule BOF: enumerates processes with a given DLL loaded."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "ModuleName": "amsi.dll",
+    }
+    module_id = "bof_situational_awareness_findmodule"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof_findprochandle(module_service, agent_mock):
+    """FindProcHandle BOF: finds which processes hold a handle to a named object."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "HandleName": "lsass.exe",
+    }
+    module_id = "bof_situational_awareness_findprochandle"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof_reconad(module_service, agent_mock):
+    """ReconAD BOF: six-arg ADSI AD enumeration; verifies ZZZiiZ format_string packing."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "Objects": "users",
+        "Filter": "*",
+        "Attributes": "",
+        "MaxResults": "100",
+        "UseGC": "0",
+        "Server": "",
+    }
+    module_id = "bof_situational_awareness_reconad"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
