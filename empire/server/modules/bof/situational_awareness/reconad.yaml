@@ -3,7 +3,6 @@ authors:
   - name: Cornelis de Plaa
     handle: '@Cneelis'
     link: https://github.com/outflanknl/C2-Tool-Collection
-  - name: BC Security
 description: |
   Beacon Object File (BOF) that performs ADSI-based Active Directory reconnaissance
   from within the beacon using LDAP or the Global Catalog. Set Objects to 'users',
@@ -24,7 +23,6 @@ language: bof
 min_language_version: ''
 comments:
   - https://github.com/outflanknl/C2-Tool-Collection
-  - 'Pinned SHA: e371a38c717edaf1650923575ab33bee0dd3e0ee'
 options:
   - name: Architecture
     description: Architecture of the beacon_funcs.o to generate with (x64 or x86).

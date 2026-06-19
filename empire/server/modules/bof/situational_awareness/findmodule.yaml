@@ -3,7 +3,6 @@ authors:
   - name: Cornelis de Plaa
     handle: '@Cneelis'
     link: https://github.com/outflanknl/C2-Tool-Collection
-  - name: BC Security
 description: |
   Beacon Object File (BOF) that enumerates all running processes and reports which
   ones have a specified module (DLL) loaded. Enables SeDebugPrivilege to access all
@@ -23,7 +22,6 @@ language: bof
 min_language_version: ''
 comments:
   - https://github.com/outflanknl/C2-Tool-Collection
-  - 'Pinned SHA: e371a38c717edaf1650923575ab33bee0dd3e0ee'
   - 'Source file: BOF/FindObjects/SOURCE/FindModule.c'
 options:
   - name: Architecture

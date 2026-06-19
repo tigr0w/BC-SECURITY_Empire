@@ -103,6 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+-   Fixed `bof/management/static_syscalls_inject` and `bof/management/syscalls_shellcode_injection` reporting "Shellcode injection completed successfully!" but never delivering an agent callback. Root cause: `BeaconDataLength()` returns `4+N` (includes the Packer length-prefix), so the BOF passed a shellcode size that was 4 bytes too large to `NtAllocateVirtualMemory`, which then wrote the page-rounded value back in-place; `NtWriteVirtualMemory` used that rounded value (e.g. 4095) as its byte count against a buffer of only `N` bytes. The fix pads the shellcode to `4096k − 5` bytes so `shellcode_size + 1` is already page-aligned, preventing the round-up clobber and capping the overread at 4 bytes (safely within the same heap object).
 -   Fixed agent listener name not updating in the database on rename, causing Starkiller to show the old name.
 -   Fixed the csharp/ironpython/go EXE-oneliner stagers silently dropping the operator's `Bypasses` selection; the PowerShell downloader they emit now prepends the selected PowerShell bypasses.
 -   Fixed `windows/launcher_bat` ignoring the operator's `Bypasses` for PowerShell payloads on non-HTTP listeners, and silently emitting a do-nothing `.bat` for csharp/ironpython/go on non-HTTP listeners; bypasses now apply and unsupported language/listener combinations raise `StagerGenerationException`.

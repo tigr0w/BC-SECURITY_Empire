@@ -1,0 +1,53 @@
+name: static_syscalls_apc_spawn
+authors:
+  - name: ajpc500
+    handle: '@ajpc500'
+    link: https://github.com/ajpc500/BOFs
+description: |
+  Beacon Object File (BOF) that spawns a temporary process and injects shellcode
+  via APC queue using static syscall numbers (SysWhispers2 hardcoded SSNs:
+  NtCreateSection -> NtMapViewOfSection -> NtQueueApcThread -> NtResumeThread).
+  Uses BeaconSpawnTemporaryProcess internally — the spawn target is not
+  operator-configurable. Generates Empire agent shellcode from the specified
+  listener. x64 only.
+software: ''
+tactics: [TA0005]
+techniques: [T1055.004]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: false
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/ajpc500/BOFs
+options:
+  - name: Listener
+    description: Empire listener to generate shellcode for.
+    required: true
+    value: ''
+  - name: Language
+    description: Language of the agent shellcode to generate.
+    required: true
+    value: powershell
+    strict: true
+    suggested_values:
+      - powershell
+      - csharp
+      - ironpython
+  - name: Architecture
+    description: Architecture of the BOF to use (x64 only).
+    required: true
+    value: x64
+    strict: true
+    suggested_values:
+      - x64
+bof:
+  x86: ''
+  x64: bof/management/static_syscalls_apc_spawn/syscallsapcspawn.x64.o
+  entry_point: ''
+  format_string: 'b'
+script_path: ''
+script_end: ''
+advanced:
+  custom_generate: true

@@ -3,7 +3,6 @@ authors:
   - name: Cornelis de Plaa
     handle: '@Cneelis'
     link: https://github.com/outflanknl/C2-Tool-Collection
-  - name: BC Security
 description: |
   Beacon Object File (BOF) that enumerates system handles across all running
   processes to find which processes hold a handle to a named object (file, key,
@@ -22,7 +21,6 @@ language: bof
 min_language_version: ''
 comments:
   - https://github.com/outflanknl/C2-Tool-Collection
-  - 'Pinned SHA: e371a38c717edaf1650923575ab33bee0dd3e0ee'
   - 'Source file: BOF/FindObjects/SOURCE/FindProcHandle.c'
 options:
   - name: Architecture
