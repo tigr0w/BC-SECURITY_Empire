@@ -103,10 +103,15 @@ class TestAESGCMInterop:
     def _load_agent_aesgcm():
         """Load the pure-Python AES256GCM from the agent stager code."""
         ns = {}
-        stager_common = pathlib.Path("empire/server/data/agent/stagers/common")
-        exec(compile((stager_common / "aes.py").read_text(), "aes.py", "exec"), ns)
+        stager_common = pathlib.Path("empire/server/listeners/common")
         exec(
-            compile((stager_common / "aesgcm.py").read_text(), "aesgcm.py", "exec"), ns
+            compile((stager_common / "aes.py.j2").read_text(), "aes.py.j2", "exec"), ns
+        )
+        exec(
+            compile(
+                (stager_common / "aesgcm.py.j2").read_text(), "aesgcm.py.j2", "exec"
+            ),
+            ns,
         )
         return ns["AES256GCM"]
 
@@ -287,8 +292,10 @@ class TestHMACInterop:
     def _load_agent_aes():
         """Load the pure-Python AES functions from the agent stager code."""
         ns = {}
-        stager_common = pathlib.Path("empire/server/data/agent/stagers/common")
-        exec(compile((stager_common / "aes.py").read_text(), "aes.py", "exec"), ns)
+        stager_common = pathlib.Path("empire/server/listeners/common")
+        exec(
+            compile((stager_common / "aes.py.j2").read_text(), "aes.py.j2", "exec"), ns
+        )
         return ns
 
     def test_server_encrypt_agent_decrypt(self):
@@ -368,11 +375,11 @@ class TestDiffieHellmanInterop:
     @staticmethod
     def _load_agent_dh():
         ns = {}
-        stager_common = pathlib.Path("empire/server/data/agent/stagers/common")
+        stager_common = pathlib.Path("empire/server/listeners/common")
         exec(
             compile(
-                (stager_common / "diffiehellman.py").read_text(),
-                "diffiehellman.py",
+                (stager_common / "diffiehellman.py.j2").read_text(),
+                "diffiehellman.py.j2",
                 "exec",
             ),
             ns,

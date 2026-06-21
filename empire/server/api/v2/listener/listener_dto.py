@@ -41,7 +41,6 @@ def domain_to_dto_template(listener, uid: str):
         name=listener.info.get("Name"),
         authors=authors,
         description=listener.info.get("Description"),
-        category=listener.info.get("Category"),
         comments=listener.info.get("Comments"),
         software=listener.info.get("Software"),
         techniques=listener.info.get("Techniques"),
@@ -70,7 +69,6 @@ class ListenerTemplate(BaseModel):
     name: str
     authors: list[Author]
     description: str
-    category: str
     comments: list[str]
     tactics: list[str]
     techniques: list[str]
@@ -89,7 +87,6 @@ class ListenerTemplate(BaseModel):
                     }
                 ],
                 "description": "Starts a http[s] listener that uses a GET/POST approach.",
-                "category": "client_server",
                 "comments": [],
                 "tactics": [],
                 "techniques": [],

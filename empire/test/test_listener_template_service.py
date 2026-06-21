@@ -27,7 +27,6 @@ class _StubListener:
             "Name": name,
             "Authors": [],
             "Description": "test",
-            "Category": "third_party",
             "Comments": [],
             "Software": "",
             "Techniques": [],
@@ -124,3 +123,30 @@ class TestUnregisterListenerTemplate:
         listener = _StubListener(service.main_menu, name="HTTP")
         with pytest.raises(ValueError, match="already registered"):
             service.register_listener_template(listener)
+
+
+class TestConstructFreshInstance:
+    def test_new_instance_populates_options_for_yaml_listener(self, service):
+        # http is a known in-tree listener; after migration it is YAML-backed.
+        # Pre-migration it is flat .py. Either way, new_instance must return an
+        # instance whose options are populated (regression guard for the
+        # empty-options critical).
+        instance = service.new_instance("http")
+        assert "Name" in instance.options
+        assert "Host" in instance.options
+        for opt in instance.options.values():
+            assert "SuggestedValues" in opt
+            assert "Strict" in opt
+
+    def test_new_instance_returns_distinct_instances(self, service):
+        a = service.new_instance("http")
+        b = service.new_instance("http")
+        assert a is not b
+
+
+class TestReservedDirsSkipped:
+    def test_template_dir_is_skipped(self, service):
+        # ``listeners/template/`` is a documentation example, not a usable
+        # listener. The loader skips it by reserved-name, so it must never be
+        # registered.
+        assert service.get_listener_template("template") is None

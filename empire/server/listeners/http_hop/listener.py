@@ -16,73 +16,10 @@ log = logging.getLogger(__name__)
 
 class Listener:
     def __init__(self, mainMenu: MainMenu):
-        self.info = {
-            "Name": "HTTP[S] Hop",
-            "Authors": [
-                {
-                    "Name": "Will Schroeder",
-                    "Handle": "@harmj0y",
-                    "Link": "https://twitter.com/harmj0y",
-                }
-            ],
-            "Description": ("Starts a http[s] listener that uses a GET/POST approach."),
-            "Category": ("client_server"),
-            "Comments": [],
-            "Software": "",
-            "Techniques": [],
-            "Tactics": [],
-        }
-
-        # any options needed by the stager, settable during runtime
-        self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
-            "Name": {
-                "Description": "Name for the listener.",
-                "Required": True,
-                "Value": "http_hop",
-            },
-            "RedirectListener": {
-                "Description": "Existing listener to redirect the hop traffic to.",
-                "Required": True,
-                "Value": "",
-            },
-            "Launcher": {
-                "Description": "Launcher string.",
-                "Required": True,
-                "Value": "powershell -noP -sta -w 1 -enc ",
-            },
-            "RedirectStagingKey": {
-                "Description": "The staging key for the redirect listener, extracted from RedirectListener automatically.",
-                "Required": False,
-                "Value": "",
-            },
-            "Host": {
-                "Description": "Hostname/IP for staging.",
-                "Required": True,
-                "Value": "",
-            },
-            "Port": {
-                "Description": "Port for the listener.",
-                "Required": True,
-                "Value": "80",
-                "SuggestedValues": ["80", "443"],
-            },
-            "DefaultProfile": {
-                "Description": "Default communication profile for the agent, extracted from RedirectListener automatically.",
-                "Required": False,
-                "Value": "",
-            },
-            "OutFolder": {
-                "Description": "Folder to output redirectors to.",
-                "Required": True,
-                "Value": "/tmp/http_hop/",
-            },
-        }
-
-        # required:
         self.mainMenu = mainMenu
         self.thread = None
+
+    def post_init(self):
         self.host_address = None
 
         self.instance_log = log
@@ -338,11 +275,11 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
 
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http/http.ps1")
+            template = eng.get_template("http/http.ps1.j2")
 
             raw_key_bytes = listener.agent_private_cert_key_object.private_bytes(
                 encoding=serialization.Encoding.Raw,
@@ -409,11 +346,11 @@ class Listener:
 
         if language.lower() in ["python", "ironpython"]:
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
 
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http/http.py")
+            template = eng.get_template("http/http.py.j2")
 
             template_options = {
                 "working_hours": workingHours,
@@ -468,11 +405,11 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
 
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http/comms.ps1")
+            template = eng.get_template("http/comms.ps1.j2")
             raw_key_bytes = self.agent_private_cert_key_object.private_bytes(
                 encoding=serialization.Encoding.Raw,
                 format=serialization.PrivateFormat.Raw,
@@ -491,10 +428,10 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http/comms.py")
+            template = eng.get_template("http/comms.py.j2")
 
             template_options = {
                 "session_cookie": "",

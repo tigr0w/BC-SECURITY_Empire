@@ -121,7 +121,6 @@ class ListenerService:
             log.error(msg)
             return None, msg
 
-        category = template_instance.info["Category"]
         listener_options = copy.deepcopy(template_instance.options)
 
         host_address, err = self.validate_listener_address(listener_options)
@@ -132,7 +131,6 @@ class ListenerService:
         db_listener = models.Listener(
             name=name,
             module=template_name,
-            listener_category=category,
             enabled=True,
             options=listener_options,
             host_address=host_address,
@@ -259,8 +257,8 @@ class ListenerService:
             return None, "Hostname error in parsing"
 
         port = listener_options["Port"]["Value"]
-        if (protocol == "https" and port == "443") or (
-            protocol == "http" and port == "80"
+        if (protocol == "https" and str(port) == "443") or (
+            protocol == "http" and str(port) == "80"
         ):
             host_address += "/"
             return host_address, None

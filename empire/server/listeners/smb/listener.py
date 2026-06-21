@@ -14,47 +14,11 @@ log = logging.getLogger(__name__)
 
 class Listener:
     def __init__(self, mainMenu: MainMenu):
-        self.info = {
-            "Name": "smb_pivot",
-            "Authors": [
-                {
-                    "Name": "Anthony Rose",
-                    "Handle": "@Cx01N",
-                    "Link": "https://twitter.com/Cx01N_",
-                }
-            ],
-            "Description": ("Internal redirector listener using SMB."),
-            "Category": ("peer_to_peer"),
-            "Comments": [],
-            "Software": "",
-            "Techniques": [],
-            "Tactics": [],
-        }
-
-        # any options needed by the stager, settable during runtime
-        self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
-            "Name": {
-                "Description": "Name for the listener.",
-                "Required": True,
-                "Value": "smb",
-            },
-            "Agent": {
-                "Description": "Agent to run SMB server on.",
-                "Required": True,
-                "Value": "",
-            },
-            "PipeName": {
-                "Description": "Name of the pipe.",
-                "Required": True,
-                "Value": "empire_pipe",
-            },
-        }
-
         # required:
         self.mainMenu = mainMenu
         self.threads = {}  # used to keep track of any threaded instances of this server
+
+    def post_init(self):
         self.host_address = None
         self.instance_log = log
 
@@ -246,11 +210,11 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
 
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("smb/smb.py")
+            template = eng.get_template("smb/smb.py.j2")
 
             template_options = {
                 "working_hours": workingHours,
@@ -362,10 +326,10 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("smb/comms.py")
+            template = eng.get_template("smb/comms.py.j2")
 
             template_options = {
                 "host": self.host_address,

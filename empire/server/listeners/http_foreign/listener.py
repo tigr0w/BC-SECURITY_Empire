@@ -14,98 +14,11 @@ log = logging.getLogger(__name__)
 
 class Listener:
     def __init__(self, mainMenu: MainMenu):
-        self.info = {
-            "Name": "HTTP[S]",
-            "Authors": [
-                {
-                    "Name": "Will Schroeder",
-                    "Handle": "@harmj0y",
-                    "Link": "https://twitter.com/harmj0y",
-                }
-            ],
-            "Description": ("Starts a 'foreign' http[s] Empire listener."),
-            "Category": ("client_server"),
-            "Comments": [],
-            "Software": "",
-            "Techniques": [],
-            "Tactics": [],
-        }
-
-        # any options needed by the stager, settable during runtime
-        self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
-            "Name": {
-                "Description": "Name for the listener.",
-                "Required": True,
-                "Value": "http_foreign",
-            },
-            "Host": {
-                "Description": "Hostname/IP for staging.",
-                "Required": True,
-                "Value": f"http://{helpers.lhost()}",
-            },
-            "Port": {
-                "Description": "Port for the listener.",
-                "Required": True,
-                "Value": "80",
-                "SuggestedValues": ["80", "443"],
-            },
-            "Launcher": {
-                "Description": "Launcher string.",
-                "Required": True,
-                "Value": "powershell -noP -sta -w 1 -enc ",
-            },
-            "StagingKey": {
-                "Description": "Staging key for initial agent negotiation.",
-                "Required": True,
-                "Value": "2c103f2c4ed1e59c0b4e2e01821770fa",
-            },
-            "Cookie": {
-                "Description": "Custom Cookie Name",
-                "Required": True,
-                "Value": "session",
-            },
-            "RoutingPacket": {
-                "Description": "Routing packet from the targeted listener",
-                "Required": True,
-                "Value": "",
-            },
-            "DefaultDelay": {
-                "Description": "Agent delay/reach back interval (in seconds).",
-                "Required": True,
-                "Value": 5,
-            },
-            "DefaultJitter": {
-                "Description": "Jitter in agent reachback interval (0.0-1.0).",
-                "Required": True,
-                "Value": 0.0,
-            },
-            "DefaultLostLimit": {
-                "Description": "Number of missed checkins before exiting",
-                "Required": True,
-                "Value": 60,
-            },
-            "DefaultProfile": {
-                "Description": "Default communication profile for the agent.",
-                "Required": True,
-                "Value": "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
-            },
-            "KillDate": {
-                "Description": "Date for the listener to exit (MM/dd/yyyy).",
-                "Required": False,
-                "Value": "",
-            },
-            "WorkingHours": {
-                "Description": "Hours for the agent to operate (09:00-17:00).",
-                "Required": False,
-                "Value": "",
-            },
-        }
-
-        # required:
         self.mainMenu = mainMenu
         self.thread = None
+
+    def post_init(self):
+        self.options["Host"]["Value"] = f"http://{helpers.lhost()}"
 
         # optional/specific for this module
         self.host_address = None
@@ -386,11 +299,11 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
 
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http/http.ps1")
+            template = eng.get_template("http/http.ps1.j2")
 
             template_options = {
                 "session_cookie": self.session_cookie,
@@ -401,10 +314,10 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http/comms.py")
+            template = eng.get_template("http/comms.py.j2")
 
             template_options = {
                 "session_cookie": self.session_cookie,

@@ -33,117 +33,12 @@ log = logging.getLogger(__name__)
 
 class Listener:
     def __init__(self, mainMenu: MainMenu):
-        self.info = {
-            "Name": "HTTP[S] MALLEABLE",
-            "Authors": [
-                {
-                    "Name": "Will Schroeder",
-                    "Handle": "@harmj0y",
-                    "Link": "https://twitter.com/harmj0y",
-                },
-                {
-                    "Name": "",
-                    "Handle": "@johneiser",
-                    "Link": "",
-                },
-            ],
-            "Description": (
-                "Starts a http[s] listener that adheres to a Malleable C2 profile."
-            ),
-            # categories - client_server, peer_to_peer, broadcast, third_party
-            "Category": ("client_server"),
-            "Comments": [],
-            "Software": "",
-            "Techniques": [],
-            "Tactics": [],
-        }
-
-        # any options needed by the stager, settable during runtime
-        self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
-            "Name": {
-                "Description": "Name for the listener.",
-                "Required": True,
-                "Value": "http_malleable",
-            },
-            "Host": {
-                "Description": "Hostname/IP for staging.",
-                "Required": True,
-                "Value": f"http://{helpers.lhost()}",
-            },
-            "BindIP": {
-                "Description": "The IP to bind to on the control server.",
-                "Required": True,
-                "Value": "0.0.0.0",
-            },
-            "Port": {
-                "Description": "Port for the listener.",
-                "Required": True,
-                "Value": "80",
-                "SuggestedValues": ["80", "443"],
-            },
-            "Profile": {
-                "Description": "Malleable C2 profile to describe comms.",
-                "Required": True,
-                "Value": "",
-            },
-            "Launcher": {
-                "Description": "Launcher string.",
-                "Required": True,
-                "Value": "powershell -noP -sta -w 1 -enc ",
-            },
-            "StagingKey": {
-                "Description": "Staging key for initial agent negotiation.",
-                "Required": True,
-                "Value": "2c103f2c4ed1e59c0b4e2e01821770fa",
-            },
-            "DefaultLostLimit": {
-                "Description": "Number of missed checkins before exiting",
-                "Required": True,
-                "Value": 60,
-            },
-            "CertPath": {
-                "Description": "Certificate path for https listeners.",
-                "Required": False,
-                "Value": "",
-            },
-            "KillDate": {
-                "Description": "Date for the listener to exit (MM/dd/yyyy).",
-                "Required": False,
-                "Value": "",
-            },
-            "WorkingHours": {
-                "Description": "Hours for the agent to operate (09:00-17:00).",
-                "Required": False,
-                "Value": "",
-            },
-            "Proxy": {
-                "Description": "Proxy to use for request (default, none, or other).",
-                "Required": False,
-                "Value": "default",
-            },
-            "ProxyCreds": {
-                "Description": r"Proxy credentials ([domain\]username:password) to use for request (default, none, or other).",
-                "Required": False,
-                "Value": "default",
-            },
-            "Cookie": {
-                "Description": "Custom Cookie Name",
-                "Required": False,
-                "Value": "session",
-            },
-            "JA3_Evasion": {
-                "Description": "Randomly generate a JA3/S signature using TLS ciphers.",
-                "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-            },
-        }
-
         # required:
         self.mainMenu = mainMenu
         self.thread = None
+
+    def post_init(self):
+        self.options["Host"]["Value"] = f"http://{helpers.lhost()}"
 
         # optional/specific for this module
         self.host_address = None
@@ -716,11 +611,11 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
 
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http_malleable/http_malleable.ps1")
+            template = eng.get_template("http_malleable/http_malleable.ps1.j2")
 
             raw_key_bytes = self.agent_private_cert_key_object.private_bytes(
                 encoding=serialization.Encoding.Raw,
@@ -795,10 +690,10 @@ class Listener:
             )
 
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http_malleable/http_malleable.py")
+            template = eng.get_template("http_malleable/http_malleable.py.j2")
 
             template_options = {
                 "working_hours": workingHours,

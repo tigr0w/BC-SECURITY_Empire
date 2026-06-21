@@ -1,3 +1,4 @@
+import importlib
 import os
 import shutil
 import sys
@@ -10,6 +11,7 @@ import pytest
 import yaml
 from starlette.testclient import TestClient
 
+from empire.server.utils.listener_template_util import load_listener_template_yaml
 from empire.server.utils.string_util import get_random_string
 from empire.test.test_listener_api import get_base_listener, get_base_malleable_listener
 
@@ -202,6 +204,36 @@ def make_agent(models, **overrides):
     }
     defaults.update(overrides)
     return models.Agent(**defaults)
+
+
+def build_test_listener(name: str, main_menu, *, run_post_init: bool = True):
+    """Construct a migrated (folder+YAML) listener for unit tests.
+
+    Mirrors ListenerTemplateService._construct but reads the YAML directly so
+    tests don't need a booted service. Use for listeners migrated in Phase 5.
+    """
+    base = Path("empire/server/listeners") / name
+    parsed = load_listener_template_yaml(base / f"{name}.yaml")
+    # Import via the real dotted package path so the module object is the same
+    # one tests target with ``monkeypatch.setattr("...<name>.listener.<x>")``.
+    mod = importlib.import_module(f"empire.server.listeners.{name}.listener")
+
+    instance = mod.Listener(main_menu)
+    instance.info = parsed["info"]
+    instance.options = parsed["options"]
+    for opt in instance.options.values():
+        opt.setdefault("SuggestedValues", [])
+        opt.setdefault("Strict", False)
+        opt.setdefault("Internal", False)
+        opt.setdefault("DependsOn", [])
+    if run_post_init and hasattr(instance, "post_init"):
+        instance.post_init()
+    return instance
+
+
+@pytest.fixture
+def listener_builder():
+    return build_test_listener
 
 
 @pytest.fixture

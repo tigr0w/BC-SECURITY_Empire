@@ -238,7 +238,6 @@ class Listener(Base):
     name: Mapped[str] = mapped_column(String(255), unique=True)
     module: Mapped[str] = mapped_column(String(255))
     listener_type: Mapped[str | None] = mapped_column(String(255))
-    listener_category: Mapped[str] = mapped_column(String(255))
     enabled: Mapped[bool]
     host_address: Mapped[str | None] = mapped_column(String(255))
     options: Mapped[dict | None] = mapped_column(JSON)

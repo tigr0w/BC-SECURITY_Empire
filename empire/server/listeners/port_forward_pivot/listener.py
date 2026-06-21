@@ -88,55 +88,10 @@ def _firewall_rule_name(session_id: str, listen_port) -> str:
 
 class Listener:
     def __init__(self, mainMenu: MainMenu):
-        self.info = {
-            "Name": "port_forward_pivot",
-            "Authors": [
-                {
-                    "Name": "Chris Ross",
-                    "Handle": "@xorrior",
-                    "Link": "https://twitter.com/xorrior",
-                }
-            ],
-            "Description": (
-                "Internal redirector. Backgrounded TCP relay job on an active agent. Windows agents must be elevated (auto-managed netsh firewall rule); Linux/macOS Python only need root for ports below 1024."
-            ),
-            # categories - client_server, peer_to_peer, broadcast, third_party
-            "Category": ("peer_to_peer"),
-            "Comments": [],
-            "Software": "",
-            "Techniques": [],
-            "Tactics": [],
-        }
-
-        # any options needed by the stager, settable during runtime
-        self.options = {
-            # format:
-            #   value_name : {description, required, default_value}
-            "Name": {
-                "Description": "Name for the listener.",
-                "Required": True,
-                "Value": "port_forward_pivot",
-            },
-            "Agent": {
-                "Description": "Agent to run port forwards pivot on.",
-                "Required": True,
-                "Value": "",
-            },
-            "internalIP": {
-                "Description": "Bind address on the agent host. Leave blank to use the agent's auto-detected internal IP.",
-                "Required": False,
-                "Value": "",
-            },
-            "ListenPort": {
-                "Description": "Port for the agent to listen on.",
-                "Required": True,
-                "Value": 80,
-            },
-        }
-
-        # required:
         self.mainMenu = mainMenu
         self.thread = None
+
+    def post_init(self):
         self.host_address = None
         self._relay_task_id = None
 
@@ -466,11 +421,11 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
 
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http/http.ps1")
+            template = eng.get_template("http/http.ps1.j2")
 
             template_options = {
                 "working_hours": workingHours,
@@ -514,11 +469,11 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
 
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http/http.py")
+            template = eng.get_template("http/http.py.j2")
 
             template_options = {
                 "working_hours": workingHours,
@@ -668,11 +623,11 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
 
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http/http.ps1")
+            template = eng.get_template("http/http.ps1.j2")
 
             template_options = {
                 "session_cookie": self.session_cookie,
@@ -683,10 +638,10 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                self.mainMenu.install_path / "data/agent/stagers",
+                self.mainMenu.install_path / "listeners",
             ]
             eng = templating.TemplateEngine(template_path)
-            template = eng.get_template("http/comms.py")
+            template = eng.get_template("http/comms.py.j2")
 
             template_options = {
                 "session_cookie": self.session_cookie,
@@ -815,7 +770,7 @@ class Listener:
                         )
                         return False
                     relay_code = self._render_relay(
-                        "port_forward_pivot/relay.ps1",
+                        "port_forward_pivot/relay.ps1.j2",
                         listen_host=listen_address,
                         listen_port=listen_port,
                         connect_host=connect_host,
@@ -824,7 +779,7 @@ class Listener:
                     task_name = "TASK_POWERSHELL_CMD_JOB"
                 elif language == "python":
                     relay_code = self._render_relay(
-                        "port_forward_pivot/relay.py",
+                        "port_forward_pivot/relay.py.j2",
                         listen_host=listen_address,
                         listen_port=listen_port,
                         connect_host=connect_host,
@@ -1070,7 +1025,9 @@ class Listener:
         connect_host = _validate_host(connect_host, "connect_host")
         listen_port = _validate_port(listen_port, "listen_port")
         connect_port = _validate_port(connect_port, "connect_port")
-        template_path = [self.mainMenu.install_path / "data/agent/listeners"]
+        template_path = [
+            self.mainMenu.install_path / "listeners",
+        ]
         eng = templating.TemplateEngine(template_path)
         template = eng.get_template(template_name)
         return template.render(

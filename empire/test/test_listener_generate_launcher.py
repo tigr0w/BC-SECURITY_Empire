@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 
 from empire.server.common import helpers
+from empire.test.conftest import build_test_listener
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -26,19 +27,17 @@ def main_menu_mock(models):
 
 
 def test_http_generate_launcher(monkeypatch, main_menu_mock):
-    from empire.server.listeners.http import Listener
-
     # guarantee the session id.
     packets = Mock()
     packets.build_routing_packet.return_value = b"routing packet"
-    monkeypatch.setattr("empire.server.listeners.http.packets", packets)
+    monkeypatch.setattr("empire.server.listeners.http.listener.packets", packets)
 
     # guarantee the chosen stage0 url.
     secrets_mock = MagicMock()
     secrets_mock.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http.secrets", secrets_mock)
+    monkeypatch.setattr("empire.server.listeners.http.listener.secrets", secrets_mock)
 
-    http_listener = Listener(main_menu_mock)
+    http_listener = build_test_listener("http", main_menu_mock)
 
     http_listener.options["Cookie"]["Value"] = "l33th4x0r"
     http_listener.options["Host"]["Value"] = "http://localhost"
@@ -64,14 +63,14 @@ def test_http_generate_launcher(monkeypatch, main_menu_mock):
 
 
 def test_http_foreign_generate_launcher(monkeypatch, main_menu_mock):
-    from empire.server.listeners.http_foreign import Listener
-
     # guarantee the chosen stage0 url.
     secrets_mock = MagicMock()
     secrets_mock.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http_foreign.secrets", secrets_mock)
+    monkeypatch.setattr(
+        "empire.server.listeners.http_foreign.listener.secrets", secrets_mock
+    )
 
-    http_foreign_listener = Listener(main_menu_mock)
+    http_foreign_listener = build_test_listener("http_foreign", main_menu_mock)
 
     http_foreign_listener.options["Host"]["Value"] = "http://localhost"
     http_foreign_listener.options["Port"]["Value"] = "80"
@@ -104,19 +103,19 @@ def test_http_foreign_generate_launcher(monkeypatch, main_menu_mock):
 
 
 def test_http_hop_generate_launcher(monkeypatch, main_menu_mock):
-    from empire.server.listeners.http_hop import Listener
-
     # guarantee the session id.
     packets = Mock()
     packets.build_routing_packet.return_value = b"routing packet"
-    monkeypatch.setattr("empire.server.listeners.http_hop.packets", packets)
+    monkeypatch.setattr("empire.server.listeners.http_hop.listener.packets", packets)
 
     # guarantee the chosen stage0 url.
     secrets_mock = MagicMock()
     secrets_mock.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http_hop.secrets", secrets_mock)
+    monkeypatch.setattr(
+        "empire.server.listeners.http_hop.listener.secrets", secrets_mock
+    )
 
-    http_hop_listener = Listener(main_menu_mock)
+    http_hop_listener = build_test_listener("http_hop", main_menu_mock)
 
     http_hop_listener.options["Host"]["Value"] = "http://localhost"
     http_hop_listener.options["Port"]["Value"] = "80"
@@ -153,21 +152,25 @@ def test_http_hop_generate_launcher(monkeypatch, main_menu_mock):
 
 
 def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
-    from empire.server.listeners.http_malleable import Listener
-
     # guarantee the session id.
     packets = Mock()
     packets.build_routing_packet.return_value = b"routing packet"
-    monkeypatch.setattr("empire.server.listeners.http_malleable.packets", packets)
+    monkeypatch.setattr(
+        "empire.server.listeners.http_malleable.listener.packets", packets
+    )
 
     # guarantee the chosen stage0 url.
     secrets_mock = MagicMock()
     secrets_mock.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http_malleable.secrets", secrets_mock)
+    monkeypatch.setattr(
+        "empire.server.listeners.http_malleable.listener.secrets", secrets_mock
+    )
 
     helpers_mock = MagicMock()
     helpers_mock.random_string.return_value = "r"
-    monkeypatch.setattr("empire.server.listeners.http_malleable.helpers", helpers_mock)
+    monkeypatch.setattr(
+        "empire.server.listeners.http_malleable.listener.helpers", helpers_mock
+    )
     helpers_mock.obfuscate_call_home_address.side_effect = (
         helpers.obfuscate_call_home_address
     )
@@ -177,7 +180,7 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
     session_mock.return_value.scalars.return_value.first.return_value = profile_mock
     profile_mock.data = _fake_malleable_profile()
     monkeypatch.setattr(
-        "empire.server.listeners.http_malleable.SessionLocal", session_mock
+        "empire.server.listeners.http_malleable.listener.SessionLocal", session_mock
     )
 
     validate_listener_address_mock = MagicMock()
@@ -187,7 +190,7 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
         validate_listener_address_mock
     )
 
-    http_malleable_listener = Listener(main_menu_mock)
+    http_malleable_listener = build_test_listener("http_malleable", main_menu_mock)
     http_malleable_listener.options["Profile"]["Value"] = "amazon.profile"
     http_malleable_listener.validate_options()
 
@@ -217,19 +220,23 @@ def _build_malleable_listener(monkeypatch, main_menu_mock):
     """Construct a validated malleable listener with the amazon sample
     profile. Mirrors the setup in test_http_malleable_generate_launcher
     but returns the listener for reuse."""
-    from empire.server.listeners.http_malleable import Listener
-
     packets = Mock()
     packets.build_routing_packet.return_value = b"routing packet"
-    monkeypatch.setattr("empire.server.listeners.http_malleable.packets", packets)
+    monkeypatch.setattr(
+        "empire.server.listeners.http_malleable.listener.packets", packets
+    )
 
     secrets_mock = MagicMock()
     secrets_mock.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http_malleable.secrets", secrets_mock)
+    monkeypatch.setattr(
+        "empire.server.listeners.http_malleable.listener.secrets", secrets_mock
+    )
 
     helpers_mock = MagicMock()
     helpers_mock.random_string.return_value = "r"
-    monkeypatch.setattr("empire.server.listeners.http_malleable.helpers", helpers_mock)
+    monkeypatch.setattr(
+        "empire.server.listeners.http_malleable.listener.helpers", helpers_mock
+    )
     helpers_mock.obfuscate_call_home_address.side_effect = (
         helpers.obfuscate_call_home_address
     )
@@ -239,7 +246,7 @@ def _build_malleable_listener(monkeypatch, main_menu_mock):
     session_mock.return_value.scalars.return_value.first.return_value = profile_mock
     profile_mock.data = _fake_malleable_profile()
     monkeypatch.setattr(
-        "empire.server.listeners.http_malleable.SessionLocal", session_mock
+        "empire.server.listeners.http_malleable.listener.SessionLocal", session_mock
     )
 
     validate_listener_address_mock = MagicMock()
@@ -249,7 +256,7 @@ def _build_malleable_listener(monkeypatch, main_menu_mock):
         validate_listener_address_mock
     )
 
-    listener = Listener(main_menu_mock)
+    listener = build_test_listener("http_malleable", main_menu_mock)
     listener.options["Profile"]["Value"] = "amazon.profile"
     listener.validate_options()
     listener.options["Host"]["Value"] = "http://localhost"
@@ -447,19 +454,17 @@ def test_http_generate_launcher_csharp_plain_ships_without_malleable(
     malleable pipeline is exclusive to http_malleable's SharpireMalleable
     yaml, which pulls the extension library in as a second
     ReferenceSourceLibrary."""
-    from empire.server.listeners.http import Listener
-
     main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
 
     packets = Mock()
     packets.build_routing_packet.return_value = b"routing packet"
-    monkeypatch.setattr("empire.server.listeners.http.packets", packets)
+    monkeypatch.setattr("empire.server.listeners.http.listener.packets", packets)
 
     secrets_mock = MagicMock()
     secrets_mock.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http.secrets", secrets_mock)
+    monkeypatch.setattr("empire.server.listeners.http.listener.secrets", secrets_mock)
 
-    http_listener = Listener(main_menu_mock)
+    http_listener = build_test_listener("http", main_menu_mock)
     http_listener.options["Host"]["Value"] = "http://localhost"
     http_listener.options["Port"]["Value"] = "80"
     http_listener.host_address = "http://localhost/"
@@ -489,25 +494,26 @@ def test_http_generate_launcher_csharp_plain_ships_without_malleable(
 
 
 def test_port_forward_pivot_generate_launcher(monkeypatch, main_menu_mock):
-    from empire.server.listeners.http import Listener as HttpListener
-    from empire.server.listeners.port_forward_pivot import Listener
-
     # guarantee the session id.
     packets = Mock()
     packets.build_routing_packet.return_value = b"routing packet"
-    monkeypatch.setattr("empire.server.listeners.port_forward_pivot.packets", packets)
+    monkeypatch.setattr(
+        "empire.server.listeners.port_forward_pivot.listener.packets", packets
+    )
 
     # guarantee the chosen stage0 url.
     secrets_mock = MagicMock()
     secrets_mock.choice.side_effect = lambda x: x[0]
     monkeypatch.setattr(
-        "empire.server.listeners.port_forward_pivot.secrets", secrets_mock
+        "empire.server.listeners.port_forward_pivot.listener.secrets", secrets_mock
     )
 
-    port_forward_pivot = Listener(main_menu_mock)
+    port_forward_pivot = build_test_listener("port_forward_pivot", main_menu_mock)
 
     # redirector doesn't get these fields until the listener is started.
-    port_forward_pivot.options.update(HttpListener(main_menu_mock).options)
+    port_forward_pivot.options.update(
+        build_test_listener("http", main_menu_mock).options
+    )
     port_forward_pivot.options["Host"] = {"Value": "http://localhost"}
     port_forward_pivot.options["Port"] = {"Value": "80"}
     port_forward_pivot.host_address = "http://localhost/"

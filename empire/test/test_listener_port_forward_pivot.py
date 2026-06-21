@@ -19,21 +19,22 @@ def main_menu_mock():
 
 @pytest.fixture
 def listener(monkeypatch, main_menu_mock):
-    from empire.server.listeners.http import Listener as HttpListener
-    from empire.server.listeners.port_forward_pivot import Listener
+    from empire.test.conftest import build_test_listener
 
     packets = Mock()
     packets.build_routing_packet.return_value = b"routing packet"
-    monkeypatch.setattr("empire.server.listeners.port_forward_pivot.packets", packets)
+    monkeypatch.setattr(
+        "empire.server.listeners.port_forward_pivot.listener.packets", packets
+    )
 
     secrets_mock = MagicMock()
     secrets_mock.choice.side_effect = lambda x: x[0]
     monkeypatch.setattr(
-        "empire.server.listeners.port_forward_pivot.secrets", secrets_mock
+        "empire.server.listeners.port_forward_pivot.listener.secrets", secrets_mock
     )
 
-    pivot = Listener(main_menu_mock)
-    pivot.options.update(HttpListener(main_menu_mock).options)
+    pivot = build_test_listener("port_forward_pivot", main_menu_mock)
+    pivot.options.update(build_test_listener("http", main_menu_mock).options)
     pivot.options["Host"] = {"Value": "http://localhost"}
     pivot.options["Port"] = {"Value": "80"}
     pivot.host_address = "http://localhost/"
@@ -118,7 +119,9 @@ def test_generate_comms_unknown_language_returns_none(listener):
     ],
 )
 def test_split_connect_target(host, port, expected):
-    from empire.server.listeners.port_forward_pivot import _split_connect_target
+    from empire.server.listeners.port_forward_pivot.listener import (
+        _split_connect_target,
+    )
 
     assert _split_connect_target(host, port) == expected
 
@@ -127,7 +130,7 @@ def test_render_python_relay_substitutes_placeholders(listener, main_menu_mock):
     main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
 
     rendered = listener._render_relay(
-        "port_forward_pivot/relay.py",
+        "port_forward_pivot/relay.py.j2",
         listen_host="10.0.0.5",
         listen_port=8443,
         connect_host="c2.example.com",
@@ -149,7 +152,7 @@ def test_render_powershell_relay_substitutes_placeholders(listener, main_menu_mo
     main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
 
     rendered = listener._render_relay(
-        "port_forward_pivot/relay.ps1",
+        "port_forward_pivot/relay.ps1.j2",
         listen_host="10.0.0.5",
         listen_port=8443,
         connect_host="c2.example.com",
@@ -178,7 +181,7 @@ def started_listener(monkeypatch, listener, main_menu_mock):
     session_mock.begin.return_value.__enter__.return_value = MagicMock()
     session_mock.begin.return_value.__exit__.return_value = False
     monkeypatch.setattr(
-        "empire.server.listeners.port_forward_pivot.SessionLocal", session_mock
+        "empire.server.listeners.port_forward_pivot.listener.SessionLocal", session_mock
     )
 
     agent = MagicMock(
@@ -290,7 +293,7 @@ def test_start_warns_about_required_agent_build_for_csharp_and_go(
 
     with caplog.at_level(
         logging.WARNING,
-        logger="empire.server.listeners.port_forward_pivot",
+        logger="empire.server.listeners.port_forward_pivot.listener",
     ):
         assert pivot.start() is True
 
@@ -316,7 +319,7 @@ def test_start_does_not_warn_for_powershell_or_python(
 
     with caplog.at_level(
         logging.WARNING,
-        logger="empire.server.listeners.port_forward_pivot",
+        logger="empire.server.listeners.port_forward_pivot.listener",
     ):
         assert pivot.start() is True
 
@@ -560,7 +563,7 @@ def test_shutdown_queues_firewall_delete_when_relay_task_id_missing(
     ],
 )
 def test_firewall_rule_name_format(session_id, port, expected):
-    from empire.server.listeners.port_forward_pivot import _firewall_rule_name
+    from empire.server.listeners.port_forward_pivot.listener import _firewall_rule_name
 
     assert _firewall_rule_name(session_id, port) == expected
 
@@ -686,7 +689,7 @@ def test_verify_relay_started_logs_info_when_sentinel_observed(
 
     with caplog.at_level(
         logging.INFO,
-        logger="empire.server.listeners.port_forward_pivot",
+        logger="empire.server.listeners.port_forward_pivot.listener",
     ):
         result = pivot._verify_relay_started(
             task_id=FAKE_TASK_ID,
@@ -764,7 +767,7 @@ def test_verify_relay_started_warns_and_returns_true_on_timeout(
 
     with caplog.at_level(
         logging.WARNING,
-        logger="empire.server.listeners.port_forward_pivot",
+        logger="empire.server.listeners.port_forward_pivot.listener",
     ):
         result = pivot._verify_relay_started(
             task_id=FAKE_TASK_ID,
@@ -790,7 +793,7 @@ def test_verify_relay_started_in_test_mode_returns_true_silently(
 
     with caplog.at_level(
         logging.WARNING,
-        logger="empire.server.listeners.port_forward_pivot",
+        logger="empire.server.listeners.port_forward_pivot.listener",
     ):
         result = pivot._verify_relay_started(
             task_id=FAKE_TASK_ID,
@@ -850,7 +853,7 @@ def test_start_returns_false_when_sentinel_reports_error(
     ],
 )
 def test_validate_host_accepts_valid_ip_or_hostname(value):
-    from empire.server.listeners.port_forward_pivot import _validate_host
+    from empire.server.listeners.port_forward_pivot.listener import _validate_host
 
     assert _validate_host(value, "field") == value
 
@@ -875,7 +878,7 @@ def test_validate_host_accepts_valid_ip_or_hostname(value):
     ],
 )
 def test_validate_host_rejects_injection_or_malformed(value):
-    from empire.server.listeners.port_forward_pivot import _validate_host
+    from empire.server.listeners.port_forward_pivot.listener import _validate_host
 
     with pytest.raises(ValueError, match="field"):
         _validate_host(value, "field")
@@ -893,7 +896,7 @@ def test_validate_host_rejects_injection_or_malformed(value):
     ],
 )
 def test_validate_port_accepts_in_range_int_or_intstring(value):
-    from empire.server.listeners.port_forward_pivot import _validate_port
+    from empire.server.listeners.port_forward_pivot.listener import _validate_port
 
     assert _validate_port(value, "field") == int(value)
 
@@ -912,7 +915,7 @@ def test_validate_port_accepts_in_range_int_or_intstring(value):
     ],
 )
 def test_validate_port_rejects_out_of_range_or_non_int(value):
-    from empire.server.listeners.port_forward_pivot import _validate_port
+    from empire.server.listeners.port_forward_pivot.listener import _validate_port
 
     with pytest.raises(ValueError, match="field"):
         _validate_port(value, "field")
@@ -931,7 +934,7 @@ def test_start_rejects_injection_in_internal_ip(
     _set_language(main_menu_mock, "powershell")
 
     with caplog.at_level(
-        logging.ERROR, logger="empire.server.listeners.port_forward_pivot"
+        logging.ERROR, logger="empire.server.listeners.port_forward_pivot.listener"
     ):
         assert pivot.start() is False
 
@@ -955,7 +958,7 @@ def test_start_rejects_injection_in_parent_host(
     _set_language(main_menu_mock, "powershell")
 
     with caplog.at_level(
-        logging.ERROR, logger="empire.server.listeners.port_forward_pivot"
+        logging.ERROR, logger="empire.server.listeners.port_forward_pivot.listener"
     ):
         assert pivot.start() is False
 
@@ -981,7 +984,7 @@ def test_render_relay_rejects_injection_defense_in_depth(listener, main_menu_moc
 
     with pytest.raises(ValueError, match="connect_host"):
         listener._render_relay(
-            "port_forward_pivot/relay.py",
+            "port_forward_pivot/relay.py.j2",
             listen_host="10.0.0.5",
             listen_port=8443,
             connect_host='evil"; do_evil; "',

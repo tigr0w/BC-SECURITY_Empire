@@ -1,0 +1,49 @@
+id: http_hop
+display_name: 'HTTP[S] Hop'
+authors:
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Starts a http[s] listener that uses a GET/POST approach.
+comments: []
+software: ''
+techniques: []
+tactics: []
+options:
+  - name: Name
+    description: Name for the listener.
+    required: true
+    value: http_hop
+  - name: RedirectListener
+    description: Existing listener to redirect the hop traffic to.
+    required: true
+    value: ''
+  - name: Launcher
+    description: Launcher string.
+    required: true
+    value: 'powershell -noP -sta -w 1 -enc '
+  - name: RedirectStagingKey
+    description: The staging key for the redirect listener, extracted from RedirectListener
+      automatically.
+    required: false
+    value: ''
+  - name: Host
+    description: Hostname/IP for staging.
+    required: true
+    value: ''
+  - name: Port
+    description: Port for the listener.
+    required: true
+    value: 80
+    suggested_values:
+      - 80
+      - 443
+  - name: DefaultProfile
+    description: Default communication profile for the agent, extracted from RedirectListener
+      automatically.
+    required: false
+    value: ''
+  - name: OutFolder
+    description: Folder to output redirectors to.
+    required: true
+    value: /tmp/http_hop/

@@ -132,7 +132,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 # It's hard to limit arguments on the endpoint functions.
 "empire/server/api/*" = ["PLR0913"]
 
-"empire/server/listeners/http_malleable.py" = ["SLF"]
+"empire/server/listeners/http_malleable/listener.py" = ["SLF"]
 
 # Can't control how many fixtures are needed for the tests.
 "empire/test/*" = ["PLR0913", "S", "SLF"]
