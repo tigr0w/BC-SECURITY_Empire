@@ -340,19 +340,28 @@ def find_all_dependent_functions(
 
 _FUNCTION_PATTERN = re.compile(r"\n(?:function|filter).*?{.*?\n}\n", re.DOTALL)
 _BLOCK_COMMENT_PATTERN = re.compile("<#.*?#>", re.DOTALL)
+# PowerView keeps backward-compatible names as ``Set-Alias`` lines
+# (e.g. ``Set-Alias Get-Proxy Get-WMIRegProxy``). These aren't function
+# definitions, so the requested-name resolver below maps them onto the
+# real target before the dependency walk.
+_ALIAS_PATTERN = re.compile(r"^Set-Alias\s+(\S+)\s+(\S+)", re.MULTILINE)
 
 
 @functools.lru_cache(maxsize=128)
 def _build_function_map(
     script: str,
-) -> tuple[str, dict[str, str], "re.Pattern[str]"]:
+) -> tuple[str, dict[str, str], "re.Pattern[str]", dict[str, str], dict[str, str]]:
     """Strip block comments and parse the script into a name->code map.
 
-    Returns ``(cleaned_script, name_to_code, deps_pattern)`` where
-    ``deps_pattern`` is a single precompiled regex of all known
-    function names — used by ``get_dependent_functions`` to avoid the
-    N-per-call recompile/research that dominated profiling (each call
-    on PowerView ran ~600 regex searches per dep-walk step).
+    Returns ``(cleaned_script, name_to_code, deps_pattern, canonical,
+    alias_map)`` where ``deps_pattern`` is a single precompiled regex of
+    all known function names — used by ``get_dependent_functions`` to
+    avoid the N-per-call recompile/research that dominated profiling
+    (each call on PowerView ran ~600 regex searches per dep-walk step);
+    ``canonical`` maps each lower-cased definition name onto its real
+    key (for case-insensitive resolution); and ``alias_map`` maps each
+    lower-cased ``Set-Alias`` name onto the real function it points at
+    (e.g. ``get-proxy`` -> ``Get-WMIRegProxy``).
 
     Cached by ``functools.lru_cache(maxsize=128)`` keyed on the script
     string itself — most callers (notably the PowerView modules) pass
@@ -365,7 +374,12 @@ def _build_function_map(
     cleaned = _BLOCK_COMMENT_PATTERN.sub("", script)
     functions = {}
     for func_match in _FUNCTION_PATTERN.findall(cleaned):
-        name = func_match[:40].split()[1]
+        # ``split(None, 2)`` -> ['function', name, rest]; capped at two
+        # splits so it stops at the name boundary without scanning the
+        # whole body. The old ``[:40]`` slice truncated names longer
+        # than 30 chars (the leading "\nfunction " eats 10), storing
+        # them under a clipped key that could never be resolved.
+        name = func_match.split(None, 2)[1]
         functions[name] = func_match
 
     if functions:
@@ -379,7 +393,49 @@ def _build_function_map(
     else:
         deps_pattern = re.compile(r"$^")  # never matches
 
-    return cleaned, functions, deps_pattern
+    # ``canonical`` maps every lower-cased definition name onto its real
+    # key — used both to validate alias targets and to resolve a
+    # case-mismatched requested name (see ``_resolve_function_name``).
+    # Map backward-compat alias names onto their real target function;
+    # only keep aliases whose target is an actual definition so the
+    # dependency walk always lands on a real name_to_code key.
+    canonical = {name.lower(): name for name in functions}
+    alias_map = {}
+    for alias, target in _ALIAS_PATTERN.findall(cleaned):
+        real = canonical.get(target.lower())
+        if real:
+            alias_map[alias.lower()] = real
+
+    return cleaned, functions, deps_pattern, canonical, alias_map
+
+
+def _resolve_function_name(
+    name: str,
+    functions: dict[str, str],
+    canonical: dict[str, str],
+    alias_map: dict[str, str],
+) -> tuple[str | None, bool]:
+    """Map a requested function name onto a real definition key.
+
+    Modules name the function to extract via the first token of their
+    ``script_end``. That token may not match a ``function`` definition
+    verbatim: it can differ only in case (the dep-walk dict is
+    case-sensitive) or be a PowerView ``Set-Alias`` backward-compat name.
+
+    Returns ``(real_key, via_alias)`` — ``real_key`` is the resolved
+    ``name_to_code`` key (or ``None`` if nothing matches), and
+    ``via_alias`` is True only when resolution went through ``alias_map``
+    (a real function/case match takes precedence). The caller uses
+    ``via_alias`` to decide whether to preserve the ``Set-Alias`` line.
+    """
+    if name in functions:
+        return name, False
+    lower = name.lower()
+    real = canonical.get(lower)
+    if real:
+        return real, False
+    alias_target = alias_map.get(lower)
+    return alias_target, alias_target is not None
 
 
 @functools.lru_cache(maxsize=512)
@@ -400,15 +456,31 @@ def _generate_dynamic_powershell_script_cached(
         "struct",
     ]
 
-    script, functions, deps_pattern = _build_function_map(script)
+    script, functions, deps_pattern, canonical, alias_map = _build_function_map(script)
 
     # recursively enumerate all possible function dependencies and
     #   start building the new result script
     function_dependencies = []
+    alias_lines = []
 
     for functionName in function_names:
+        resolved, via_alias = _resolve_function_name(
+            functionName, functions, canonical, alias_map
+        )
+        if resolved is None:
+            log.warning(
+                "Requested function %s was not found in the script; skipping.",
+                functionName,
+            )
+            continue
+
+        if via_alias:
+            # Preserve the alias so a script_end that invokes the
+            # backward-compat name still resolves at agent runtime.
+            alias_lines.append(f"Set-Alias {functionName} {resolved}")
+
         function_dependencies += find_all_dependent_functions(
-            functions, functionName, deps_pattern
+            functions, resolved, deps_pattern
         )
         function_dependencies = unique(function_dependencies)
 
@@ -422,6 +494,11 @@ def _generate_dynamic_powershell_script_cached(
     # if any psreflect methods are needed, add in the overhead at the end
     if any(el in set(psreflect_functions) for el in function_dependencies):
         new_script += get_powerview_psreflect_overhead(script)
+
+    # Emit any preserved aliases after their target definitions so the
+    # alias resolves to an already-defined function at runtime.
+    for alias_line in alias_lines:
+        new_script += alias_line + "\n"
 
     return strip_powershell_comments(new_script) + "\n"
 
