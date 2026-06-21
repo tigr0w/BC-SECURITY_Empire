@@ -62,3 +62,6 @@ starkiller-dist.tar.gz
 .worktrees/
 config.user.yaml
 .claude/settings.local.json
+
+# Superpowers brainstorming/planning artifacts — local working docs, not code
+docs/superpowers/
