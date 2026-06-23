@@ -21,7 +21,7 @@ class Module:
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
-        obf = params["Obfuscate"].lower() == "true"
+        obf = params["Obfuscate"]
         obf_cmd = params["ObfuscateCommand"]
         bypasses = params["Bypasses"]
 

@@ -26,7 +26,7 @@ class Module:
         proxy_creds = params["ProxyCreds"]
         command = params["Command"]
         result_file = params["ResultFile"]
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
+        launcher_obfuscate = params["Obfuscate"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         script_end = ""

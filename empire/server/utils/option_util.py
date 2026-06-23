@@ -58,24 +58,19 @@ def safe_cast(option: typing.Any, expected_option_type: type) -> typing.Any | No
         return None
 
 
-def normalize_legacy_params(params: dict) -> dict:
-    """Stringify primitive `bool`/`int`/`float` params at the generate-path boundary.
+def coerce_legacy_value(value: typing.Any) -> typing.Any:
+    """Stringify a native ``bool``/``int``/``float`` option value to its legacy
+    string form for generate-path consumers that build command text — switch
+    detection (`value.lower() == "true"`), `str.replace` substitution, and `+`
+    concatenation all assume strings.
 
-    The typed-options PR widened the API + model surface to accept native
-    bool/int/float, but every downstream generate path was written against
-    the legacy string-typed contract: `_generate_script_python` calls
-    `script.replace(placeholder, value)` (TypeError on bool), `_generate_script_powershell`
-    calls `value.lower()` directly, and ~70 custom-generate modules' own
-    `generate()` functions do `values.lower() == "true"` on raw param values.
-    Normalizing once at the dispatch boundary keeps the typed contract intact
-    at the API/model layer while every legacy generate consumer keeps working.
-
-    File-typed params (db_download model objects), `None`, and any other
-    non-primitive value pass through unchanged.
+    Strings, ``None``, and non-primitive values (e.g. file-download objects)
+    pass through unchanged. This is the per-value form of the removed
+    ``normalize_legacy_params`` dict-level shim: apply it only at the point a
+    typed value must become text, so native reads elsewhere (`if params["X"]:`)
+    keep their real types.
     """
-    return {
-        k: str(v) if isinstance(v, bool | int | float) else v for k, v in params.items()
-    }
+    return str(value) if isinstance(value, bool | int | float) else value
 
 
 def convert_module_options(options: list[EmpireModuleOption]) -> dict:
@@ -119,22 +114,24 @@ def validate_options(  # noqa: PLR0912
     plugins for now).
     """
     options = {}
-    # Stringify native primitives so `evaluate_dependencies` compares correctly
-    # against module YAML's string dependency-value lists, e.g.
-    # `depends_on: [{name: Obfuscate, values: ['True']}]`. Without this, a
-    # caller passing `{Obfuscate: True}` (native bool) would silently fail the
-    # `True in ['True']` check and drop the dependent option's value.
-    # `normalize_legacy_params` returns a fresh dict so the caller's `params`
-    # is never mutated.
-    params = normalize_legacy_params(params)
+    # Copy so the default-injection below (`params[instance_key] = ...`) never
+    # mutates the caller's dict.
+    params = params.copy()
 
     for instance_key, option_meta in instance_options.items():
         if option_meta.get("Internal", False):
             continue
 
         if not evaluate_dependencies(option_meta, params):
-            # Dependencies not met: include with default value but skip validation
+            # Dependencies not met: include with default value but skip validation.
+            # Cast the default to the option's native type so a gated bool/int
+            # option matches the validated branch — otherwise a bool option's
+            # stringly "False" default reaches generate() as a truthy string and
+            # a native `if params["X"]:` check silently inverts.
             default_value = option_meta.get("Value", "")
+            casted, _ = _safe_cast_option(instance_key, default_value, option_meta)
+            if casted is not None:
+                default_value = casted
             if option_meta.get("NameInCode"):
                 options[option_meta["NameInCode"]] = default_value
             else:

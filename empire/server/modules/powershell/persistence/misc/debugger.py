@@ -22,13 +22,13 @@ class Module:
         reg_path = params["RegPath"]
 
         # staging options
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
+        launcher_obfuscate = params["Obfuscate"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         status_msg = ""
         locationString = ""
 
-        if cleanup.lower() == "true":
+        if cleanup:
             # the registry command to disable the debugger for Utilman.exe
             script = f"Remove-Item 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\{target_binary}';'{target_binary} debugger removed.'"
             return main_menu.modulesv2.finalize_module(

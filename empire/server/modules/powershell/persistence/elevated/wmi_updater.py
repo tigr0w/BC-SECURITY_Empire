@@ -30,7 +30,7 @@ class Module:
 
         status_msg = ""
 
-        if cleanup.lower() == "true":
+        if cleanup:
             # commands to remove the WMI filter and subscription
             script = (
                 "Get-WmiObject __eventFilter -namespace root\\subscription -filter \"name='"

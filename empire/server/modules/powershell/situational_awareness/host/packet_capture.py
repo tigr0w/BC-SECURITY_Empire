@@ -16,7 +16,7 @@ class Module:
         persistent = params["Persistent"]
         stop_trace = params["StopTrace"]
 
-        if stop_trace.lower() == "true":
+        if stop_trace:
             script = "netsh trace stop"
 
         else:

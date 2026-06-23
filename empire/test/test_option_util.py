@@ -12,8 +12,8 @@ from empire.server.core.option_types import (
     to_value_type,
 )
 from empire.server.utils.option_util import (
+    coerce_legacy_value,
     evaluate_dependencies,
-    normalize_legacy_params,
     safe_cast,
     validate_options,
 )
@@ -377,6 +377,21 @@ def test_safe_cast_boolean_silent_coercion_edges():
     assert safe_cast("", bool) is False
 
 
+def test_coerce_legacy_value():
+    # Native primitives stringify for the legacy generate-path string builders.
+    assert coerce_legacy_value(True) == "True"
+    assert coerce_legacy_value(False) == "False"
+    assert coerce_legacy_value(100) == "100"
+    assert coerce_legacy_value(1.5) == "1.5"
+    # Strings, None, and non-primitives (e.g. file-download objects) pass through
+    # unchanged so the `.lower()` / `get_base64_file()` consumers still work.
+    assert coerce_legacy_value("already a string") == "already a string"
+    assert coerce_legacy_value("") == ""
+    assert coerce_legacy_value(None) is None
+    sentinel = object()
+    assert coerce_legacy_value(sentinel) is sentinel
+
+
 def test_safe_cast_non_bool_returns_none_on_typeerror():
     # Pin the post-PR safe_cast contract: TypeError from `expected_option_type(option)`
     # surfaces as None (caller `_safe_cast_option` translates this into
@@ -390,14 +405,14 @@ def test_safe_cast_non_bool_returns_none_on_typeerror():
     assert safe_cast("not-a-number", int) is None
 
 
-def test_validate_options_strict_with_legacy_string_suggested_values_accepts_native_bool():
-    # Regression pin for the "hybrid YAML" shape (`strict: true` +
-    # `suggested_values: ['True','False']` + stringly value). Third-party
-    # plugins may still carry this pre-migration shape. After moving
-    # `normalize_legacy_params` to the top of `validate_options` (depends_on
-    # fix), native `True` is stringified to `"True"` before the strict
-    # check runs, so the hybrid YAML now correctly accepts both native and
-    # stringly clients (previously native bool was rejected).
+def test_validate_options_strict_with_legacy_string_suggested_values():
+    # "Hybrid YAML" shape (`strict: true` + `suggested_values: ['True','False']`
+    # + bool type). validate_options no longer stringifies native primitives, so
+    # a *direct* caller passing native `True` is now rejected by the strict
+    # membership check (`True not in ["True", "False"]`). This direct-call path
+    # is unreachable via the HTTP API, where `coerced_dict` stringifies every
+    # option value to "True"/"False" before validation — the stringly path below
+    # is the real API contract and still passes.
     instance_options = {
         "Debug": {
             "Description": "Debug toggle (legacy hybrid shape).",
@@ -409,13 +424,12 @@ def test_validate_options_strict_with_legacy_string_suggested_values_accepts_nat
         },
     }
 
-    # Native bool param against legacy string suggested values: now accepted.
-    cleaned, err = validate_options(instance_options, {"Debug": True}, None, None)
-    assert err is None
-    assert cleaned == {"Debug": True}
+    # Native bool no longer matches the stringly suggested values (direct call).
+    _, err = validate_options(instance_options, {"Debug": True}, None, None)
+    assert err is not None
 
-    # Stringly param against the same shape: also accepted; `_safe_cast_option`
-    # casts the post-strict-check string to native bool because Type=="bool".
+    # Stringly param (the API contract) passes the strict check, then
+    # `_safe_cast_option` casts it to native bool because Type == "bool".
     cleaned, err = validate_options(instance_options, {"Debug": "True"}, None, None)
     assert err is None
     assert cleaned == {"Debug": True}
@@ -532,14 +546,12 @@ def test_validate_options_dependency_not_met():
     assert err is None
 
 
-def test_validate_options_dependency_met_via_native_bool_param():
-    # Regression for the typed-options widening: a client POSTing a native
-    # `bool` for the parent of a `depends_on` chain would silently fail the
-    # `True in ['True']` comparison (because `evaluate_dependencies` reads
-    # raw stringly YAML values), drop into the "include with default value
-    # but skip validation" branch, and discard the user's value for the
-    # dependent option. `validate_options` now normalizes primitives at the
-    # top before `evaluate_dependencies` runs.
+def test_validate_options_dependency_with_stringly_values():
+    # `depends_on` values in YAML are stringly (`values: ["True"]`), and
+    # `evaluate_dependencies` compares them verbatim. validate_options no longer
+    # stringifies native primitives, so the parent value must already be a string
+    # for the dependency to match. Via the HTTP API this always holds:
+    # `coerced_dict` coerces a POSTed native `true` to "True" before validation.
     instance_options = {
         "Obfuscate": {
             "Description": "Obfuscate the script",
@@ -554,18 +566,76 @@ def test_validate_options_dependency_met_via_native_bool_param():
             "DependsOn": [{"name": "Obfuscate", "values": ["True"]}],
         },
     }
-    # User sends native `True` (the new typed-options contract on the API).
-    options = {"Obfuscate": True, "ObfuscateCommand": "MyCustomObfuscation"}
-    cleaned_options, err = validate_options(instance_options, options, None, None)
 
+    # The API contract: stringly "True" matches the stringly depends_on value,
+    # the dependency is met, and the user's ObfuscateCommand is kept.
+    cleaned_options, err = validate_options(
+        instance_options,
+        {"Obfuscate": "True", "ObfuscateCommand": "MyCustomObfuscation"},
+        None,
+        None,
+    )
     assert err is None
-    # Pre-fix: ObfuscateCommand silently fell back to "Token\\All\\1" default.
     assert cleaned_options["ObfuscateCommand"] == "MyCustomObfuscation"
-    # Pins the contract documented in the validate_options comment: the
-    # validation layer stringifies primitives for depends_on / strict checks,
-    # but `safe_cast(value, bool)` re-emerges native types into the returned
-    # `options` dict so downstream consumers see typed values.
+    # safe_cast re-emerges the parent as a native bool in the returned options.
     assert cleaned_options["Obfuscate"] is True
+
+    # A *direct* caller passing native `True` no longer matches the stringly
+    # depends_on value (`True not in ["True"]`), so the dependency is treated as
+    # unmet and ObfuscateCommand falls back to its default. This path is
+    # unreachable via the API (coerced_dict stringifies first).
+    cleaned_options, err = validate_options(
+        instance_options,
+        {"Obfuscate": True, "ObfuscateCommand": "MyCustomObfuscation"},
+        None,
+        None,
+    )
+    assert err is None
+    assert cleaned_options["ObfuscateCommand"] == "Token\\All\\1"
+
+
+def test_validate_options_gated_default_is_native_typed():
+    # Regression pin: when an option's `depends_on` is unmet, validate_options
+    # returns its default value. That default must be cast to the option's
+    # native type (matching the validated branch) — otherwise a gated bool
+    # option's stringly "False" default reaches generate() as a truthy string
+    # and a native `if params["X"]:` check silently inverts (e.g. obfuscation
+    # turning on for non-PowerShell launchers). String/int defaults must round-
+    # trip to their native types too.
+    instance_options = {
+        "Language": {
+            "Description": "",
+            "Required": True,
+            "Value": "powershell",
+            "SuggestedValues": ["powershell", "csharp"],
+            "Strict": True,
+            "Type": "string",
+        },
+        "Obfuscate": {
+            "Description": "",
+            "Required": False,
+            "Value": "False",  # stringly default, as loaded from YAML
+            "Type": "bool",
+            "DependsOn": [{"name": "Language", "values": ["powershell"]}],
+        },
+        "Threads": {
+            "Description": "",
+            "Required": False,
+            "Value": "5",
+            "Type": "int",
+            "DependsOn": [{"name": "Language", "values": ["powershell"]}],
+        },
+    }
+    # Language=csharp -> both gated options' dependency is unmet -> defaults.
+    cleaned, err = validate_options(
+        instance_options, {"Language": "csharp"}, None, None
+    )
+    assert err is None
+    # Native bool, not the truthy string "False".
+    assert cleaned["Obfuscate"] is False
+    # Native int, cast from the stringly default "5".
+    assert cleaned["Threads"] == int(instance_options["Threads"]["Value"])
+    assert isinstance(cleaned["Threads"], int)
 
 
 def test_validate_options_dependency_met(session_local):
@@ -821,60 +891,10 @@ def test_module_option_suggested_values_coerced_to_strings():
     assert opt.suggested_values == ["80", "443", "8080"]
 
 
-def test_normalize_legacy_params_stringifies_primitives():
-    # Boundary fast-tier coverage: bool/int/float become strings, file objects
-    # and None pass through. This is the single point of truth for the
-    # generate paths' string-only contract — every csharp/bof/python/powershell
-    # path (custom and non-custom) routes params through this function before
-    # touching `.lower()`, `.replace()`, or JSON serialization.
-    file_obj = object()  # stand-in for a db_download
-    normalized = normalize_legacy_params(
-        {
-            "BoolTrue": True,
-            "BoolFalse": False,
-            "Int": 42,
-            "Float": 3.14,
-            "Str": "already",
-            "None": None,
-            "File": file_obj,
-        }
-    )
-    assert normalized == {
-        "BoolTrue": "True",
-        "BoolFalse": "False",
-        "Int": "42",
-        "Float": "3.14",
-        "Str": "already",
-        "None": None,
-        "File": file_obj,
-    }
-    # Same key set (no params dropped or added).
-    assert set(normalized) == {
-        "BoolTrue",
-        "BoolFalse",
-        "Int",
-        "Float",
-        "Str",
-        "None",
-        "File",
-    }
-
-
-def test_normalize_legacy_params_preserves_input_dict():
-    # Boundary contract: the caller's dict must not be mutated. validate_options
-    # now relies on this fresh-dict return instead of its own `.copy()`, so the
-    # property must hold for a borrowed reference.
-    original = {"x": True}
-    normalized = normalize_legacy_params(original)
-    assert original == {"x": True}
-    assert normalized == {"x": "True"}
-
-
 def test_validate_options_does_not_mutate_caller_params():
-    # Guards the dropped `params.copy()`: validate_options writes into its local
-    # params (the `Value` default backfill at the `not in params` branch), so it
-    # must rebind to the fresh dict normalize_legacy_params returns and never
-    # touch the caller's. The native bool also exercises the normalize step.
+    # Guards `params.copy()`: validate_options writes into its local params
+    # (the `Value` default backfill at the `not in params` branch), so it must
+    # rebind to a fresh copy and never touch the caller's dict.
     instance_options = {
         "Command": {
             "Description": "",

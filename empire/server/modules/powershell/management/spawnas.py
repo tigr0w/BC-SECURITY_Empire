@@ -37,7 +37,7 @@ class Module:
         launcher.options["Listener"]["Value"] = params["Listener"]
         launcher.options["Delete"]["Value"] = True
         launcher.options["Language"]["Value"] = params["Language"]
-        if (params["Obfuscate"]).lower() == "true":
+        if params["Obfuscate"]:
             launcher.options["Obfuscate"]["Value"] = True
             launcher.options["ObfuscateCommand"]["Value"] = params["ObfuscateCommand"]
         else:

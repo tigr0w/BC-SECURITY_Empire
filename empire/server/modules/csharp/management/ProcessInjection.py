@@ -31,7 +31,7 @@ class Module:
         language = params["Language"]
         dot_net_version = params["DotNetVersion"].lower()
         arch = params["Architecture"]
-        launcher_obfuscation = params["Obfuscate"] == "True"
+        launcher_obfuscation = params["Obfuscate"]
 
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             raise ModuleExecutionException("Invalid listener: " + listener_name)

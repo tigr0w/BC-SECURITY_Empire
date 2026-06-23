@@ -19,7 +19,7 @@ class Module:
         extension = params["Extension"]
         script_path = params["ScriptPath"]
         cleanup = params["Cleanup"]
-        obf = params["Obfuscate"].lower() == "true"
+        obf = params["Obfuscate"]
         obf_cmd = params["ObfuscateCommand"]
         bypasses = params["Bypasses"]
         user_agent = params["UserAgent"]
@@ -33,7 +33,7 @@ class Module:
         ext_clean = extension.lstrip(".")
         handler_name = "EmpireHandler" + ext_clean
 
-        if cleanup.lower() == "true":
+        if cleanup:
             script = (
                 "$scriptFile = $ExecutionContext.InvokeCommand.ExpandString('"
                 + script_path

@@ -34,7 +34,7 @@ class Module:
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
+        launcher_obfuscate = params["Obfuscate"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         status_msg = ""
@@ -42,7 +42,7 @@ class Module:
 
         # for cleanup, remove any script from the specified storage location
         #   and remove the specified trigger
-        if cleanup.lower() == "true":
+        if cleanup:
             if ads_path != "":
                 # remove the ADS storage location
                 if ".txt" not in ads_path:

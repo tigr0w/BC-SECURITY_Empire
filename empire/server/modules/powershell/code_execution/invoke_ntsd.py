@@ -52,9 +52,7 @@ class Module:
         multi_launcher.options["UserAgent"]["Value"] = params["UserAgent"]
         multi_launcher.options["Proxy"]["Value"] = params["Proxy"]
         multi_launcher.options["ProxyCreds"]["Value"] = params["ProxyCreds"]
-        multi_launcher.options["Obfuscate"]["Value"] = (
-            params["Obfuscate"].lower() == "true"
-        )
+        multi_launcher.options["Obfuscate"]["Value"] = params["Obfuscate"]
         multi_launcher.options["ObfuscateCommand"]["Value"] = params["ObfuscateCommand"]
         multi_launcher.options["Bypasses"]["Value"] = params["Bypasses"]
         launcher = multi_launcher.generate()

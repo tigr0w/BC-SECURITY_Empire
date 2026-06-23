@@ -28,7 +28,7 @@ class Module:
         dot_net_version = params["DotNetVersion"]
         bypasses = params["Bypasses"]
 
-        launcher_obfuscate = str(params.get("Obfuscate", "False")).lower() == "true"
+        launcher_obfuscate = params.get("Obfuscate", False)
 
         if language == "csharp":
             exe_path = main_menu.stagergenv2.generate_launcher(

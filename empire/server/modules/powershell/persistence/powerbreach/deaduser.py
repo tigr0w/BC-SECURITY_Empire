@@ -4,6 +4,7 @@ from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
+from empire.server.utils.option_util import coerce_legacy_value
 
 
 class Module:
@@ -91,7 +92,8 @@ Invoke-DeadUserBackdoor"""
 
         script = script.replace("REPLACE_LAUNCHER", stager_code)
 
-        for option, values in params.items():
+        for option, raw_value in params.items():
+            values = coerce_legacy_value(raw_value)
             if (
                 (
                     option.lower() != "agent"

@@ -136,6 +136,45 @@ def test_execute_module_custom_generate_no_obfuscation_config_powershell_agent(
     assert script == 'cmd = "find /Users/ -name *.emlx 2>/dev/null"\nrun_command(cmd)'
 
 
+def test_execute_module_custom_generate_native_bool_gates_branch(
+    module_service, agent_mock
+):
+    """Boolean options must reach a custom_generate module as native bools so an
+    ``if params["X"]:`` gate fires only when the option is truthy.
+
+    Regression guard for the removed ``normalize_legacy_params`` shim, which
+    re-stringified ``False`` -> ``"False"`` (truthy) before dispatch and so
+    silently triggered bool-gated branches (e.g. ThreadlessInject's always-on
+    launcher obfuscation). ``computerdetails`` emits ``Get-ComputerDetails
+    -Limit 100`` only from its all-false fallthrough, so that string's
+    presence/absence proves whether any ``if params["X"]:`` gate fired.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_situational_awareness_host_computerdetails"
+    base = {"Agent": agent_mock.session_id}
+
+    # All switches false (defaults) -> no gate fires -> fallthrough invocation.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, base, True, True, None
+    )
+    assert err is None
+    assert "Get-ComputerDetails -Limit 100" in res.data
+
+    # Explicit string "False" (the API/coerced_dict wire form) must stay falsy.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, {**base, "4624": "False"}, True, True, None
+    )
+    assert err is None
+    assert "Get-ComputerDetails -Limit 100" in res.data
+
+    # A truthy switch fires its branch and returns early, skipping the fallthrough.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, {**base, "4624": "True"}, True, True, None
+    )
+    assert err is None
+    assert "Get-ComputerDetails -Limit 100" not in res.data
+
+
 def test_execute_module_task_command_python_agent(module_service, agent_mock):
     agent_mock.language = "python"
     params = {

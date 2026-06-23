@@ -52,8 +52,8 @@ from empire.server.utils.dotnet_version_util import (
     parse_agent_dotnet_versions,
 )
 from empire.server.utils.option_util import (
+    coerce_legacy_value,
     convert_module_options,
-    normalize_legacy_params,
     validate_options,
 )
 from empire.server.utils.string_util import slugify
@@ -488,13 +488,6 @@ class ModuleService:
         Raises ``ModuleValidationException`` or ``ModuleExecutionException``
         on failure.
         """
-        # Stringify native bool/int/float params before language dispatch so
-        # `_generate_script_python.replace(...)`, `_generate_script_powershell`'s
-        # `value.lower()` check, and ~70 custom-generate modules' own
-        # `values.lower()` calls all see the legacy string contract they were
-        # written against. See `normalize_legacy_params` for rationale.
-        params = normalize_legacy_params(params)
-
         if not obfuscation_config:
             obfuscation_config = self.obfuscation_service.get_obfuscation_config(
                 db, module.language
@@ -756,8 +749,10 @@ class ModuleService:
         else:
             script = module.script
 
-        for key, value in params.items():
+        for key, raw_value in params.items():
             if key.lower() != "agent":
+                # Native bool/int/float options arrive typed; str.replace needs str.
+                value = coerce_legacy_value(raw_value)
                 script = script.replace("{{ " + key + " }}", value).replace(
                     "{{" + key + "}}", value
                 )
@@ -800,7 +795,11 @@ class ModuleService:
         option_strings = []
 
         # This is where the code goes for all the modules that do not have a custom generate function.
-        for key, value in params.items():
+        for key, raw_value in params.items():
+            # Native bool/int/float options arrive typed; the switch detection
+            # and `-Option value` substitution below operate on the legacy
+            # string form, so stringify each primitive value first.
+            value = coerce_legacy_value(raw_value)
             if key.lower() not in ["agent", "outputfunction"] and value and value != "":
                 if value.lower() == "true":
                     # if we're just adding a switch
@@ -863,7 +862,11 @@ class ModuleService:
                 merge_references=merge_refs,
             )
             filtered_params = {}
-            for key, value in params.items():
+            for key, raw_value in params.items():
+                # Native bool/int/float options arrive typed; the agent payload
+                # JSON expects the legacy string form, so stringify primitives
+                # (file options stay db objects for the get_base64_file branch).
+                value = coerce_legacy_value(raw_value)
                 if (
                     key.lower() not in ["agent", "dotnetversion"]
                     and value

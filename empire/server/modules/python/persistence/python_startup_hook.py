@@ -25,7 +25,7 @@ class Module:
         obfuscation_command: str = "",
     ):
         method = params["Method"]
-        cleanup = params.get("Cleanup", "False").lower() == "true"
+        cleanup = params.get("Cleanup", False)
 
         if cleanup:
             return f"""

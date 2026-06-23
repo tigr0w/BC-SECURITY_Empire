@@ -1,6 +1,7 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.core.module_service import auto_finalize, auto_get_source
+from empire.server.utils.option_util import coerce_legacy_value
 
 
 class Module:
@@ -19,11 +20,11 @@ class Module:
 
         outputf = params.get("OutputFunction", "Out-String")
 
-        if params["RevToSelf"].lower() == "true":
+        if params["RevToSelf"]:
             script_end += " -RevToSelf"
-        if params["WhoAmI"].lower() == "true":
+        if params["WhoAmI"]:
             script_end += " -WhoAmI"
-        if params["ShowAll"].lower() == "true":
+        if params["ShowAll"]:
             script_end += " -ShowAll"
             script_end += (
                 f" | {outputf} | "
@@ -32,7 +33,8 @@ class Module:
                 + ' completed!"'
             )
 
-        for option, values in params.items():
+        for option, raw_value in params.items():
+            values = coerce_legacy_value(raw_value)
             if (
                 option.lower()
                 not in ["agent", "outputfunction", "revtoself", "whoami", "showall"]
@@ -59,7 +61,7 @@ class Module:
                 + str(module.name.split("/")[-1])
                 + ' completed!"'
             )
-            if params["RevToSelf"].lower() != "true":
+            if not params["RevToSelf"]:
                 script_end += ';"`nUse credentials/tokens with RevToSelf option to revert token privileges"'
 
         return script, script_end

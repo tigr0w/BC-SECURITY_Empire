@@ -352,8 +352,9 @@ def test_create_task_module_accepts_native_bool_python(
 
 def test_create_task_module_accepts_native_int(client, admin_auth_header, agent):
     # Posting a native int (Threads) locks in the int path end-to-end: the DTO
-    # coerces it to "20", then safe_cast re-types it and normalize_legacy_params
-    # feeds the powershell render.
+    # coerces it to "20", safe_cast re-types it to int, and the non-custom
+    # powershell render stringifies it back for the `-{{ KEY }}={{ VALUE }}`
+    # substitution.
     response = client.post(
         f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
@@ -378,10 +379,11 @@ def test_create_task_module_accepts_native_int(client, admin_auth_header, agent)
 def test_create_task_module_accepts_native_bool_custom_generate(
     client, admin_auth_header, agent
 ):
-    # Locks in the boundary normalization for custom_generate modules: a native
-    # bool must not reach a `.lower()` call in module-owned generate() code
-    # (AttributeError on bool). find_fruit exercises the `custom_generate`
-    # dispatch with three bool options (UseSSL, ShowAll, FoundOnly).
+    # Covers both migrated patterns in one custom_generate dispatch: find_fruit
+    # reads ShowAll natively (`if not show_all:`) while UseSSL/FoundOnly flow
+    # through the shared `params.items()` loop, whose `values.lower() == "true"`
+    # switch detection now runs on point-of-use-stringified primitives. Three
+    # bool options total (UseSSL, ShowAll, FoundOnly).
     response = client.post(
         f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,

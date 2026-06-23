@@ -13,7 +13,7 @@ class Module:
         obfuscation_command: str = "",
     ):
         instance = params["Instance"]
-        check_all = params["CheckAll"].lower() == "true"
+        check_all = params["CheckAll"]
         username = params["Username"]
         password = params["Password"]
 

@@ -41,7 +41,7 @@ class Module:
         command = params["Command"]
         username = params["UserName"]
         password = params["Password"]
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
+        launcher_obfuscate = params["Obfuscate"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         if command == "":

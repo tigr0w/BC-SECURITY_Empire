@@ -21,7 +21,9 @@ class Module:
         day_of_week = params["DayOfWeek"]
         sub_name = params["SubName"]
         dummy_sub_name = "_" + sub_name
-        failed_logon = params["FailedLogon"]
+        # FailedLogon is a bool option but this module embeds it as a literal
+        # value in a WQL query/message; stringify to preserve legacy output.
+        failed_logon = str(params["FailedLogon"])
 
         # management options
         ext_file = params["ExtFile"]
@@ -32,12 +34,12 @@ class Module:
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
+        launcher_obfuscate = params["Obfuscate"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         status_msg = ""
 
-        if cleanup.lower() == "true":
+        if cleanup:
             # commands to remove the WMI filter and subscription
             script = (
                 "Get-WmiObject __eventFilter -namespace root\\subscription -filter \"name='"
