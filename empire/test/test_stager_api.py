@@ -195,6 +195,19 @@ def test_get_stager_template(client, admin_auth_header):
     assert isinstance(response.json()["options"], dict)
 
 
+def test_stager_template_bool_value_type(client, admin_auth_header):
+    response = client.get(
+        "/api/v2/stager-templates/multi_launcher",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    options = response.json()["options"]
+    for bool_opt in ("Base64", "Obfuscate"):
+        assert options[bool_opt]["value_type"] == "BOOLEAN", (
+            f"{bool_opt} should advertise BOOLEAN, got {options[bool_opt]['value_type']}"
+        )
+
+
 def test_stager_template_bypass_language_map(client, admin_auth_header):
     response = client.get(
         "/api/v2/stager-templates/multi_launcher",

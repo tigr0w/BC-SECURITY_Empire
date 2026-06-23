@@ -43,16 +43,12 @@ class Stager:
             "Base64": {
                 "Description": "Base64 encode the output.",
                 "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": True,
             },
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -101,13 +97,8 @@ class Stager:
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
 
-        encode = False
-        if base64.lower() == "true":
-            encode = True
-
-        invoke_obfuscation = False
-        if obfuscate.lower() == "true":
-            invoke_obfuscation = True
+        encode = base64
+        invoke_obfuscation = obfuscate
 
         if language in ("csharp", "ironpython"):
             launcher = self.mainMenu.stagergenv2.generate_exe_oneliner_routed(

@@ -34,9 +34,7 @@ class Stager:
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for "
                 "obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -111,7 +109,7 @@ class Stager:
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
-        if self.options["Obfuscate"]["Value"].lower() == "true":
+        if self.options["Obfuscate"]["Value"]:
             obfuscate_script = True
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
 

@@ -53,7 +53,7 @@ class StagerService:
         self, db: Session, template: str, params: dict
     ) -> tuple[Any | None, str | None]:
         """
-        Validates the new listener's options. Constructs a new "Listener" object.
+        Validates the stager options. Constructs a new Stager template instance.
         :param template:
         :param params:
         :return: (Stager, error)

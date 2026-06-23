@@ -25,7 +25,7 @@ class Module:
         launcher.options["UserAgent"]["Value"] = params["UserAgent"]
         launcher.options["Proxy"]["Value"] = params["Proxy"]
         launcher.options["ProxyCreds"]["Value"] = params["ProxyCreds"]
-        launcher.options["Delete"]["Value"] = "True"
+        launcher.options["Delete"]["Value"] = True
         launcher_code = launcher.generate()
 
         # PowerShell code to write the launcher.bat out

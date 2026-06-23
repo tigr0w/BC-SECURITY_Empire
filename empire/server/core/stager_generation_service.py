@@ -719,7 +719,7 @@ class StagerGenerationService:
         """
         MH_DYLIB = 6
         misc_dir = self.main_menu.install_path / "data/misc"
-        if hijacker.lower() == "true":
+        if hijacker:
             if arch == "x86":
                 dylib_path = misc_dir / "hijackers/template.dylib"
             else:

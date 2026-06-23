@@ -80,8 +80,8 @@ Invoke-DeadUserBackdoor"""
 
         # set the listener value for the launcher
         stager = main_menu.stagertemplatesv2.new_instance("multi_launcher")
-        stager.options["Listener"] = listener_name
-        stager.options["Base64"] = "False"
+        stager.options["Listener"]["Value"] = listener_name
+        stager.options["Base64"]["Value"] = False
 
         # and generate the code
         stager_code = stager.generate()

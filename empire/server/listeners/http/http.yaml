@@ -94,7 +94,4 @@ options:
   - name: JA3_Evasion
     description: Randomly generate a JA3/S signature using TLS ciphers.
     required: true
-    value: 'False'
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false

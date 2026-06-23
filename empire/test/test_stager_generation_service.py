@@ -872,7 +872,7 @@ def test_generate_dylib(stager_generation_service):
     """
     launcher_code = "import os; print('Hello, World!')"
     arch = "x64"
-    hijacker = "false"
+    hijacker = False
 
     result = stager_generation_service.generate_dylib(launcher_code, arch, hijacker)
 
@@ -949,7 +949,7 @@ def test_multi_generate_agent_stageless_powershell(main):
     stager = Stager(main)
     stager.options["Language"]["Value"] = "powershell"
     stager.options["Listener"]["Value"] = "new-listener-1"
-    stager.options["Staged"]["Value"] = "False"
+    stager.options["Staged"]["Value"] = False
 
     result = stager.generate()
 
@@ -963,7 +963,7 @@ def test_multi_generate_agent_staged_powershell(main):
     stager = Stager(main)
     stager.options["Language"]["Value"] = "powershell"
     stager.options["Listener"]["Value"] = "new-listener-1"
-    stager.options["Staged"]["Value"] = "True"
+    stager.options["Staged"]["Value"] = True
 
     result = stager.generate()
 
@@ -976,7 +976,7 @@ def test_multi_generate_agent_stageless_python(main):
     stager = Stager(main)
     stager.options["Language"]["Value"] = "python"
     stager.options["Listener"]["Value"] = "new-listener-1"
-    stager.options["Staged"]["Value"] = "False"
+    stager.options["Staged"]["Value"] = False
 
     result = stager.generate()
 
@@ -1039,13 +1039,38 @@ def _decode_ps_enc(text: str) -> str:
     return base64.b64decode(m.group(1)).decode("utf-16le", errors="strict")
 
 
+def test_multi_launcher_base64_native_bool_controls_encoding(main):
+    """Regression guard for the native-bool migration: the multi launcher's
+    `encode = base64` path must honor a native bool. A native False produces a
+    readable (non -enc) launcher; a native True produces an -enc oneliner.
+    Before the migration this was `base64.lower() == "true"`, so a string
+    "False" was correctly falsy; now generate() trusts a native bool, and the
+    module callers that feed it must pass one (see the powerbreach/powerup
+    stager modules)."""
+    stager = MultiLauncherStager(main)
+    stager.options["Language"]["Value"] = "powershell"
+    stager.options["Listener"]["Value"] = "new-listener-1"
+
+    stager.options["Base64"]["Value"] = False
+    plain = stager.generate()
+    assert isinstance(plain, str)
+    assert plain
+    assert "-enc" not in plain, "native False must not engage base64 encoding"
+
+    stager.options["Base64"]["Value"] = True
+    encoded = stager.generate()
+    assert isinstance(encoded, str)
+    assert encoded
+    assert "-enc" in encoded, "native True must engage base64 encoding"
+
+
 def test_multi_launcher_csharp_embeds_ps_bypass(main):
     """End-to-end: the multi launcher with Language=csharp emits a PS oneliner
     that contains the PS bypass code (defended by BypassLanguage map)."""
     stager = MultiLauncherStager(main)
     stager.options["Language"]["Value"] = "csharp"
     stager.options["Listener"]["Value"] = "new-listener-1"
-    stager.options["Base64"]["Value"] = "True"
+    stager.options["Base64"]["Value"] = True
     stager.options["Bypasses"]["Value"] = "SafeChecksPS"
 
     launcher = stager.generate()
@@ -1063,7 +1088,7 @@ def test_launcher_bat_go_embeds_ps_bypass(main):
     stager.options["Language"]["Value"] = "go"
     stager.options["Listener"]["Value"] = "new-listener-1"
     stager.options["Bypasses"]["Value"] = "SafeChecksPS"
-    stager.options["Delete"]["Value"] = "False"
+    stager.options["Delete"]["Value"] = False
 
     bat = stager.generate()
     assert isinstance(bat, str)

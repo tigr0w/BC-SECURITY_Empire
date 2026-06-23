@@ -47,9 +47,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -90,9 +88,7 @@ class Stager:
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
 
-        obfuscate_script = False
-        if obfuscate.lower() == "true":
-            obfuscate_script = True
+        obfuscate_script = obfuscate
 
         if app_name == "":
             app_name = listener_name

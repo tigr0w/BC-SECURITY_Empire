@@ -72,9 +72,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -94,9 +92,7 @@ class Stager:
             "Staged": {
                 "Description": "Allow agent to be staged",
                 "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": True,
             },
         }
 
@@ -115,7 +111,7 @@ class Stager:
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
 
-        obfuscate_script = obfuscate.lower() == "true"
+        obfuscate_script = obfuscate
 
         # The per-stager Obfuscate option is gated to powershell via DependsOn,
         # so for csharp/ironpython fall back to the global ObfuscationConfig
@@ -129,7 +125,7 @@ class Stager:
                     obfuscation_config and obfuscation_config.enabled
                 )
 
-        staged = self.options["Staged"]["Value"].lower() == "true"
+        staged = self.options["Staged"]["Value"]
 
         if not staged and language != "csharp":
             launcher = self.mainMenu.stagergenv2.generate_stageless(self.options)

@@ -40,9 +40,7 @@ class Stager:
             "Hijacker": {
                 "Description": "Generate dylib to be used in a Dylib Hijack. This provides a dylib with the LC_REEXPORT_DYLIB load command. The path will serve as a placeholder.",
                 "Required": True,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
             },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",

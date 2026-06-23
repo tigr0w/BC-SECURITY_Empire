@@ -1,3 +1,4 @@
+import pytest
 from starlette import status
 
 
@@ -75,6 +76,19 @@ def test_get_listener_template(client, admin_auth_header):
     assert response.json()["name"] == "HTTP[S]"
     assert response.json()["id"] == "http"
     assert isinstance(response.json()["options"], dict)
+
+
+@pytest.mark.parametrize("template", ["http", "http_malleable"])
+def test_listener_template_bool_value_type(client, admin_auth_header, template):
+    response = client.get(
+        f"/api/v2/listener-templates/{template}",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    options = response.json()["options"]
+    assert options["JA3_Evasion"]["value_type"] == "BOOLEAN", (
+        f"{template}: JA3_Evasion should advertise BOOLEAN, got {options['JA3_Evasion']['value_type']}"
+    )
 
 
 def test_create_listener_validation_fails_required_field(client, admin_auth_header):

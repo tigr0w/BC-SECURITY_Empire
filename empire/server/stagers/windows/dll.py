@@ -60,9 +60,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -102,9 +100,7 @@ class Stager:
         ) and not self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name):
             raise StagerGenerationException(f"Invalid listener: {listener_name}")
 
-        obfuscate_script = False
-        if obfuscate.lower() == "true":
-            obfuscate_script = True
+        obfuscate_script = obfuscate
 
         if obfuscate_script and "launcher" in obfuscate_command.lower():
             raise StagerGenerationException(

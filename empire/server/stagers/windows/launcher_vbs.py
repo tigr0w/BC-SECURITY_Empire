@@ -42,9 +42,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -84,9 +82,7 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        obfuscate_script = False
-        if obfuscate.lower() == "true":
-            obfuscate_script = True
+        obfuscate_script = obfuscate
 
         if language in ["csharp", "ironpython"]:
             launcher = self.mainMenu.stagergenv2.generate_exe_oneliner_routed(

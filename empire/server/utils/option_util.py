@@ -119,16 +119,13 @@ def validate_options(  # noqa: PLR0912
     plugins for now).
     """
     options = {}
-    # Stringify native primitives so `evaluate_dependencies` (and the
-    # `Strict` + `SuggestedValues` membership check below) compare against
-    # YAML's stringly `values: ['True']` / `['False']` lists correctly.
-    # Without this, a client POSTing `{Obfuscate: true}` against a YAML with
-    # `depends_on: [{name: Obfuscate, values: ['True']}]` would silently
-    # fail the `True in ['True']` check and drop the dependent option's
-    # user-supplied value. The `_generate_script` boundary normalize stays
-    # because `safe_cast(value, bool)` re-emerges native types into the
-    # returned `options` dict. `normalize_legacy_params` returns a fresh dict,
-    # so the caller's `params` is never mutated.
+    # Stringify native primitives so `evaluate_dependencies` compares correctly
+    # against module YAML's string dependency-value lists, e.g.
+    # `depends_on: [{name: Obfuscate, values: ['True']}]`. Without this, a
+    # caller passing `{Obfuscate: True}` (native bool) would silently fail the
+    # `True in ['True']` check and drop the dependent option's value.
+    # `normalize_legacy_params` returns a fresh dict so the caller's `params`
+    # is never mutated.
     params = normalize_legacy_params(params)
 
     for instance_key, option_meta in instance_options.items():

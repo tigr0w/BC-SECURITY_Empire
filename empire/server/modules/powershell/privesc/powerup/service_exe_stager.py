@@ -28,12 +28,9 @@ class Module:
         launcher.options["Proxy"]["Value"] = params["Proxy"]
         launcher.options["ProxyCreds"]["Value"] = params["ProxyCreds"]
         launcher.options["ObfuscateCommand"]["Value"] = params["ObfuscateCommand"]
-        launcher.options["Obfuscate"]["Value"] = params["Obfuscate"]
+        launcher.options["Obfuscate"]["Value"] = params["Obfuscate"].lower() == "true"
         launcher.options["Bypasses"]["Value"] = params["Bypasses"]
-        if params["Delete"].lower() == "true":
-            launcher.options["Delete"] = "True"
-        else:
-            launcher.options["Delete"] = "False"
+        launcher.options["Delete"]["Value"] = params["Delete"].lower() == "true"
 
         launcher_code = launcher.generate()
 

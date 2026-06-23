@@ -40,9 +40,7 @@ class Stager:
             "Base64": {
                 "Description": "Base64 encode the output.",
                 "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": True,
             },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
@@ -62,9 +60,7 @@ class Stager:
         base64 = self.options["Base64"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
 
-        encode = False
-        if base64.lower() == "true":
-            encode = True
+        encode = base64
 
         # generate the launcher code
         launcher = self.mainMenu.stagergenv2.generate_launcher(

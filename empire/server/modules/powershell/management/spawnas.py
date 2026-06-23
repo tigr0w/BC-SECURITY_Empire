@@ -35,13 +35,13 @@ class Module:
 
         launcher = main_menu.stagertemplatesv2.new_instance("windows_launcher_bat")
         launcher.options["Listener"]["Value"] = params["Listener"]
-        launcher.options["Delete"]["Value"] = "True"
+        launcher.options["Delete"]["Value"] = True
         launcher.options["Language"]["Value"] = params["Language"]
         if (params["Obfuscate"]).lower() == "true":
-            launcher.options["Obfuscate"]["Value"] = "True"
+            launcher.options["Obfuscate"]["Value"] = True
             launcher.options["ObfuscateCommand"]["Value"] = params["ObfuscateCommand"]
         else:
-            launcher.options["Obfuscate"]["Value"] = "False"
+            launcher.options["Obfuscate"]["Value"] = False
         launcher.options["Bypasses"]["Value"] = params["Bypasses"]
         launcher_code = launcher.generate()
 

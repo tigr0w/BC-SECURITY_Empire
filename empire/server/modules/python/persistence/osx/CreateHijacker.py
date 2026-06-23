@@ -32,7 +32,7 @@ class Module:
         launcher = launcher.strip('"')
 
         dylib_bytes = main_menu.stagergenv2.generate_dylib(
-            launcher_code=launcher, arch=arch, hijacker="true"
+            launcher_code=launcher, arch=arch, hijacker=True
         )
         encoded_dylib = base64.b64encode(dylib_bytes)
         dylib = params["LegitimateDylibPath"]

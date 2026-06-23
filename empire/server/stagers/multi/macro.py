@@ -82,9 +82,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -132,9 +130,7 @@ class Stager:
         pixel_track_url = self.options["PixelTrackURL"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
 
-        invoke_obfuscation = False
-        if obfuscate.lower() == "true":
-            invoke_obfuscation = True
+        invoke_obfuscation = obfuscate
 
         # generate the python launcher code
         pylauncher = self.mainMenu.stagergenv2.generate_launcher(

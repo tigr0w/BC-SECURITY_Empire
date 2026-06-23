@@ -52,9 +52,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -74,9 +72,7 @@ class Stager:
             "Staged": {
                 "Description": "Allow agent to be staged",
                 "Required": True,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
             },
         }
 
@@ -96,8 +92,8 @@ class Stager:
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
 
-        obfuscate_script = obfuscate.lower() == "true"
-        staged = self.options["Staged"]["Value"].lower() == "true"
+        obfuscate_script = obfuscate
+        staged = self.options["Staged"]["Value"]
 
         if not staged:
             launcher = self.mainMenu.stagergenv2.generate_stageless(self.options)

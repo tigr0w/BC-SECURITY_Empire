@@ -40,16 +40,12 @@ class Stager:
             "Delete": {
                 "Description": "Delete .bat after running.",
                 "Required": False,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": True,
             },
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -81,9 +77,9 @@ class Stager:
         listener = self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name)
         host = listener.options["Host"]["Value"]
 
-        obfuscate = options["Obfuscate"]["Value"].lower() == "true"
+        obfuscate = options["Obfuscate"]["Value"]
 
-        delete = options["Delete"]["Value"].lower() == "true"
+        delete = options["Delete"]["Value"]
 
         if not host:
             raise StagerGenerationException("Error in launcher command generation.")
