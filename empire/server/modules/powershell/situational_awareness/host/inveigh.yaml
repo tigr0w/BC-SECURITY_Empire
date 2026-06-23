@@ -93,11 +93,7 @@ options:
   - name: Inspect
     description: 'Inspect LLMNR, mDNS, and NBNS traffic only (no spoofing).'
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: IP
     description: 'Local IP address for listening and packet sniffing. Used for spoofing
       if SpooferIP is not set.'

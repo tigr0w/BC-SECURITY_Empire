@@ -7,9 +7,9 @@ from empire.server.api.v2.shared_dto import (
     Author,
     CustomOptionSchema,
     coerced_dict,
-    to_value_type,
 )
 from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
+from empire.server.core.option_types import to_value_type
 
 
 def domain_to_dto_template(listener, uid: str):

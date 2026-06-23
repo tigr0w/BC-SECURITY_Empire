@@ -51,11 +51,7 @@ options:
   - name: CheckAll
     description: Discover and check all domain SQL Server instances.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: Username
     description: Domain account to authenticate to AD with (domain\user). Used with
       CheckAll.

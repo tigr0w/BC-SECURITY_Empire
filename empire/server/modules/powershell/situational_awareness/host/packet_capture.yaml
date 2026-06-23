@@ -45,18 +45,10 @@ options:
   - name: Persistent
     description: Persist capture across reboots.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: StopTrace
     description: Stop trace capture.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 advanced:
   custom_generate: true

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from empire.server.core.db import models
 from empire.server.core.module_models import EmpireModuleOption
+from empire.server.core.option_types import py_type_for_tag
 
 log = logging.getLogger(__name__)
 
@@ -36,12 +37,45 @@ def get_listener_defaults(db: Session) -> tuple[str | None, list[str] | None]:
 
 
 def safe_cast(option: typing.Any, expected_option_type: type) -> typing.Any | None:
-    try:
-        if expected_option_type is bool:
-            return option.lower() in ["true", "1"]
-        return expected_option_type(option)
-    except ValueError:
+    """Coerce `option` into `expected_option_type`, returning None on failure.
+
+    `bool` is special-cased: a native bool passes through, any other value is
+    truthy-string tested. `expected_option_type is None` (an unknown YAML
+    `type:` tag) short-circuits to None so callers can distinguish it from
+    "valid type, bad value" — only reachable for non-module callers, since
+    `EmpireModuleOption` rejects unknown tags at load time.
+    """
+    if expected_option_type is None:
         return None
+    if expected_option_type is bool:
+        if isinstance(option, bool):
+            return option
+        return str(option).lower() in ("true", "1")
+    try:
+        return expected_option_type(option)
+    except (ValueError, TypeError) as e:  # TypeError tolerates int(None) etc.
+        log.debug("safe_cast: %s(%r) failed: %s", expected_option_type, option, e)
+        return None
+
+
+def normalize_legacy_params(params: dict) -> dict:
+    """Stringify primitive `bool`/`int`/`float` params at the generate-path boundary.
+
+    The typed-options PR widened the API + model surface to accept native
+    bool/int/float, but every downstream generate path was written against
+    the legacy string-typed contract: `_generate_script_python` calls
+    `script.replace(placeholder, value)` (TypeError on bool), `_generate_script_powershell`
+    calls `value.lower()` directly, and ~70 custom-generate modules' own
+    `generate()` functions do `values.lower() == "true"` on raw param values.
+    Normalizing once at the dispatch boundary keeps the typed contract intact
+    at the API/model layer while every legacy generate consumer keeps working.
+
+    File-typed params (db_download model objects), `None`, and any other
+    non-primitive value pass through unchanged.
+    """
+    return {
+        k: str(v) if isinstance(v, bool | int | float) else v for k, v in params.items()
+    }
 
 
 def convert_module_options(options: list[EmpireModuleOption]) -> dict:
@@ -85,7 +119,17 @@ def validate_options(  # noqa: PLR0912
     plugins for now).
     """
     options = {}
-    params = params.copy()
+    # Stringify native primitives so `evaluate_dependencies` (and the
+    # `Strict` + `SuggestedValues` membership check below) compare against
+    # YAML's stringly `values: ['True']` / `['False']` lists correctly.
+    # Without this, a client POSTing `{Obfuscate: true}` against a YAML with
+    # `depends_on: [{name: Obfuscate, values: ['True']}]` would silently
+    # fail the `True in ['True']` check and drop the dependent option's
+    # user-supplied value. The `_generate_script` boundary normalize stays
+    # because `safe_cast(value, bool)` re-emerges native types into the
+    # returned `options` dict. `normalize_legacy_params` returns a fresh dict,
+    # so the caller's `params` is never mutated.
+    params = normalize_legacy_params(params)
 
     for instance_key, option_meta in instance_options.items():
         if option_meta.get("Internal", False):
@@ -230,21 +274,10 @@ def get_file_options(db, download_service, options, params):
     return files, None
 
 
-def _parse_type(type_str: str = "", value: str = ""):  # noqa: PLR0911
+def _parse_type(type_str: str = "", value: str = ""):
     if not type_str:
         return type(value)
-
-    if type_str.lower() in ["int", "integer"]:
-        return int
-    if type_str.lower() in ["bool", "boolean"]:
-        return bool
-    if type_str.lower() in ["str", "string"]:
-        return str
-    if type_str.lower() == "float":
-        return float
-    if type_str.lower() == "file":
-        return "file"
-    return None
+    return py_type_for_tag(type_str)
 
 
 def _safe_cast_option(

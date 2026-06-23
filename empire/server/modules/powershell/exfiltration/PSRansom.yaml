@@ -34,12 +34,8 @@ options:
     strict: true
   - name: Demo
     description: Remove wallpaper and popup ransom.
-    required: true
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    required: false
+    value: false
     depends_on:
       - name: Mode
         values: ['Encrypt']
@@ -52,12 +48,8 @@ options:
         values: ['Decrypt']
   - name: Exfiltrate
     description: Exfiltrate files to Command & Control Server.
-    required: true
-    value: 'False'
-    suggested_values:
-      - 'True'
-      - 'False'
-    strict: true
+    required: false
+    value: false
     depends_on:
       - name: Mode
         values: ['Encrypt']

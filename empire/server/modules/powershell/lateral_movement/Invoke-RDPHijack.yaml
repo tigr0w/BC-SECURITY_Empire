@@ -42,11 +42,7 @@ options:
   - name: ListSessions
     description: List active RDP sessions instead of hijacking.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
 script: |
   function Invoke-RDPHijack {
       [CmdletBinding()]

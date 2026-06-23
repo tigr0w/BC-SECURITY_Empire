@@ -61,10 +61,6 @@ options:
       from site-packages (pth method) or strips the empire-hook block from usercustomize.py
       (usercustomize method).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 advanced:
   custom_generate: true

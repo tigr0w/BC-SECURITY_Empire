@@ -8,9 +8,9 @@ from empire.server.api.v2.shared_dto import (
     DownloadDescription,
     coerced_dict,
     domain_to_dto_download_description,
-    to_value_type,
 )
 from empire.server.core.db import models
+from empire.server.core.option_types import to_value_type
 from empire.server.utils.option_util import LISTENER_OPTION_NAMES
 
 

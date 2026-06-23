@@ -37,10 +37,6 @@ options:
       for obfuscation types.
     required: false
     value: false
-    strict: true
-    suggested_values:
-      - True
-      - False
     depends_on:
       - name: Language
         values: ['powershell']

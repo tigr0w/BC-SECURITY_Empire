@@ -36,11 +36,7 @@ options:
   - name: IPs
     description: List the resolved individual IPs
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: Domain
     description: The domain to use for the query, defaults to the current domain.
     required: false

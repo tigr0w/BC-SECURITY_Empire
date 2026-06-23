@@ -32,11 +32,7 @@ options:
   - name: l
     description: Listen for a connection.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: c
     description: Connect to a listener.
     required: false
@@ -52,27 +48,15 @@ options:
   - name: ep
     description: Execute PowerShell on remote system.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: r
     description: 'Relay connection format: -r tcp:10.1.1.1:443.'
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: u
     description: Transfer data over UDP instead of TCP.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: dns
     description: Transfer data over DNS (dnscat2 protocol).
     required: false
@@ -105,34 +89,18 @@ options:
   - name: d
     description: Disconnect after connecting.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: rep
     description: Repeater mode - restart after disconnecting.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: g
     description: Generate Payload for remote execution.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: ge
     description: Generate Encoded Payload for obfuscation.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 script_path: management/powercat.ps1
 script_end: powercat {{ PARAMS }}

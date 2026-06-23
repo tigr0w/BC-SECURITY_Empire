@@ -45,11 +45,7 @@ options:
     value: ''
   - name: Debug
     description: Enable debug output for troubleshooting.
-    required: true
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    required: false
+    value: false
 advanced:
   custom_generate: true

@@ -44,11 +44,7 @@ options:
   - name: Delete
     description: Have the launcher.bat delete itself after running.
     required: false
-    value: 'True'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: true
   - name: Listener
     description: Listener to use.
     required: true
@@ -57,11 +53,7 @@ options:
     description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
       for obfuscation types.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: ObfuscateCommand
     description: The Invoke-Obfuscation command to use.
     required: false

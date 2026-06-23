@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 
-from empire.server.api.v2.shared_dto import Author, CustomOptionSchema, to_value_type
+from empire.server.api.v2.shared_dto import Author, CustomOptionSchema
 from empire.server.core.module_models import EmpireModule, LanguageEnum
+from empire.server.core.option_types import to_value_type
 from empire.server.utils.option_util import LISTENER_OPTION_NAMES
 
 

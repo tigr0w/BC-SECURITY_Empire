@@ -34,10 +34,6 @@ options:
   - name: AllUsers
     description: Log off all current users (set to True to log off all sessions).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 advanced:
   custom_generate: true

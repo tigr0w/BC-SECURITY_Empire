@@ -43,11 +43,7 @@ options:
     description: Obfuscate the launcher PowerShell code to evade signature-based
       detection.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: ObfuscateCommand
     description: The Invoke-Obfuscation command to use.
     required: false
@@ -79,11 +75,7 @@ options:
   - name: Cleanup
     description: Disable the Utilman.exe debugger.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: TriggerBinary
     description: Binary to set for the debugger.
     required: false

@@ -11,6 +11,7 @@ from _pytest.logging import LogCaptureHandler
 from empire.server.core.exceptions import (
     ModuleValidationException,
 )
+from empire.server.core.module_models import EmpireModule
 from empire.server.core.module_service import ModuleService
 
 
@@ -249,13 +250,21 @@ def test_auto_finalize(
         assert execute.data.strip() == "ScriptScriptEnd"
 
 
+@pytest.fixture(scope="session")
+def all_module_yaml_paths(install_path):
+    """Session-scoped list of every shipped module YAML. Three tests below walk
+    the same tree; centralizing the glob keeps the path/extension expectation
+    in one place.
+    """
+    return list((Path(install_path) / "modules").rglob("*.y*ml"))
+
+
 @pytest.mark.slow
-def test_ttps(install_path):
-    module_dir = Path(install_path) / "modules"
+def test_ttps(install_path, all_module_yaml_paths):
     tactic_pattern = re.compile(r"TA\d{4}")
     technique_pattern = re.compile(r"T\d{4}(\.\d{3})?")
 
-    for path in module_dir.rglob("*.y*ml"):
+    for path in all_module_yaml_paths:
         try:
             mod = yaml.safe_load(path.read_text())
 
@@ -270,3 +279,134 @@ def test_ttps(install_path):
 
         except Exception as e:
             pytest.fail(f"Error loading {path}: {e}")
+
+
+@pytest.mark.slow
+def test_all_module_yamls_validate(install_path, all_module_yaml_paths):
+    # Smoke test: every shipped module YAML must construct cleanly via
+    # `EmpireModule`. This exercises `EmpireModuleOption.infer_type_and_coerce_value`
+    # against every option in the tree, catching any YAML that escaped the
+    # native-bool migration with a malformed shape — partial conversions,
+    # unintended type inference (e.g. `value: "true"` accidentally unquoted),
+    # or `suggested_values` entries that fail string coercion. Cheap to add and
+    # the only end-to-end coverage of the validator against real data.
+    #
+    # `id` is normally injected by `module_service._load_module` from the file
+    # path; the smoke test stubs it with the relative path so YAMLs (which
+    # don't carry an `id` field on disk) construct cleanly. We only care about
+    # the option-side validation, not the `id` shape.
+    module_dir = Path(install_path) / "modules"
+    failures = []
+    for path in all_module_yaml_paths:
+        raw = yaml.safe_load(path.read_text())
+        if not isinstance(raw, dict):
+            continue
+        # Mirror `module_service._load_module`'s preprocessing: strip None
+        # values so YAML keys like `software:` or `output_extension:` (left
+        # empty intentionally) don't fail the typed field validators.
+        normalized = {k: v for k, v in raw.items() if v is not None}
+        normalized.setdefault(
+            "id", path.relative_to(module_dir).with_suffix("").as_posix()
+        )
+        try:
+            EmpireModule(**normalized)
+        except Exception as e:
+            failures.append(f"{path}: {type(e).__name__}: {e}")
+    assert not failures, "Module YAML validation failures:\n" + "\n".join(failures)
+
+
+@pytest.mark.slow
+def test_no_quoted_string_booleans_in_module_yamls(all_module_yaml_paths):
+    # Regression guard against the migration script's blind spot. The original
+    # sweep missed options wrapped in `strict: true` + `suggested_values:` blocks
+    # (15 modules in the first pass, 18 in the second), all of which the runtime
+    # would happily treat as string-typed text fields instead of booleans —
+    # functionally fine, but the toggle UX silently degrades. EmpireModule
+    # validation accepts these too (no error raised), so the smoke test above
+    # does not catch them. Failure here means a new module landed with the old
+    # pattern OR the migration sweep regressed.
+    #
+    # Marked `@pytest.mark.slow` (consistent with the two sibling YAML-walk
+    # tests above) since the per-file read+regex scales with module count
+    # (~500 files) and shouldn't run on the non-slow CI lane.
+    #
+    # Two complementary checks:
+    #   1. line regex catches `value: 'True'` / `value: "false"` shapes
+    #   2. parsed YAML walk catches the hybrid shape (empty `value: ''` +
+    #      `strict: true` + bool `suggested_values`) — this is what slipped
+    #      `new_gpo_immediate_task.yaml::Remove` through the first time.
+    offenders = []
+    quoted_bool_re = re.compile(r"^\s*value:\s*['\"](True|False|true|false)['\"]\s*$")
+    bool_strings = {"True", "False", "true", "false"}
+    for path in all_module_yaml_paths:
+        text = path.read_text()
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            if quoted_bool_re.match(line):
+                offenders.append(f"{path}:{lineno}: {line.strip()}")
+
+        raw = yaml.safe_load(text)
+        if not isinstance(raw, dict):
+            continue
+        for opt in raw.get("options") or []:
+            if not isinstance(opt, dict):
+                continue
+            suggested = opt.get("suggested_values") or []
+            if (
+                opt.get("strict")
+                and isinstance(suggested, list)
+                and len(suggested) == 2  # noqa: PLR2004
+                and all(str(v) in bool_strings for v in suggested)
+            ):
+                offenders.append(
+                    f"{path}: option {opt.get('name')!r} has hybrid "
+                    f"strict + suggested_values={suggested!r} — convert to "
+                    f"native `value: true`/`value: false` and drop the "
+                    f"strict/suggested_values block"
+                )
+
+    assert not offenders, (
+        "Quoted-string boolean values are no longer supported in module YAMLs; "
+        "use native YAML booleans (`value: true` / `value: false`) and drop "
+        "`strict: true` + `suggested_values: ['True','False']` for those options. "
+        "Offenders:\n" + "\n".join(offenders)
+    )
+
+
+def test_quoted_bool_yaml_guard_positive_control(tmp_path):
+    # Self-check for the regression guard above. If a future refactor changes
+    # the membership check (e.g., `str(v) in bool_strings` → `v in bool_strings`
+    # silently breaks on YAML-parsed `true`/`false` natives, or `bool_strings`
+    # is narrowed to lowercase-only), the detector would silently stop catching
+    # the very pattern it exists for. This synthetic-input test feeds the
+    # guard a known-bad YAML and asserts it gets flagged.
+    bad = tmp_path / "bad_module.yaml"
+    bad.write_text(
+        "name: BadModule\n"
+        "language: powershell\n"
+        "options:\n"
+        "  - name: Debug\n"
+        "    value: ''\n"
+        "    strict: true\n"
+        "    suggested_values:\n"
+        "      - 'True'\n"
+        "      - 'False'\n"
+    )
+
+    bool_strings = {"True", "False", "true", "false"}
+    raw = yaml.safe_load(bad.read_text())
+    flagged = False
+    for opt in raw.get("options") or []:
+        suggested = opt.get("suggested_values") or []
+        if (
+            opt.get("strict")
+            and isinstance(suggested, list)
+            and len(suggested) == 2  # noqa: PLR2004
+            and all(str(v) in bool_strings for v in suggested)
+        ):
+            flagged = True
+            break
+    assert flagged, (
+        "The hybrid-shape detector did not flag the synthetic offender; the "
+        "regression guard above is broken — it will silently stop catching "
+        "the migration miss it exists for."
+    )

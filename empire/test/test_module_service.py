@@ -8,7 +8,10 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from empire.server.core.exceptions import ModuleValidationException
+from empire.server.core.exceptions import (
+    ModuleExecutionException,
+    ModuleValidationException,
+)
 from empire.server.core.module_models import EmpireModule, LanguageEnum
 from empire.server.core.module_service import ModuleService
 from empire.server.core.obfuscation_service import ObfuscationService
@@ -1455,6 +1458,38 @@ def test_dotnet_version_impossible_downgrade_raises(module_service, agent_mock):
         module_service._validate_module_params(
             None, module, agent_mock, params, ignore_admin_check=True
         )
+
+
+def test_generate_script_csharp_wraps_inner_exception_message(
+    module_service, agent_mock
+):
+    # Pins that C# generate-script errors preserve the inner cause: the except
+    # block re-raises `ModuleExecutionException(... {e}) from e` with the inner
+    # message and traceback. Guards against a regression back to a static,
+    # cause-losing message.
+    module = module_service.get_by_id("csharp_persistence_sharpsploit_persistwmi")
+    assert module is not None
+    # Mock the compiler to raise a deterministic error. Use patch.object so the
+    # module-scoped `module_service` fixture's compile_task is restored when the
+    # block exits — otherwise the failure leaks into later tests in this file
+    # (e.g. the BOF execution tests that also call compile_task).
+    with (
+        patch.object(
+            module_service.dotnet_compiler,
+            "compile_task",
+            side_effect=RuntimeError("synthetic mcs failure"),
+        ),
+        pytest.raises(ModuleExecutionException) as exc_info,
+    ):
+        module_service.generate_script_csharp(
+            module, {"DotNetVersion": "net40"}, obfuscation_config=None
+        )
+
+    # Inner cause is preserved via `raise ... from e`.
+    assert exc_info.value.__cause__ is not None
+    assert isinstance(exc_info.value.__cause__, RuntimeError)
+    # User-facing message includes the inner reason, not the static label.
+    assert "synthetic mcs failure" in str(exc_info.value)
 
 
 def test_parse_agent_dotnet_versions_helper():

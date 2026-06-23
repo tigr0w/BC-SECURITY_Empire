@@ -41,11 +41,7 @@ options:
     description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
       for obfuscation types.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: ObfuscateCommand
     description: The Invoke-Obfuscation command to use.
     required: false
@@ -73,11 +69,7 @@ options:
   - name: Cleanup
     description: Restore the original .LNK settings.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: UserAgent
     description: User-agent string to use for the staging request (default, none,
       or other).

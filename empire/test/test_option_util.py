@@ -1,10 +1,31 @@
 from unittest.mock import MagicMock
 
+import pytest
+
+from empire.server.core.module_models import EmpireModuleOption
+from empire.server.core.option_types import (
+    _TYPE_STR_TO_PY,
+    _TYPE_STR_TO_VALUETYPE,
+    _VALUETYPE_TO_PYTYPE,
+    _VALUETYPE_TO_TAG,
+    ValueType,
+    to_value_type,
+)
 from empire.server.utils.option_util import (
     evaluate_dependencies,
+    normalize_legacy_params,
     safe_cast,
     validate_options,
 )
+
+
+def test_option_type_tables_are_self_consistent():
+    # The `option_types` tables are a single source of truth: `_TYPE_STR_TO_PY`
+    # is derived from `_TYPE_STR_TO_VALUETYPE`, so their key sets must match,
+    # and `_VALUETYPE_TO_PYTYPE` must realize every `ValueType` member (else the
+    # derivation would KeyError at import).
+    assert set(_TYPE_STR_TO_PY) == set(_TYPE_STR_TO_VALUETYPE)
+    assert set(_VALUETYPE_TO_PYTYPE) == set(ValueType)
 
 
 def test_validate_options_required_strict_success():
@@ -85,6 +106,49 @@ def test_validate_options_required_missing_uses_default():
     cleaned_options, _err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {"Command": "DEFAULT_VALUE"}
+
+
+def test_validate_options_required_bool_with_default_is_noop():
+    # `Required` is a presence check, not a value check. A boolean always
+    # carries a value, so `Required: True` on a bool with a default can never
+    # fail validation — it is effectively a no-op. See the note on
+    # `EmpireModuleOption.required`.
+    instance_options = {
+        "Debug": {
+            "Description": "Enable debug output",
+            "Required": True,
+            "Value": "False",
+            "SuggestedValues": [],
+            "Strict": False,
+            "Type": "bool",
+        }
+    }
+
+    cleaned_options, err = validate_options(instance_options, {}, None, None)
+
+    assert err is None
+    assert cleaned_options == {"Debug": False}
+
+
+def test_validate_options_required_bool_empty_string_param_is_rejected():
+    # The single path where `Required` is observable for a bool: a client that
+    # explicitly sends an empty string (which a toggle UI never does). The empty
+    # value trips the presence check before it can be cast to a bool.
+    instance_options = {
+        "Debug": {
+            "Description": "Enable debug output",
+            "Required": True,
+            "Value": "False",
+            "SuggestedValues": [],
+            "Strict": False,
+            "Type": "bool",
+        }
+    }
+
+    cleaned_options, err = validate_options(instance_options, {"Debug": ""}, None, None)
+
+    assert cleaned_options is None
+    assert err == "required option missing: Debug"
 
 
 def test_validate_options_casts_string_to_int_success():
@@ -292,6 +356,71 @@ def test_safe_cast_boolean_from_string_false():
     assert safe_cast("FALSE", bool) is False
 
 
+def test_safe_cast_boolean_from_bool():
+    assert safe_cast(True, bool) is True
+    assert safe_cast(False, bool) is False
+
+
+def test_safe_cast_boolean_silent_coercion_edges():
+    # Pin the documented "truthy-string" contract so a future refactor of the
+    # bool branch doesn't silently flip these. Only `"true"` (any case) and
+    # `"1"` map to True; everything else — including `None`, `0`, `"yes"`,
+    # `"on"`, and the literal string `"2"` — maps to False (or None in the
+    # case of None, where str(None).lower() == "none" is not in the truthy set).
+    assert safe_cast(None, bool) is False
+    assert safe_cast(0, bool) is False
+    assert safe_cast(1, bool) is True
+    assert safe_cast("1", bool) is True
+    assert safe_cast("2", bool) is False
+    assert safe_cast("yes", bool) is False
+    assert safe_cast("on", bool) is False
+    assert safe_cast("", bool) is False
+
+
+def test_safe_cast_non_bool_returns_none_on_typeerror():
+    # Pin the post-PR safe_cast contract: TypeError from `expected_option_type(option)`
+    # surfaces as None (caller `_safe_cast_option` translates this into
+    # "incorrect type for option X"). Regression target: `int(None)` and
+    # `int([])` previously raised; widening the catch was intentional but
+    # narrowly scoped to the type-call path.
+    assert safe_cast(None, int) is None
+    assert safe_cast([1, 2], int) is None
+    assert safe_cast({"a": 1}, int) is None
+    # ValueError path still returns None.
+    assert safe_cast("not-a-number", int) is None
+
+
+def test_validate_options_strict_with_legacy_string_suggested_values_accepts_native_bool():
+    # Regression pin for the "hybrid YAML" shape (`strict: true` +
+    # `suggested_values: ['True','False']` + stringly value). Third-party
+    # plugins may still carry this pre-migration shape. After moving
+    # `normalize_legacy_params` to the top of `validate_options` (depends_on
+    # fix), native `True` is stringified to `"True"` before the strict
+    # check runs, so the hybrid YAML now correctly accepts both native and
+    # stringly clients (previously native bool was rejected).
+    instance_options = {
+        "Debug": {
+            "Description": "Debug toggle (legacy hybrid shape).",
+            "Required": False,
+            "Value": "False",
+            "SuggestedValues": ["True", "False"],
+            "Strict": True,
+            "Type": "bool",
+        },
+    }
+
+    # Native bool param against legacy string suggested values: now accepted.
+    cleaned, err = validate_options(instance_options, {"Debug": True}, None, None)
+    assert err is None
+    assert cleaned == {"Debug": True}
+
+    # Stringly param against the same shape: also accepted; `_safe_cast_option`
+    # casts the post-strict-check string to native bool because Type=="bool".
+    cleaned, err = validate_options(instance_options, {"Debug": "True"}, None, None)
+    assert err is None
+    assert cleaned == {"Debug": True}
+
+
 def test_evaluate_dependencies_no_depends_on():
     option = {"name": "Option1", "Value": "Test"}
     params = {"Option1": "Test"}
@@ -401,6 +530,42 @@ def test_validate_options_dependency_not_met():
 
     assert cleaned_options["DependentOption"] == ""
     assert err is None
+
+
+def test_validate_options_dependency_met_via_native_bool_param():
+    # Regression for the typed-options widening: a client POSTing a native
+    # `bool` for the parent of a `depends_on` chain would silently fail the
+    # `True in ['True']` comparison (because `evaluate_dependencies` reads
+    # raw stringly YAML values), drop into the "include with default value
+    # but skip validation" branch, and discard the user's value for the
+    # dependent option. `validate_options` now normalizes primitives at the
+    # top before `evaluate_dependencies` runs.
+    instance_options = {
+        "Obfuscate": {
+            "Description": "Obfuscate the script",
+            "Required": False,
+            "Value": "False",
+            "Type": "bool",
+        },
+        "ObfuscateCommand": {
+            "Description": "Obfuscation command",
+            "Required": False,
+            "Value": "Token\\All\\1",
+            "DependsOn": [{"name": "Obfuscate", "values": ["True"]}],
+        },
+    }
+    # User sends native `True` (the new typed-options contract on the API).
+    options = {"Obfuscate": True, "ObfuscateCommand": "MyCustomObfuscation"}
+    cleaned_options, err = validate_options(instance_options, options, None, None)
+
+    assert err is None
+    # Pre-fix: ObfuscateCommand silently fell back to "Token\\All\\1" default.
+    assert cleaned_options["ObfuscateCommand"] == "MyCustomObfuscation"
+    # Pins the contract documented in the validate_options comment: the
+    # validation layer stringifies primitives for depends_on / strict checks,
+    # but `safe_cast(value, bool)` re-emerges native types into the returned
+    # `options` dict so downstream consumers see typed values.
+    assert cleaned_options["Obfuscate"] is True
 
 
 def test_validate_options_dependency_met(session_local):
@@ -573,3 +738,213 @@ def test_validation_options_file_not_required():
     cleaned_options, _err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {"File": ""}
+
+
+def test_to_value_type_explicit_bool_with_string_value():
+    """Explicit type='bool' should return BOOLEAN even when value is a string."""
+    assert to_value_type("False", "bool") == ValueType.boolean
+    assert to_value_type("True", "bool") == ValueType.boolean
+    assert to_value_type("true", "boolean") == ValueType.boolean
+
+
+def test_to_value_type_explicit_int_with_string_value():
+    assert to_value_type("8080", "int") == ValueType.integer
+    assert to_value_type("42", "integer") == ValueType.integer
+
+
+def test_to_value_type_explicit_float_with_string_value():
+    assert to_value_type("3.14", "float") == ValueType.float
+
+
+def test_to_value_type_explicit_string():
+    assert to_value_type("hello", "string") == ValueType.string
+    assert to_value_type("hello", "str") == ValueType.string
+
+
+def test_to_value_type_explicit_file():
+    assert to_value_type("somefile", "file") == ValueType.file
+
+
+def test_to_value_type_infer_from_value():
+    """When type is empty, infer from the Python type of value."""
+    assert to_value_type(True) == ValueType.boolean
+    assert to_value_type(False) == ValueType.boolean
+    assert to_value_type(42) == ValueType.integer
+    assert to_value_type(3.14) == ValueType.float
+    assert to_value_type("hello") == ValueType.string
+
+
+def test_module_option_infers_bool_type():
+    opt = EmpireModuleOption(name="Debug", value=False)
+    assert opt.type == "bool"
+    assert opt.value == "False"
+
+
+def test_module_option_infers_bool_type_true():
+    opt = EmpireModuleOption(name="Debug", value=True)
+    assert opt.type == "bool"
+    assert opt.value == "True"
+
+
+def test_module_option_infers_int_type():
+    opt = EmpireModuleOption(name="Port", value=8080)
+    assert opt.type == "int"
+    assert opt.value == "8080"
+
+
+def test_module_option_infers_float_type():
+    opt = EmpireModuleOption(name="Rate", value=3.14)
+    assert opt.type == "float"
+    assert opt.value == "3.14"
+
+
+def test_module_option_string_no_type_inference():
+    opt = EmpireModuleOption(name="Command", value="whoami")
+    assert opt.type is None
+    assert opt.value == "whoami"
+
+
+def test_module_option_explicit_type_takes_precedence():
+    opt = EmpireModuleOption(name="Port", value=8080, type="string")
+    assert opt.type == "string"
+    assert opt.value == "8080"
+
+
+def test_module_option_default_empty_string():
+    opt = EmpireModuleOption(name="Command")
+    assert opt.value == ""
+    assert opt.type is None
+
+
+def test_module_option_suggested_values_coerced_to_strings():
+    opt = EmpireModuleOption(name="Port", suggested_values=[80, 443, 8080])
+    assert opt.suggested_values == ["80", "443", "8080"]
+
+
+def test_normalize_legacy_params_stringifies_primitives():
+    # Boundary fast-tier coverage: bool/int/float become strings, file objects
+    # and None pass through. This is the single point of truth for the
+    # generate paths' string-only contract — every csharp/bof/python/powershell
+    # path (custom and non-custom) routes params through this function before
+    # touching `.lower()`, `.replace()`, or JSON serialization.
+    file_obj = object()  # stand-in for a db_download
+    normalized = normalize_legacy_params(
+        {
+            "BoolTrue": True,
+            "BoolFalse": False,
+            "Int": 42,
+            "Float": 3.14,
+            "Str": "already",
+            "None": None,
+            "File": file_obj,
+        }
+    )
+    assert normalized == {
+        "BoolTrue": "True",
+        "BoolFalse": "False",
+        "Int": "42",
+        "Float": "3.14",
+        "Str": "already",
+        "None": None,
+        "File": file_obj,
+    }
+    # Same key set (no params dropped or added).
+    assert set(normalized) == {
+        "BoolTrue",
+        "BoolFalse",
+        "Int",
+        "Float",
+        "Str",
+        "None",
+        "File",
+    }
+
+
+def test_normalize_legacy_params_preserves_input_dict():
+    # Boundary contract: the caller's dict must not be mutated. validate_options
+    # now relies on this fresh-dict return instead of its own `.copy()`, so the
+    # property must hold for a borrowed reference.
+    original = {"x": True}
+    normalized = normalize_legacy_params(original)
+    assert original == {"x": True}
+    assert normalized == {"x": "True"}
+
+
+def test_validate_options_does_not_mutate_caller_params():
+    # Guards the dropped `params.copy()`: validate_options writes into its local
+    # params (the `Value` default backfill at the `not in params` branch), so it
+    # must rebind to the fresh dict normalize_legacy_params returns and never
+    # touch the caller's. The native bool also exercises the normalize step.
+    instance_options = {
+        "Command": {
+            "Description": "",
+            "Required": False,
+            "Value": "DEFAULT_VALUE",
+            "SuggestedValues": [],
+            "Strict": False,
+            "Type": None,
+        },
+        "Debug": {
+            "Description": "",
+            "Required": False,
+            "Value": "False",
+            "SuggestedValues": [],
+            "Strict": False,
+            "Type": "bool",
+        },
+    }
+    caller_params = {"Debug": True}
+    _, err = validate_options(instance_options, caller_params, MagicMock(), MagicMock())
+    assert err is None
+    # No default backfilled in, native bool not stringified — on the caller's dict.
+    assert caller_params == {"Debug": True}
+
+
+def test_valuetype_to_tag_round_trips_through_alias_table():
+    # _VALUETYPE_TO_TAG is the inference write-back path. It can't be a key-set
+    # equality check: `string` is omitted (inferred strings stay untyped) and
+    # `file` is omitted (never inferred from a raw scalar). Pin the exact
+    # taggable set and that every written tag re-resolves to its own type — this
+    # catches a new ValueType that should auto-tag but was left out of the map.
+    assert set(_VALUETYPE_TO_TAG) == {
+        ValueType.boolean,
+        ValueType.integer,
+        ValueType.float,
+    }
+    for vtype, tag in _VALUETYPE_TO_TAG.items():
+        assert _TYPE_STR_TO_VALUETYPE[tag] == vtype
+
+
+def test_to_value_type_unknown_type_falls_through_to_inference():
+    # A typo'd `type:` tag is not an error: to_value_type falls through to
+    # inference on the Python type of value (documented behavior) instead of
+    # raising, so it renders as its inferred type.
+    assert to_value_type("hello", "stirng") == ValueType.string
+    assert to_value_type(True, "boool") == ValueType.boolean
+
+
+def test_safe_cast_unknown_type_returns_none_without_swallowing_real_errors():
+    # `_parse_type` returns None for a typo'd `type:` tag like 'stirng'.
+    # safe_cast now short-circuits on None so the caller can distinguish
+    # "server-config bug" from "bad client value" without the catch widening
+    # masking the TypeError that NoneType(value) would otherwise raise.
+    assert safe_cast("anything", None) is None
+
+
+def test_empire_module_option_rejects_unknown_type_tag():
+    # Typos in `type:` previously silently degraded to STRING and produced
+    # a misleading "Expected None but got <class 'str'>" error at task
+    # dispatch time. The field validator now rejects unknown tags at
+    # model-load (mirrors `check_credential_parser`).
+    with pytest.raises(ValueError, match="unknown option type"):
+        EmpireModuleOption(name="Debug", value="True", type="stirng")
+
+
+def test_empire_module_option_accepts_known_type_tags():
+    # All canonical aliases in `_TYPE_STR_TO_PY` must construct cleanly.
+    # Verify the validator's "known set" stays aligned with the underlying
+    # dispatch table.
+    for tag in ("str", "string", "int", "integer", "bool", "boolean", "float", "file"):
+        # Capitalized form also accepted (validator lowercases for the check).
+        opt = EmpireModuleOption(name="Debug", value="x", type=tag.upper())
+        assert opt.type == tag.upper()

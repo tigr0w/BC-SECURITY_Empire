@@ -75,11 +75,7 @@ options:
   - name: Cleanup
     description: Remove the persistence mechanism and clean up artifacts.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: WebFile
     description: URL location of the launcher.bat file to fetch over the network.
     required: true

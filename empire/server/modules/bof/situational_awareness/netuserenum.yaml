@@ -30,10 +30,6 @@ options:
     description: Enumerate domain user accounts. False enumerates local user accounts.
     required: true
     value: false
-    strict: true
-    suggested_values:
-      - true
-      - false
   - name: UserFilter
     description: Which account types to return. "All users" lists every account;
       "Locked out" and "Disabled" restrict to those states; "Active accounts only"

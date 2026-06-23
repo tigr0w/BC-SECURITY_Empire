@@ -77,11 +77,7 @@ options:
   - name: ShowWindow
     description: Show the window for the created process instead of hiding it.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 script_path: management/Invoke-RunAs.ps1
 advanced:
   custom_generate: true

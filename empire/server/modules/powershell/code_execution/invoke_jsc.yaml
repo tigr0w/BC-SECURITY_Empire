@@ -45,11 +45,7 @@ options:
   - name: Execute
     description: Execute the compiled output.
     required: false
-    value: 'True'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: true
   - name: OutputFunction
     description: PowerShell output function to use.
     required: false

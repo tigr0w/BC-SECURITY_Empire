@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from empire.server.api.v2.shared_dto import (
     DownloadDescription,
+    coerced_dict,
     domain_to_dto_download_description,
 )
 from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
@@ -84,7 +85,11 @@ class ModulePostRequest(BaseModel):
     ignore_language_version_check: bool = False
     ignore_admin_check: bool = False
     background_override: bool | None = None
-    options: dict[str, str | int | float]
+    # String-coerced like the listener/stager/plugin DTOs: native JSON
+    # bool/int/float are still accepted on the wire and normalized to strings
+    # (see `coerced_dict`), then re-typed per option by `safe_cast`. Each
+    # option's real type is advertised on the GET side via `value_type`.
+    options: coerced_dict
     modified_input: str | None = None
 
 

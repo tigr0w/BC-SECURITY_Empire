@@ -36,19 +36,11 @@ options:
       the profile entry intact.
     required: true
     value: false
-    strict: true
-    suggested_values:
-      - true
-      - false
   - name: Force
     description: Forcefully disconnect even if files are open on the share. False
       fails if the share is in use.
     required: true
     value: false
-    strict: true
-    suggested_values:
-      - true
-      - false
 bof:
   x86: bof/situational_awareness/netuse/netuse.x86.o
   x64: bof/situational_awareness/netuse/netuse.x64.o

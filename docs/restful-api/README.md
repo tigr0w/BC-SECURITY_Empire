@@ -68,6 +68,8 @@ If a file is downloaded, then the associated AgentFile record will have a joined
 
 _/api/v2/modules/_ The modules endpoints provide a way to view the currently loaded modules in Empire. At the moment, there is no way to create modules via the API, they must exist on the server at the time that the server is ran. There is an update endpoint that allows for enabling and disabling a module. Disabling a module will block it from being allowed to execute.
 
+Each option in a module response includes a `value_type` field (`STRING`/`BOOLEAN`/`INTEGER`/`FLOAT`/`FILE`) so frontends can render the appropriate input widget (toggle, number, file picker, etc.) without inspecting the value. The `value` itself stays serialized as a string for language-agnostic compatibility.
+
 ### Hosts
 
 _/api/v2/hosts/_ Hosts are read-only via the API. Hosts represent the machines that agents are running on. Multiple agents can run on a single host. The resources are generated when an agent connects and is based on its internal IP address and name.
@@ -112,7 +114,7 @@ _/api/v2/malleable-profiles_ Malleable Profiles support basic CRUD operations vi
 
 ### Plugins
 
-_/api/v2/plugins_ The plugin endpoints allow for the management of plugins. There is an endpoint for getting a single plugin, as well as a list of all plugins. The `execute` endpoint allows for the execution of a plugin's code. Like a listener, stager, or module, the plugin defines its options in code, and the options can be sent as strings, but Empire will still validate that they can be parsed to the correct type and raise an exception if it isn't correct.
+_/api/v2/plugins_ The plugin endpoints allow for the management of plugins. There is an endpoint for getting a single plugin, as well as a list of all plugins. The `execute` endpoint allows for the execution of a plugin's code. Like a listener, stager, or module, the plugin defines its options in code. Module options accept native JSON types (`bool`/`int`/`float`/`str`) in `POST /api/v2/agents/{id}/tasks/module`; stager, listener, and plugin POST endpoints continue to accept stringified values today. Response payloads include a `value_type` discriminator (`STRING`/`BOOLEAN`/`INTEGER`/`FLOAT`/`FILE`) that frontends can use to render typed inputs. Empire validates incoming values against their declared type and raises an exception when the cast fails.
 
 ### Meta
 

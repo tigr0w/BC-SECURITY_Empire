@@ -51,12 +51,8 @@ options:
     value: ''
   - name: LoadedProcesses
     description: Scan only loaded process executables
-    required: true
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    required: false
+    value: false
 script: |-
   from ctypes import *
   def run():

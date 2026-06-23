@@ -53,10 +53,6 @@ options:
   - name: Enable
     description: Enable the target account after modification (set to True to enable).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 script_path: persistence/Invoke-RIDHijacking.ps1
 script_end: Invoke-RIDHijacking {{ PARAMS }}

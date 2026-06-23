@@ -37,11 +37,7 @@ options:
   - name: CleanUp
     description: Re-enable machine password changes.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 script: |
   Function Invoke-DisableAccountChange {
       param

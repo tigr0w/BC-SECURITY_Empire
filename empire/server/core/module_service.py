@@ -51,7 +51,11 @@ from empire.server.utils.dotnet_version_util import (
     normalize_dotnet_version,
     parse_agent_dotnet_versions,
 )
-from empire.server.utils.option_util import convert_module_options, validate_options
+from empire.server.utils.option_util import (
+    convert_module_options,
+    normalize_legacy_params,
+    validate_options,
+)
 from empire.server.utils.string_util import slugify
 
 if typing.TYPE_CHECKING:
@@ -484,6 +488,13 @@ class ModuleService:
         Raises ``ModuleValidationException`` or ``ModuleExecutionException``
         on failure.
         """
+        # Stringify native bool/int/float params before language dispatch so
+        # `_generate_script_python.replace(...)`, `_generate_script_powershell`'s
+        # `value.lower()` check, and ~70 custom-generate modules' own
+        # `values.lower()` calls all see the legacy string contract they were
+        # written against. See `normalize_legacy_params` for rationale.
+        params = normalize_legacy_params(params)
+
         if not obfuscation_config:
             obfuscation_config = self.obfuscation_service.get_obfuscation_config(
                 db, module.language
@@ -874,8 +885,8 @@ class ModuleService:
         except (ModuleValidationException, ModuleExecutionException):
             raise
         except Exception as e:
-            log.exception("dotnet compile error")
-            raise ModuleExecutionException("dotnet compile error") from e
+            log.error("Error generating C# script: %s", e, exc_info=True)
+            raise ModuleExecutionException(f"Error generating C# script: {e}") from e
 
     def _create_modified_module(self, module: EmpireModule, modified_input: str):
         """

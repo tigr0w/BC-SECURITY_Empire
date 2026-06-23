@@ -35,18 +35,10 @@ options:
   - name: VBScript
     description: Set VBScript as script code
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: JScript
     description: Set JScript as script code
     required: false
-    value: 'True'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: true
 script_path: code_execution/Invoke-ClearScript.ps1
 script_end: Invoke-ClearScript {{ PARAMS }}

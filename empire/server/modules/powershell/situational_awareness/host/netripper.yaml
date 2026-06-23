@@ -45,11 +45,7 @@ options:
   - name: AllData
     description: Log all data instead of just plaintext.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: Datalimit
     description: Data limit capture per request.
     required: false

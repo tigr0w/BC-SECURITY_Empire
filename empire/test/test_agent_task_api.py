@@ -62,6 +62,16 @@ def agent_low_integrity(session_local, models, main):
 
 
 @pytest.fixture(scope="module")
+def agent_python(session_local, models, main):
+    # Needed to exercise the python `_generate_script_python` path — the
+    # default `agent` fixture runs powershell, and the agent/module language
+    # compatibility check rejects cross-language tasks.
+    return _get_or_create_agent(
+        session_local, models, main, name="pyagent", language="python"
+    )
+
+
+@pytest.fixture(scope="module")
 def download(client, admin_auth_header, session_local, models):
     response = client.post(
         "/api/v2/downloads",
@@ -282,6 +292,119 @@ def test_create_task_module(client, admin_auth_header, agent):
         "Restore": "False",
         "Verbose": "False",
     }
+
+
+def test_create_task_module_accepts_native_bool(client, admin_auth_header, agent):
+    # Pins the contract this PR ships: a client may POST native JSON booleans for
+    # module boolean options — `coerced_dict` normalizes them to strings at the
+    # API boundary. Regression targets: `coerced_dict` coercion, `safe_cast(value,
+    # bool)`, and the `value.lower()` call in `_generate_script_powershell`
+    # (crashes on a raw bool). `module_options` echoes the string-coerced payload.
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "powershell_credentials_invoke_internal_monologue",
+            "options": {
+                "Challenge": "1122334455667788",
+                "Downgrade": False,
+                "Impersonate": False,
+                "Restore": True,
+                "Verbose": True,
+            },
+        },
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    assert response.json()["input"].startswith("function Invoke-InternalMonologue")
+    assert response.json()["module_options"] == {
+        "Agent": agent,
+        "Challenge": "1122334455667788",
+        "Downgrade": "False",
+        "Impersonate": "False",
+        "Restore": "True",
+        "Verbose": "True",
+    }
+
+
+def test_create_task_module_accepts_native_bool_python(
+    client, admin_auth_header, agent_python
+):
+    # Locks in the boundary normalization for `_generate_script_python`: a
+    # native bool option must not reach `script.replace(...)` (TypeError on a
+    # non-str arg). Covers the non-custom Python generate path.
+    response = client.post(
+        f"/api/v2/agents/{agent_python}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "python_credentials_linux_proc_credential_dump",
+            "options": {"SearchEnviron": True},
+        },
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    # `input` is truncated to 100 chars for display; the full rendered script
+    # is in `full_input`.
+    rendered = response.json()["full_input"]
+    assert "search_environ = 'True'" in rendered
+    assert "{{ SearchEnviron }}" not in rendered
+
+
+def test_create_task_module_accepts_native_int(client, admin_auth_header, agent):
+    # Posting a native int (Threads) locks in the int path end-to-end: the DTO
+    # coerces it to "20", then safe_cast re-types it and normalize_legacy_params
+    # feeds the powershell render.
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "powershell_credentials_sharpsecdump",
+            "options": {
+                "Target": "127.0.0.1",
+                "Threads": 20,
+            },
+        },
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    # The `-{{ KEY }}={{ VALUE }}` format_string + the `Threads` option's
+    # `name_in_code: threads` produces `-threads=20` in the rendered script.
+    rendered = response.json()["full_input"]
+    assert "-threads=20" in rendered
+    # `module_options` on the response echoes the string-coerced client payload.
+    assert response.json()["module_options"]["Threads"] == "20"
+
+
+def test_create_task_module_accepts_native_bool_custom_generate(
+    client, admin_auth_header, agent
+):
+    # Locks in the boundary normalization for custom_generate modules: a native
+    # bool must not reach a `.lower()` call in module-owned generate() code
+    # (AttributeError on bool). find_fruit exercises the `custom_generate`
+    # dispatch with three bool options (UseSSL, ShowAll, FoundOnly).
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "powershell_situational_awareness_host_find_fruit",
+            "options": {
+                "Rhosts": "192.168.1.0/24",
+                "UseSSL": True,
+                "ShowAll": False,
+                "FoundOnly": True,
+            },
+        },
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    # `find_fruit.py`'s generate() appends ` -UseSSL` and ` -FoundOnly` switches
+    # for true-valued bool options and omits false-valued ones. The flag
+    # switches land in the script_end appended past the 100-char `input`
+    # truncation, so check `full_input`.
+    rendered = response.json()["full_input"]
+    assert "-UseSSL" in rendered
+    assert "-FoundOnly" in rendered
+    assert "-ShowAll" not in rendered
 
 
 @pytest.mark.slow

@@ -24,10 +24,6 @@ options:
       to target a specific remote PID.
     required: true
     value: true
-    strict: true
-    suggested_values:
-      - true
-      - false
   - name: Pid
     description: Process ID of the remote process to inject the ETW bypass into.
       Only used when InjectSelf is False.

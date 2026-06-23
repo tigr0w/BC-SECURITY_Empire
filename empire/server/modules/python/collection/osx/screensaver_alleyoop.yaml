@@ -47,12 +47,8 @@ options:
     value: '15'
   - name: Verbose
     description: Run in verbose mode.
-    required: true
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    required: false
+    value: false
 script: |-
   import subprocess
   import time

@@ -56,11 +56,7 @@ options:
   - name: Obfuscate
     description: Obfuscate the launcher powershell code.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
     depends_on:
       - name: Language
         values: ['powershell']
@@ -94,10 +90,6 @@ options:
   - name: Cleanup
     description: Remove the persistence mechanism and restore screensaver settings.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 advanced:
   custom_generate: true
