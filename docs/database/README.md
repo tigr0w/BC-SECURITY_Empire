@@ -37,7 +37,7 @@ Empire stamps fresh databases at baseline automatically on startup but does NOT 
 ### Backing up before migrations
 
 The `backup_db()` function creates a timestamped backup before applying migrations:
-- **SQLite**: copies the database file to `~/.local/share/empire/backups/`
+- **SQLite**: copies the database file to the `backups/` dir under Empire's data directory (Linux default `~/.local/share/empire/backups/`; see [data & config locations](../quickstart/server.md#data--config-locations))
 - **MySQL**: runs `mysqldump` to the same backup directory
 
 # Docker

@@ -70,9 +70,11 @@ plugin_marketplace:
       file: registry.yaml
 directories:
   downloads: downloads
-  # Persistent on-disk caches (currently: Go build cache). Relative paths land
-  # under DATA_DIR (~/.local/share/empire); set to an absolute path to override.
-  cache: .cache
+  # Persistent on-disk caches (currently: Go build cache). Defaults to the
+  # platform cache dir (~/.cache/empire on Linux, honoring $XDG_CACHE_HOME;
+  # ~/Library/Caches/empire on macOS). Uncomment to override; a relative path
+  # lands under the data dir.
+  # cache: .cache
 logging:
   level: INFO
   simple_console: true

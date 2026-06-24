@@ -1,6 +1,8 @@
 import copy
+import sys
 from pathlib import Path
 
+import platformdirs
 import pytest
 import yaml
 
@@ -53,8 +55,10 @@ def test_config_resolves_path():
     server_config_dict["directories"]["downloads"] = "empire/test"
     empire_config = EmpireConfig(server_config_dict)
     assert isinstance(empire_config.directories.downloads, Path)
-    assert str(empire_config.directories.downloads).endswith(
-        ".local/share/empire-test/empire/test"
+    # A relative `downloads` resolves under DATA_DIR (platform-specific base).
+    assert (
+        empire_config.directories.downloads
+        == config_manager.DATA_DIR / "empire" / "test"
     )
     assert empire_config.directories.downloads.is_absolute()
 
@@ -274,3 +278,54 @@ def test_user_config_deep_merges_nested_dicts(tmp_path):
     assert config.database.mysql.username == "default_user"
     assert config.database.mysql.url == "localhost:3306"
     assert config.api.port == 1337  # noqa: PLR2004
+
+
+def test_base_dirs_derive_from_platformdirs():
+    # pytest.ini sets TEST_MODE=true, so the app name is "empire-test".
+    assert (
+        Path(platformdirs.user_data_dir("empire-test", appauthor=False))
+        == config_manager.DATA_DIR
+    )
+    assert (
+        Path(platformdirs.user_config_dir("empire-test", appauthor=False))
+        == config_manager.CONFIG_DIR
+    )
+    assert (
+        Path(platformdirs.user_cache_dir("empire-test", appauthor=False))
+        == config_manager.CACHE_DIR
+    )
+
+
+def test_cache_defaults_to_platform_cache_dir():
+    # With no `cache` key in any config source, the field falls through to its
+    # CACHE_DIR default (XDG cache home), NOT under DATA_DIR.
+    cfg_dict = load_test_config()
+    cfg_dict.setdefault("directories", {}).pop("cache", None)
+    cfg = EmpireConfig(cfg_dict)
+    assert cfg.directories.cache == config_manager.CACHE_DIR
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="XDG path semantics are Linux-only")
+def test_production_dirs_are_xdg_no_op_when_unset(monkeypatch):
+    # Locks the production path contract: app name "empire" + appauthor=False
+    # must yield the legacy Linux locations (~/.config/empire,
+    # ~/.local/share/empire) when $XDG_*_HOME is unset — the migration's core
+    # no-op guarantee. The suite runs under "empire-test" (covered above), so
+    # this documents the production paths and catches an appauthor change or a
+    # platformdirs behavior shift. It asserts the platformdirs result for
+    # "empire" directly, so it does NOT catch a rename of the _APP_NAME literal.
+    for var in ("XDG_DATA_HOME", "XDG_CONFIG_HOME", "XDG_CACHE_HOME"):
+        monkeypatch.delenv(var, raising=False)
+    home = Path.home()
+    assert (
+        Path(platformdirs.user_data_dir("empire", appauthor=False))
+        == home / ".local/share/empire"
+    )
+    assert (
+        Path(platformdirs.user_config_dir("empire", appauthor=False))
+        == home / ".config/empire"
+    )
+    assert (
+        Path(platformdirs.user_cache_dir("empire", appauthor=False))
+        == home / ".cache/empire"
+    )

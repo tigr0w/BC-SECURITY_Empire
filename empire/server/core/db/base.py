@@ -212,6 +212,8 @@ def migrate_db():
     """Run any pending Alembic migrations."""
     from alembic import command
 
+    from empire.server.core.config.config_manager import DATA_DIR
+
     cfg = _alembic_cfg()
     log.info("Alembic: checking for pending migrations...")
     try:
@@ -220,7 +222,7 @@ def migrate_db():
     except Exception:
         log.error(
             "Alembic migration failed. Consider restoring from a backup in "
-            "~/.local/share/empire/backups/ or running 'server --clean' to reset.",
+            f"{DATA_DIR / 'backups'} or running 'server --clean' to reset.",
             exc_info=True,
         )
         raise

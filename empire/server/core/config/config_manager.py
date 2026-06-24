@@ -21,7 +21,23 @@ from pydantic_settings import (
     YamlConfigSettingsSource,
 )
 
+from empire.server.core.config import paths
+
 log = logging.getLogger(__name__)
+
+# Base directories. The platformdirs incantation lives in `paths` (a
+# side-effect-free leaf module) so config_manager and the root conftest derive
+# their dirs identically — without conftest importing config_manager at startup,
+# which would trigger this module's mkdir/config-copy side effects too early.
+# Defined here (not at module bottom) because DirectoriesConfig.cache uses
+# CACHE_DIR as a class-level field default, evaluated at import time. TEST_MODE
+# swaps in an isolated "empire-test" app name; on Linux/CI that resolves to the
+# same ~/.local/share/empire-test as before.
+_APP_NAME = "empire-test" if os.environ.get("TEST_MODE") else "empire"
+CONFIG_DIR = paths.config_dir(_APP_NAME)
+DATA_DIR = paths.data_dir(_APP_NAME)
+CACHE_DIR = paths.cache_dir(_APP_NAME)
+CONFIG_PATH = CONFIG_DIR / "config.yaml"
 
 
 class EmpireBaseModel(BaseModel):
@@ -133,10 +149,11 @@ class DatabaseConfig(EmpireBaseModel):
 
 class DirectoriesConfig(EmpireBaseModel):
     downloads: Path = Path("downloads")
-    # Persistent on-disk caches (e.g. Go build cache). Relative paths land under
-    # DATA_DIR (~/.local/share/empire/.cache) via EmpireBaseModel.set_path;
-    # operators can override to an absolute path in YAML.
-    cache: Path = Path(".cache")
+    # Persistent on-disk caches (e.g. Go build cache). Defaults to the platform
+    # cache dir (CACHE_DIR, e.g. ~/.cache/empire on Linux, ~/Library/Caches/empire
+    # on macOS). A relative override in YAML lands under DATA_DIR via
+    # EmpireBaseModel.set_path; an absolute override is used as-is.
+    cache: Path = CACHE_DIR
 
 
 class LoggingConfig(EmpireBaseModel):
@@ -320,18 +337,10 @@ def _resolve_base_config_path() -> Path:
 
 DEFAULT_CONFIG = Path("empire/server/config.yaml")
 
-if os.environ.get("TEST_MODE"):
-    # Wipe semantics moved to root conftest.py::pytest_configure
-    # (see _reset_test_dirs). Outside pytest, this directory persists
-    # across invocations. If you change these paths, update
-    # _TEST_CONFIG_DIR / _TEST_DATA_DIR in the root conftest.py too.
-    CONFIG_DIR = Path.home() / ".config" / "empire-test"
-    DATA_DIR = Path.home() / ".local" / "share" / "empire-test"
-else:
-    CONFIG_DIR = Path.home() / ".config" / "empire"
-    DATA_DIR = Path.home() / ".local" / "share" / "empire"
-
-CONFIG_PATH = CONFIG_DIR / "config.yaml"
+# CONFIG_DIR / DATA_DIR / CACHE_DIR / CONFIG_PATH are defined near the top of this
+# module (platformdirs). The TEST_MODE wipe lives in root conftest.py::
+# _reset_test_dirs — if you change the path derivation, update _TEST_CONFIG_DIR /
+# _TEST_DATA_DIR / _TEST_CACHE_DIR there too.
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 

@@ -253,7 +253,7 @@ def _git_fast_forward(target: Path, ref: str, label: str) -> bool:
 def overwrite_base_config(repo_root: Path) -> bool:
     """Copy the shipped `config.yaml` over the user's active base config.
 
-    Customizations belong in `~/.config/empire/config.user.yaml`, which the
+    Customizations belong in `config.user.yaml` under the config dir, which the
     layered loader (`config_manager.EmpireConfig.settings_customise_sources`)
     merges on top of the base — so treating the base as team-owned defaults
     lets us ship new refs (compiler, starkiller, registries) without trying
@@ -673,7 +673,7 @@ def update_database(*, assume_yes: bool) -> bool:
         _warn(
             "Database: backup did not produce a file (see log for cause). "
             "Proceeding with migration anyway — restore manually from an "
-            "earlier backup in ~/.local/share/empire/backups/ if needed."
+            f"earlier backup in {config_manager.DATA_DIR / 'backups'} if needed."
         )
     else:
         _banner(f"Database: backed up to {backup_path}")
@@ -681,7 +681,7 @@ def update_database(*, assume_yes: bool) -> bool:
     try:
         db_base.stamp_and_migrate()
     except Exception:
-        restore_hint = backup_path or "~/.local/share/empire/backups/"
+        restore_hint = backup_path or config_manager.DATA_DIR / "backups"
         _error(
             f"Database: migration failed. The database may be in a partial "
             f"state — restore from {restore_hint} before retrying."

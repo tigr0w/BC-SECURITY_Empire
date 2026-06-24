@@ -29,6 +29,20 @@ Nested settings are deep-merged: overriding `database.mysql.password` in `config
 
 If using `--config /path/to/config.yaml`, Empire looks for `config.user.yaml` in the same directory as the specified config file.
 
+## Data & config locations
+
+Empire uses [platformdirs](https://pypi.org/project/platformdirs/) for its base
+directories, so paths are XDG-compliant on Linux and native on macOS/Windows:
+
+| Purpose | Linux (default) | macOS | Windows |
+|---------|-----------------|-------|---------|
+| Config (`config.yaml`, `config.user.yaml`) | `~/.config/empire` | `~/Library/Application Support/empire` | `%LOCALAPPDATA%\empire` |
+| Data (DB, certs, logs, downloads, backups, clones) | `~/.local/share/empire` | `~/Library/Application Support/empire` | `%LOCALAPPDATA%\empire` |
+| Cache (Go build cache) | `~/.cache/empire` | `~/Library/Caches/empire` | `%LOCALAPPDATA%\empire\Cache` |
+
+On Linux these honor `$XDG_CONFIG_HOME` / `$XDG_DATA_HOME` / `$XDG_CACHE_HOME`
+when set. The examples elsewhere in the docs use the Linux defaults.
+
 * **suppress-self-cert-warning** - Suppress the http warnings when launching an Empire instance that uses a self-signed cert.
 * **obfuscation** - Settings for the obfuscation subsystem.
 

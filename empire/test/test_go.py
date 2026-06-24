@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.exceptions import ModuleExecutionException
 from empire.server.core.go import GoCompiler, _resolve_go_binary
 from empire.server.core.stager_service import StagerService
@@ -179,13 +180,14 @@ def test_compile_stager_uses_resolved_binary_not_literal_go(tmp_path, monkeypatc
 
 
 def test_compile_stager_env_has_required_go_vars(tmp_path, monkeypatch):
-    """GOTOOLCHAIN=local, a stable GOCACHE under DATA_DIR/.cache/go-build, and
-    GONOSUMDB=* must all be present in every go build invocation.
+    """GOTOOLCHAIN=local, a stable GOCACHE under the configured cache dir
+    (DirectoriesConfig.cache), and GONOSUMDB=* must all be present in every go
+    build invocation.
 
     Missing GOTOOLCHAIN caused Go to auto-download a nonexistent toolchain.
     Wrong GOCACHE (e.g. ``Path.home()/.cache/...``) meant the server running as
     root always got a cold cache — the cache must anchor on the configured
-    user-data path, not the runtime user's home.
+    platform cache path, not the runtime user's home.
     """
     compiler = _make_compiler(tmp_path)
     calls = _patch_compile_stager_subprocess(monkeypatch)
@@ -207,9 +209,11 @@ def test_compile_stager_env_has_required_go_vars(tmp_path, monkeypatch):
     assert gocache.endswith("/go-build"), (
         f"GOCACHE must end in /go-build (the configured cache subdir), got: {gocache!r}"
     )
-    assert ".cache/go-build" in gocache, (
-        "GOCACHE must live under DirectoriesConfig.cache (default DATA_DIR/.cache), "
-        f"not the install_path or Path.home()/.cache/…; got: {gocache!r}"
+    cache_dir = str(empire_config.directories.cache)
+    assert gocache.startswith(cache_dir), (
+        "GOCACHE must live under DirectoriesConfig.cache (the platform cache dir, "
+        f"e.g. ~/.cache/empire on Linux), not install_path or Path.home(); "
+        f"got: {gocache!r}, cache dir: {cache_dir!r}"
     )
     assert env.get("GONOSUMDB") == "*", (
         "GONOSUMDB=* must be set to avoid sum-database network calls"

@@ -12,7 +12,12 @@ import urllib3
 
 from empire.server.common import empire
 from empire.server.core.config import config_manager
-from empire.server.core.config.config_manager import CONFIG_DIR, DATA_DIR, empire_config
+from empire.server.core.config.config_manager import (
+    CACHE_DIR,
+    CONFIG_DIR,
+    DATA_DIR,
+    empire_config,
+)
 from empire.server.core.db import base
 from empire.server.utils.file_util import run_as_user
 from empire.server.utils.log_util import setup_logging
@@ -30,6 +35,7 @@ def clean():
     base.reset_db()
     shutil.rmtree(CONFIG_DIR, ignore_errors=True)
     shutil.rmtree(DATA_DIR, ignore_errors=True)
+    shutil.rmtree(CACHE_DIR, ignore_errors=True)
 
 
 def reset():
