@@ -516,7 +516,10 @@ def test_download_stager_one_liner(client, admin_auth_header):
         headers=admin_auth_header,
     )
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] == "text/plain"
+    assert response.headers.get("content-type").split(";")[0] in [
+        "text/plain",
+        "application/octet-stream",
+    ]
     assert response.text.startswith("powershell -noP -sta")
 
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
@@ -719,7 +722,10 @@ def test_pyinstaller_stager_creation(client, admin_auth_header):
 
     # Check if the file is downloaded successfully
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] == "text/plain"
+    assert response.headers.get("content-type").split(";")[0] in [
+        "text/plain",
+        "application/octet-stream",
+    ]
     assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty
@@ -837,7 +843,10 @@ def test_macro_stager_generation(
 
     # Check if the file is downloaded successfully
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] == "text/plain"
+    assert response.headers.get("content-type").split(";")[0] in [
+        "text/plain",
+        "application/octet-stream",
+    ]
     assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty

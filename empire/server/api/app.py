@@ -8,7 +8,7 @@ import socketio
 import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.gzip import GZipMiddleware
-from starlette.staticfiles import StaticFiles
+from starlette.routing import WebSocketRoute
 
 from empire.server.api.middleware import EmpireCORSMiddleware
 from empire.server.api.v2.admin import admin_api
@@ -73,11 +73,16 @@ def load_starkiller(app, port):
         )
         return
 
-    app.mount(
-        "/",
-        StaticFiles(directory=f"{starkiller_dir!s}/dist", html=True),
-        name="static",
-    )
+    dist_dir = starkiller_dir / "dist"
+    if not dist_dir.is_dir():
+        log.warning(
+            "Starkiller dist directory not found at '%s'. "
+            "The UI will not be available. Run a Starkiller build first.",
+            dist_dir,
+        )
+        return
+
+    app.frontend("/", directory=dist_dir)
 
     log.info("Starkiller served at the same ip and port as Empire Server")
     log.info(f"Starkiller served at http://localhost:{port}/")
@@ -155,7 +160,7 @@ def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
         )
 
         app.add_route("/socket.io/", route=sio_app, methods=["GET", "POST"])
-        app.add_websocket_route("/socket.io/", sio_app)
+        app.router.routes.append(WebSocketRoute("/socket.io/", sio_app))
 
         setup_socket_events(sio, main)
     else:
