@@ -79,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added credential-parser hooks for non-agent ingestion paths: the `CredentialParser` protocol now accepts `agent=None` for sources not tied to an Empire agent, plus a new `NETNTLMV2` credential type (hashcat mode 5600).
 -   Added Gopire (Go agent) support for backgrounding long-running PowerShell jobs and the `TASK_STOPJOB` stop-job task.
 -   Added a malleable `host_stage` gate to disable the stager URI, plus a Gopire malleable schema version guard.
+-   Added `api.cors_origins` config field (default `["*"]`) to make CORS allowed origins operator-configurable for both the REST API and Socket.IO server. Override via `config.yaml` or `EMPIRE_API__CORS_ORIGINS` (JSON-encoded list).
 -   Migration `0006`: widens `agent_files.session_id` to `String(255)` and adds `ON DELETE CASCADE` FK to `agents.session_id`.
 
 ### Changed

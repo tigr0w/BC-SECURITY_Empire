@@ -64,3 +64,4 @@
   * [Logging](settings/logging.md)
   * [Bypasses](settings/bypasses.md)
   * [IP Filtering](settings/ip-filtering.md)
+  * [CORS Allowed Origins](settings/cors.md)

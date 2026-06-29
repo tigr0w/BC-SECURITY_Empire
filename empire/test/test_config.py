@@ -1,4 +1,5 @@
 import copy
+import json
 import sys
 from pathlib import Path
 
@@ -329,3 +330,25 @@ def test_production_dirs_are_xdg_no_op_when_unset(monkeypatch):
         Path(platformdirs.user_cache_dir("empire", appauthor=False))
         == home / ".cache/empire"
     )
+
+
+def test_cors_origins_default():
+    server_config_dict = load_test_config()
+    config = EmpireConfig(server_config_dict)
+    assert config.api.cors_origins == ["*"]
+
+
+def test_yaml_config_cors_origins():
+    expected_origins = ["http://localhost:8080", "http://my-starkiller.example.com"]
+    server_config_dict = load_test_config()
+    server_config_dict["api"]["cors_origins"] = expected_origins
+    config = EmpireConfig(server_config_dict)
+    assert config.api.cors_origins == expected_origins
+
+
+def test_env_overrides_cors_origins(monkeypatch):
+    expected_origins = ["http://starkiller.example.com", "http://localhost:8080"]
+    server_config_dict = load_test_config()
+    monkeypatch.setenv("EMPIRE_API__CORS_ORIGINS", json.dumps(expected_origins))
+    config = EmpireConfig(server_config_dict)
+    assert config.api.cors_origins == expected_origins

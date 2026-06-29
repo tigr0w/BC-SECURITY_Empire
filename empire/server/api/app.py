@@ -92,6 +92,7 @@ def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
     ip = empire_config.api.ip
     port = empire_config.api.port
     secure = empire_config.api.secure
+    cors_origins = empire_config.api.cors_origins
 
     from empire.server.server import main
 
@@ -134,12 +135,7 @@ def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
 
     app.add_middleware(
         EmpireCORSMiddleware,
-        allow_origins=[
-            "*",
-            "http://localhost",
-            "http://localhost:8080",
-            "http://localhost:8081",
-        ],
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -152,7 +148,7 @@ def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
     if empire_config.server.socketio:
         sio = socketio.AsyncServer(
             async_mode="asgi",
-            cors_allowed_origins="*",
+            cors_allowed_origins=cors_origins,
             json=MyJsonWrapper,
         )
         sio_app = socketio.ASGIApp(

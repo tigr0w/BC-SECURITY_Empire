@@ -8,6 +8,11 @@ api:
   ip: 0.0.0.0
   port: 1337
   secure: false
+  # cors_origins:
+  #   - "http://localhost:8080"
+  #   - "http://my-starkiller.example.com"
+  # If not set, defaults to ["*"] (allow all origins).
+  # Env override must be JSON-encoded: EMPIRE_API__CORS_ORIGINS='["http://localhost:8080","http://my-starkiller.example.com"]'
 server:
   socketio: true
 database:

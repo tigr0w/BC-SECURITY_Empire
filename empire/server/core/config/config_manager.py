@@ -59,6 +59,7 @@ class ApiConfig(EmpireBaseModel):
     ip: str = "0.0.0.0"
     port: int = 1337
     secure: bool = False
+    cors_origins: list[str] = ["*"]
 
 
 class SubmodulesConfig(EmpireBaseModel):
