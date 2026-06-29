@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+-   `http_malleable` listener no longer crashes with `AttributeError` when a request arrives on a URI not defined in the malleable profile. It now returns a 404 default response instead of propagating an unhandled exception.
+
 ### Added
 
 -   Performance indexes migration (0002) — apply with `poetry run alembic -c alembic.ini upgrade head` (from the Empire root) on existing databases.

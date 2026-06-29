@@ -1393,9 +1393,9 @@ class ExtendedPacketHandler(PacketHandler):
                             break
 
                 if not implementation:
-                    # log invalid uri
                     message = f"{listenerName}: unknown uri /{request_uri} requested by {clientIP}."
                     self.instance_log.warning(message)
+                    return Response(self.default_response(), 404)
 
                 # attempt to extract information from the request
                 if implementation is profile.stager and request.method == "POST":
