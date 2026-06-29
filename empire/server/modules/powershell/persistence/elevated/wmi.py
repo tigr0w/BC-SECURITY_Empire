@@ -91,7 +91,7 @@ class Module:
                 fileData = ext_path.read_text()
 
                 # unicode-base64 encode the script for -enc launching
-                enc_script = helpers.enc_powershell(fileData)
+                enc_script = helpers.enc_powershell(fileData).decode("UTF-8")
                 status_msg += "using external file " + ext_file
 
             else:

@@ -175,6 +175,57 @@ def test_execute_module_custom_generate_native_bool_gates_branch(
     assert "Get-ComputerDetails -Limit 100" not in res.data
 
 
+@pytest.mark.parametrize(
+    ("module_id", "extra_params"),
+    [
+        ("powershell_persistence_userland_registry", {}),
+        ("powershell_persistence_userland_schtasks", {}),
+        (
+            "powershell_persistence_userland_backdoor_lnk",
+            {"Listener": "http", "LNKPath": "C:\\Users\\test\\test.lnk"},
+        ),
+        ("powershell_persistence_elevated_registry", {}),
+        ("powershell_persistence_elevated_schtasks", {}),
+        ("powershell_persistence_elevated_wmi", {"Listener": "http"}),
+        ("powershell_persistence_elevated_wmi_updater", {}),
+    ],
+)
+def test_execute_persistence_module_extfile_mode(
+    module_service, agent_mock, tmp_path, module_id, extra_params
+):
+    """ExtFile mode must base64-encode the external payload into the script.
+
+    ``helpers.enc_powershell`` returns ``bytes``. The registry/schtasks/wmi
+    modules concatenate ``enc_script`` into a ``str`` PowerShell script, so
+    without decoding they raise ``TypeError`` — which ``execute_module`` re-raises
+    as ``ModuleExecutionException("Error generating script.")``. ``backdoor_lnk``
+    instead f-string-interpolates it, silently embedding the ``b'...'`` bytes-repr;
+    the negative assertion below catches that corruption, while ``err is None`` and
+    the positive assertion catch the crash. ``main_menu`` is a truthy ``Mock``, so
+    the listener checks pass and the test isolates the ExtFile encoding path.
+    """
+    agent_mock.language = "powershell"
+    payload = tmp_path / "payload.ps1"
+    payload_content = "Write-Host 'persist-check'"
+    payload.write_text(payload_content)
+    expected_b64 = base64.b64encode(payload_content.encode("UTF-16LE")).decode("UTF-8")
+
+    params = {
+        "Agent": agent_mock.session_id,
+        "ExtFile": str(payload),
+        **extra_params,
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+
+    assert err is None
+    # The decoded base64 string is present...
+    assert expected_b64 in res.data
+    # ...and not as a Python bytes repr (the backdoor_lnk silent-corruption form).
+    assert f"b'{expected_b64}'" not in res.data
+
+
 def test_execute_module_dcsync_hashdump_native_bool_toggles(module_service, agent_mock):
     """dcsync_hashdump gates ``-DumpForest``/``-GetComputers``/``-OnlyActive:$false``
     on native-bool options.
