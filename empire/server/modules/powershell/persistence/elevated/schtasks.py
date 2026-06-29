@@ -160,7 +160,7 @@ class Module:
                 "[!] Warning: trigger command exceeds the maximum of 259 characters."
             )
 
-        if on_logon != "":
+        if on_logon:
             script += (
                 "schtasks /Create /F /RU system /SC ONLOGON /TN "
                 + task_name

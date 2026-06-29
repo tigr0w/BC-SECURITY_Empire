@@ -33,8 +33,13 @@ comments:
   - https://winscripting.blog/2017/05/12/first-entry-welcome-and-uac-bypass/
 options:
   - name: Listener
-    description: Listener to use.
-    required: true
+    description: Listener to use. Either Listener or Command must be specified.
+    required: false
+    value: ''
+  - name: Command
+    description: Custom launcher command to run instead of generating one from a
+      Listener. Either Listener or Command must be specified.
+    required: false
     value: ''
   - name: Language
     description: Language of the stager to generate (if using a Listener).

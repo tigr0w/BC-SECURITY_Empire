@@ -203,10 +203,15 @@ def is_option_required(option_meta: dict, params: dict) -> bool:
     # If there are dependencies, check if all are satisfied
     for dependency in dependencies:
         dependent_option = dependency["name"]
-        required_values = dependency["values"]
+        required_values = dependency.get("values")
 
-        # Check if the dependent option's value matches any of the required values
-        if params.get(dependent_option) not in required_values:
+        # A dependency with no "values" list imposes no value constraint, so it
+        # is treated as satisfied; gate on a specific value only when one is
+        # listed. (Presence of the dependent option is enforced separately by
+        # validate_options, which calls evaluate_dependencies first.)
+        if required_values is not None and (
+            params.get(dependent_option) not in required_values
+        ):
             return (
                 False  # If any dependency is not satisfied, the option is not required
             )

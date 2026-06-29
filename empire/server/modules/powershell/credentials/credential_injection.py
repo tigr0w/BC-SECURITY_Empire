@@ -20,7 +20,7 @@ class Module:
     ):
         script_end = "Invoke-CredentialInjection"
 
-        if params["NewWinLogon"] == "" and params["ExistingWinLogon"] == "":
+        if not params["NewWinLogon"] and not params["ExistingWinLogon"]:
             raise ModuleValidationException(
                 "Either NewWinLogon or ExistingWinLogon must be specified"
             )
@@ -56,17 +56,18 @@ class Module:
             )
 
         for option, raw_value in params.items():
-            values = coerce_legacy_value(raw_value)
-            if (
-                option.lower() != "agent"
-                and option.lower() != "credid"
-                and values
-                and values != ""
-            ):
-                if values.lower() == "true":
-                    # if we're just adding a switch
+            if option.lower() in ("agent", "credid"):
+                continue
+            # NewWinLogon / ExistingWinLogon are [Switch] params (native bools):
+            # emit the bare flag only when set, never as a literal "-Option False".
+            # Everything else is a value option and passes through unchanged -- a
+            # literal "True"/"False" value (e.g. a password) must not be dropped.
+            if isinstance(raw_value, bool):
+                if raw_value:
                     script_end += " -" + str(option)
-                else:
+            else:
+                values = coerce_legacy_value(raw_value)
+                if values and values != "":
                     script_end += " -" + str(option) + " " + str(values)
 
         script_end += ';`n"Invoke-CredentialInjection completed."'

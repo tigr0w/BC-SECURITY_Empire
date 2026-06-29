@@ -20,13 +20,13 @@ class Module:
         if params["Domain"] != "":
             script_end += " -Domain " + params["Domain"]
 
-        if params["Forest"] != "":
+        if params["Forest"]:
             script_end += " -DumpForest "
 
-        if params["Computers"] != "":
+        if params["Computers"]:
             script_end += " -GetComputers "
 
-        if params["Active"] == "":
+        if not params["Active"]:
             script_end += " -OnlyActive:$false "
 
         outputf = params.get("OutputFunction", "Out-String")

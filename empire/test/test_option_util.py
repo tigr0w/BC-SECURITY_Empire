@@ -14,6 +14,7 @@ from empire.server.core.option_types import (
 from empire.server.utils.option_util import (
     coerce_legacy_value,
     evaluate_dependencies,
+    is_option_required,
     safe_cast,
     validate_options,
 )
@@ -495,6 +496,36 @@ def test_evaluate_dependencies_dependency_not_present_in_params():
     }
     params = {"Option1": "Test"}
     assert evaluate_dependencies(option, params) is False
+
+
+def test_is_option_required_tolerates_valueless_depends_on():
+    """A depends_on entry without a "values" key imposes no value constraint and
+    must not crash.
+
+    Regression guard: is_option_required used to index ``dependency["values"]``
+    unconditionally, so a valueless depends_on (e.g. ``- name: Obfuscate`` with
+    no values) raised ``KeyError`` at validation time. It now gates on values
+    only when they are listed.
+    """
+    # Valueless dependency, dependent option present -> required (no crash).
+    option_meta = {"Required": False, "DependsOn": [{"name": "Obfuscate"}]}
+    assert is_option_required(option_meta, {"Obfuscate": "True"}) is True
+
+    # Mixed with a valued dependency: required only when the valued one matches.
+    mixed = {
+        "Required": False,
+        "DependsOn": [
+            {"name": "Language", "values": ["powershell"]},
+            {"name": "Obfuscate"},
+        ],
+    }
+    assert (
+        is_option_required(mixed, {"Language": "powershell", "Obfuscate": "True"})
+        is True
+    )
+    assert (
+        is_option_required(mixed, {"Language": "csharp", "Obfuscate": "True"}) is False
+    )
 
 
 def test_validate_options_internal_option_skipped():

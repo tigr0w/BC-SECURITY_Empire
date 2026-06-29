@@ -14,7 +14,7 @@ class Module:
         listApps = params["ListApps"]
         appName = params["AppName"]
         sandboxMode = params["SandboxMode"]
-        if listApps != "":
+        if listApps:
             script = """
 import os
 apps = [ app.split('.app')[0] for app in os.listdir('/Applications/') if not app.split('.app')[0].startswith('.')]
@@ -26,7 +26,7 @@ print("\\nAvailable applications:\\n")
 print('\\n'.join(choices))
 """
 
-        elif sandboxMode != "":
+        elif sandboxMode:
             # osascript prompt for the current application with System Preferences icon
             script = """
 import os

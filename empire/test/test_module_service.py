@@ -175,6 +175,318 @@ def test_execute_module_custom_generate_native_bool_gates_branch(
     assert "Get-ComputerDetails -Limit 100" not in res.data
 
 
+def test_execute_module_dcsync_hashdump_native_bool_toggles(module_service, agent_mock):
+    """dcsync_hashdump gates ``-DumpForest``/``-GetComputers``/``-OnlyActive:$false``
+    on native-bool options.
+
+    Regression guard for the pre-existing ``!= ""`` / ``== ""`` comparisons
+    against bool options (#1514): a native bool is never ``== ""``, so
+    ``-DumpForest`` and ``-GetComputers`` were appended unconditionally and
+    ``-OnlyActive:$false`` never was -- the toggles were dead. ``Active`` defaults
+    to true (only-active), matching its description and the ``$OnlyActive = $true``
+    default in Invoke-DCSync.ps1.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_credentials_mimikatz_dcsync_hashdump"
+    base = {"Agent": agent_mock.session_id}
+
+    # Defaults: Forest/Computers false, Active true -> no extra switches.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, base, True, True, None
+    )
+    assert err is None
+    assert "-DumpForest" not in res.data
+    assert "-GetComputers" not in res.data
+    assert "-OnlyActive:$false" not in res.data
+
+    # Forest + Computers on -> both switches appended.
+    res, err = module_service.execute_module(
+        None,
+        agent_mock,
+        module_id,
+        {**base, "Forest": "True", "Computers": "True"},
+        True,
+        True,
+        None,
+    )
+    assert err is None
+    assert "-DumpForest" in res.data
+    assert "-GetComputers" in res.data
+
+    # Active off -> only-active restriction lifted.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, {**base, "Active": "False"}, True, True, None
+    )
+    assert err is None
+    assert "-OnlyActive:$false" in res.data
+
+
+def test_execute_module_osx_prompt_native_bool_branches(module_service, agent_mock):
+    """osx/prompt selects its script branch from the ``ListApps``/``SandboxMode``
+    bools.
+
+    Regression guard for the pre-existing ``!= ""`` comparisons (#1514): a native
+    bool is always ``!= ""`` so the ``ListApps`` branch was always taken and the
+    sandbox / AppName-prompt branches were dead.
+    """
+    agent_mock.language = "python"
+    module_id = "python_collection_osx_prompt"
+    base = {"Agent": agent_mock.session_id, "AppName": "App Store"}
+
+    # Defaults: both false -> AppName prompt branch (the else fallthrough).
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, base, True, True, None
+    )
+    assert err is None
+    assert "App Store" in res.data
+    assert "Available applications" not in res.data
+
+    # ListApps on -> application-listing branch.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, {**base, "ListApps": "True"}, True, True, None
+    )
+    assert err is None
+    assert "Available applications" in res.data
+
+    # SandboxMode on (ListApps off) -> sandbox prompt branch.
+    res, err = module_service.execute_module(
+        None,
+        agent_mock,
+        module_id,
+        {**base, "SandboxMode": "True"},
+        True,
+        True,
+        None,
+    )
+    assert err is None
+    assert "Software Update requires" in res.data
+    assert "Available applications" not in res.data
+
+
+def test_execute_module_invoke_sqloscmd_obfuscate_options_present(
+    module_service, agent_mock
+):
+    """invoke_sqloscmd reads ``params["Obfuscate"]`` / ``params["ObfuscateCommand"]``
+    unconditionally.
+
+    Regression guard for the pre-existing KeyError (#1514): those options were
+    missing from the module YAML, so ``validate_options`` dropped them and the
+    read raised ``KeyError`` on every invocation. A ``Command`` is supplied to
+    skip the listener/launcher path so the test needs no active listener.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_lateral_movement_invoke_sqloscmd"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Instance": "SQL01",
+        "Command": "whoami",
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert 'Invoke-SQLOSCmd -Instance "SQL01" -Command "whoami"' in res.data
+
+
+def test_windowlist_all_flag_reads_correct_option_key():
+    """windowlist packs its BOF ``All`` flag from the ``All`` option.
+
+    Regression guard for the pre-existing key mismatch (#1514): the module read
+    ``params.get("all")`` (lowercase) which never matched the ``All`` option, so
+    the flag was hard-wired to ``"0"`` regardless of the toggle. Exercised
+    directly (the BOF path otherwise needs the .NET compiler) by capturing the
+    params handed to ``generate_script_bof``.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "windowlist_mod",
+        Path(__file__).parents[1]
+        / "server/modules/bof/situational_awareness/windowlist.py",
+    )
+    windowlist = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(windowlist)
+
+    captured = {}
+    main_menu = Mock()
+    main_menu.modulesv2.generate_script_bof = Mock(
+        side_effect=lambda module, params, obfuscate: captured.update(params)
+    )
+
+    windowlist.Module.generate(main_menu, Mock(), {"Architecture": "x64", "All": True})
+    assert captured["All"] == "1"
+
+    captured.clear()
+    windowlist.Module.generate(main_menu, Mock(), {"Architecture": "x64", "All": False})
+    assert captured["All"] == "0"
+
+
+def test_execute_module_credential_injection_winlogon_guard_fires(
+    module_service, agent_mock
+):
+    """credential_injection requires ``NewWinLogon`` or ``ExistingWinLogon`` to be
+    set.
+
+    Regression guard for the pre-existing ``== ""`` comparison on bool options
+    (#1514): a native bool is never ``== ""`` so the guard never raised and the
+    module proceeded with neither WinLogon option selected.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_credentials_credential_injection"
+    base = {"Agent": agent_mock.session_id}
+
+    # Neither WinLogon option set (both default false) -> validation must fire.
+    with pytest.raises(
+        ModuleValidationException, match="NewWinLogon or ExistingWinLogon"
+    ):
+        module_service.execute_module(
+            None, agent_mock, module_id, base, True, True, None
+        )
+
+
+def test_execute_module_credential_injection_omits_unset_winlogon_switch(
+    module_service, agent_mock
+):
+    """credential_injection emits the set ``[Switch]`` flag but not the unset one,
+    and never drops a value option.
+
+    Regression guard for the bespoke option loop (#1514): it emitted every option
+    as ``-Name Value``, so a normal ``NewWinLogon`` run still appended the unset
+    ``-ExistingWinLogon False``. Because the two are ``[Switch]`` parameters in
+    mutually-exclusive parameter sets, that command fails to bind on the agent.
+    The loop now keys on the option's native type: boolean switches emit a bare
+    flag only when set; value options pass through unchanged -- including a
+    literal ``"False"`` (e.g. a password), which must not be dropped as if it
+    were an unset switch.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_credentials_credential_injection"
+    params = {
+        "Agent": agent_mock.session_id,
+        "NewWinLogon": "True",
+        "DomainName": "demo",
+        "UserName": "administrator",
+        "Password": "Password1",
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert "Invoke-CredentialInjection -NewWinLogon" in res.data
+    assert "-ExistingWinLogon False" not in res.data
+
+    # A value option whose literal text is "False" must be passed through, not
+    # skipped as if it were an unset switch.
+    res, err = module_service.execute_module(
+        None,
+        agent_mock,
+        module_id,
+        {**params, "Password": "False"},
+        True,
+        True,
+        None,
+    )
+    assert err is None
+    assert "-Password False" in res.data
+
+
+def test_execute_module_packet_capture_persistent_native_bool(
+    module_service, agent_mock
+):
+    """packet_capture appends ``persistent=yes`` only when the ``Persistent``
+    bool is set.
+
+    Regression guard for the pre-existing ``!= ""`` comparison (#1514): a native
+    bool is always ``!= ""`` so persistence was always enabled regardless of the
+    toggle.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_situational_awareness_host_packet_capture"
+    base = {"Agent": agent_mock.session_id}
+
+    # Persistent false (default), StopTrace false -> start capture, no persistence.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, base, True, True, None
+    )
+    assert err is None
+    assert "netsh trace start" in res.data
+    assert "persistent=yes" not in res.data
+
+    # Persistent on -> persistence flag appended.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, {**base, "Persistent": "True"}, True, True, None
+    )
+    assert err is None
+    assert "persistent=yes" in res.data
+
+
+def test_execute_module_fodhelper_custom_command_without_listener(
+    module_service, agent_mock
+):
+    """bypassuac_fodhelper supports a custom ``Command`` instead of a Listener.
+
+    Regression guard for the missing ``Command`` option (#1514): the YAML never
+    declared it (so ``params.get("Command", "")`` was always empty) and
+    ``Listener`` was ``required: true``, so the custom-command branch was
+    unreachable. ``Command`` is now declared and ``Listener`` is optional.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_privesc_bypassuac_fodhelper"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Command": "powershell -enc ABC123",
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert "Invoke-FodHelperBypass" in res.data
+    assert "ABC123" in res.data
+
+
+def test_execute_module_schtasks_onlogon_native_bool_selects_trigger(
+    module_service, agent_mock, tmp_path
+):
+    """schtasks selects the ONLOGON trigger only when the ``OnLogon`` bool is set.
+
+    Regression guard for the pre-existing ``!= ""`` comparison (#1514): a native
+    bool is always ``!= ""`` so ``ONLOGON`` was always chosen and BOTH the idle
+    and daily trigger branches were unreachable. ``ExtFile`` supplies the payload
+    so the test needs no active listener; ``enc_powershell`` is patched to a str
+    because the module's ExtFile storage path otherwise concatenates its bytes
+    output onto a str (a separate pre-existing bug, tracked in #1517).
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_persistence_elevated_schtasks"
+    ext_file = tmp_path / "payload.ps1"
+    ext_file.write_text("Write-Output hi")
+    base = {"Agent": agent_mock.session_id, "ExtFile": str(ext_file)}
+
+    with patch(
+        "empire.server.common.helpers.enc_powershell", return_value="ENCPAYLOAD"
+    ):
+        # OnLogon false (default) -> daily trigger, not ONLOGON.
+        res, err = module_service.execute_module(
+            None, agent_mock, module_id, base, True, True, None
+        )
+        assert err is None
+        assert "/SC DAILY" in res.data
+        assert "/SC ONLOGON" not in res.data
+
+        # IdleTime set (OnLogon still off) -> idle trigger, the formerly-dead branch.
+        res, err = module_service.execute_module(
+            None, agent_mock, module_id, {**base, "IdleTime": "5"}, True, True, None
+        )
+        assert err is None
+        assert "/SC ONIDLE" in res.data
+        assert "/SC ONLOGON" not in res.data
+
+        # OnLogon on -> ONLOGON trigger selected.
+        res, err = module_service.execute_module(
+            None, agent_mock, module_id, {**base, "OnLogon": "True"}, True, True, None
+        )
+        assert err is None
+        assert "/SC ONLOGON" in res.data
+
+
 def test_execute_module_task_command_python_agent(module_service, agent_mock):
     agent_mock.language = "python"
     params = {
