@@ -15,6 +15,7 @@ from empire.server.core.exceptions import (
 from empire.server.core.module_models import EmpireModule, LanguageEnum
 from empire.server.core.module_service import ModuleService
 from empire.server.core.obfuscation_service import ObfuscationService
+from empire.server.stagers.windows.launcher_bat import Stager as LauncherBat
 from empire.server.utils.dotnet_version_util import parse_agent_dotnet_versions
 
 
@@ -231,7 +232,7 @@ def test_execute_module_dcsync_hashdump_native_bool_toggles(module_service, agen
     on native-bool options.
 
     Regression guard for the pre-existing ``!= ""`` / ``== ""`` comparisons
-    against bool options (#1514): a native bool is never ``== ""``, so
+    against bool options: a native bool is never ``== ""``, so
     ``-DumpForest`` and ``-GetComputers`` were appended unconditionally and
     ``-OnlyActive:$false`` never was -- the toggles were dead. ``Active`` defaults
     to true (only-active), matching its description and the ``$OnlyActive = $true``
@@ -276,7 +277,7 @@ def test_execute_module_osx_prompt_native_bool_branches(module_service, agent_mo
     """osx/prompt selects its script branch from the ``ListApps``/``SandboxMode``
     bools.
 
-    Regression guard for the pre-existing ``!= ""`` comparisons (#1514): a native
+    Regression guard for the pre-existing ``!= ""`` comparisons: a native
     bool is always ``!= ""`` so the ``ListApps`` branch was always taken and the
     sandbox / AppName-prompt branches were dead.
     """
@@ -320,7 +321,7 @@ def test_execute_module_invoke_sqloscmd_obfuscate_options_present(
     """invoke_sqloscmd reads ``params["Obfuscate"]`` / ``params["ObfuscateCommand"]``
     unconditionally.
 
-    Regression guard for the pre-existing KeyError (#1514): those options were
+    Regression guard for the pre-existing KeyError: those options were
     missing from the module YAML, so ``validate_options`` dropped them and the
     read raised ``KeyError`` on every invocation. A ``Command`` is supplied to
     skip the listener/launcher path so the test needs no active listener.
@@ -342,7 +343,7 @@ def test_execute_module_invoke_sqloscmd_obfuscate_options_present(
 def test_windowlist_all_flag_reads_correct_option_key():
     """windowlist packs its BOF ``All`` flag from the ``All`` option.
 
-    Regression guard for the pre-existing key mismatch (#1514): the module read
+    Regression guard for the pre-existing key mismatch: the module read
     ``params.get("all")`` (lowercase) which never matched the ``All`` option, so
     the flag was hard-wired to ``"0"`` regardless of the toggle. Exercised
     directly (the BOF path otherwise needs the .NET compiler) by capturing the
@@ -376,8 +377,8 @@ def test_execute_module_credential_injection_winlogon_guard_fires(
     """credential_injection requires ``NewWinLogon`` or ``ExistingWinLogon`` to be
     set.
 
-    Regression guard for the pre-existing ``== ""`` comparison on bool options
-    (#1514): a native bool is never ``== ""`` so the guard never raised and the
+    Regression guard for the pre-existing ``== ""`` comparison on bool options:
+    a native bool is never ``== ""`` so the guard never raised and the
     module proceeded with neither WinLogon option selected.
     """
     agent_mock.language = "powershell"
@@ -399,7 +400,7 @@ def test_execute_module_credential_injection_omits_unset_winlogon_switch(
     """credential_injection emits the set ``[Switch]`` flag but not the unset one,
     and never drops a value option.
 
-    Regression guard for the bespoke option loop (#1514): it emitted every option
+    Regression guard for the bespoke option loop: it emitted every option
     as ``-Name Value``, so a normal ``NewWinLogon`` run still appended the unset
     ``-ExistingWinLogon False``. Because the two are ``[Switch]`` parameters in
     mutually-exclusive parameter sets, that command fails to bind on the agent.
@@ -445,7 +446,7 @@ def test_execute_module_packet_capture_persistent_native_bool(
     """packet_capture appends ``persistent=yes`` only when the ``Persistent``
     bool is set.
 
-    Regression guard for the pre-existing ``!= ""`` comparison (#1514): a native
+    Regression guard for the pre-existing ``!= ""`` comparison: a native
     bool is always ``!= ""`` so persistence was always enabled regardless of the
     toggle.
     """
@@ -474,7 +475,7 @@ def test_execute_module_fodhelper_custom_command_without_listener(
 ):
     """bypassuac_fodhelper supports a custom ``Command`` instead of a Listener.
 
-    Regression guard for the missing ``Command`` option (#1514): the YAML never
+    Regression guard for the missing ``Command`` option: the YAML never
     declared it (so ``params.get("Command", "")`` was always empty) and
     ``Listener`` was ``required: true``, so the custom-command branch was
     unreachable. ``Command`` is now declared and ``Listener`` is optional.
@@ -498,12 +499,11 @@ def test_execute_module_schtasks_onlogon_native_bool_selects_trigger(
 ):
     """schtasks selects the ONLOGON trigger only when the ``OnLogon`` bool is set.
 
-    Regression guard for the pre-existing ``!= ""`` comparison (#1514): a native
+    Regression guard for the pre-existing ``!= ""`` comparison: a native
     bool is always ``!= ""`` so ``ONLOGON`` was always chosen and BOTH the idle
     and daily trigger branches were unreachable. ``ExtFile`` supplies the payload
-    so the test needs no active listener; ``enc_powershell`` is patched to a str
-    because the module's ExtFile storage path otherwise concatenates its bytes
-    output onto a str (a separate pre-existing bug, tracked in #1517).
+    so the test needs no active listener; ``enc_powershell`` is patched to return
+    bytes, matching its real return type (the module base64-decodes the result).
     """
     agent_mock.language = "powershell"
     module_id = "powershell_persistence_elevated_schtasks"
@@ -512,7 +512,7 @@ def test_execute_module_schtasks_onlogon_native_bool_selects_trigger(
     base = {"Agent": agent_mock.session_id, "ExtFile": str(ext_file)}
 
     with patch(
-        "empire.server.common.helpers.enc_powershell", return_value="ENCPAYLOAD"
+        "empire.server.common.helpers.enc_powershell", return_value=b"ENCPAYLOAD"
     ):
         # OnLogon false (default) -> daily trigger, not ONLOGON.
         res, err = module_service.execute_module(
@@ -536,6 +536,69 @@ def test_execute_module_schtasks_onlogon_native_bool_selects_trigger(
         )
         assert err is None
         assert "/SC ONLOGON" in res.data
+
+
+def test_execute_module_service_stager_no_proxy_options_on_launcher_bat(
+    module_service, main_menu_mock, agent_mock
+):
+    """service_stager only sets options that ``windows_launcher_bat`` defines.
+
+    Regression guard for the pre-existing KeyError: the module set
+    ``UserAgent`` / ``Proxy`` / ``ProxyCreds`` on the ``windows_launcher_bat``
+    template, which does not define them, so the assignment raised ``KeyError``
+    before ``generate()`` was reached -- the module crashed on every invocation.
+    A real ``windows_launcher_bat`` instance supplies the faithful option surface;
+    its ``generate()`` is stubbed so the test needs no active listener.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_privesc_powerup_service_stager"
+
+    launcher = LauncherBat(main_menu_mock)
+    launcher.generate = Mock(return_value="@echo off\nstart /B powershell -enc ABC123")
+    main_menu_mock.stagertemplatesv2.new_instance = Mock(return_value=launcher)
+
+    params = {
+        "Agent": agent_mock.session_id,
+        "ServiceName": "VulnSvc",
+        "Listener": "http",
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert 'Invoke-ServiceAbuse -ServiceName "VulnSvc"' in res.data
+    assert "start /B powershell -enc ABC123" in res.data
+
+
+def test_execute_module_service_exe_stager_no_proxy_options_on_launcher_bat(
+    module_service, main_menu_mock, agent_mock
+):
+    """service_exe_stager only sets options that ``windows_launcher_bat`` defines.
+
+    Regression guard for the same pre-existing KeyError: the module
+    set ``UserAgent`` / ``Proxy`` / ``ProxyCreds`` on ``windows_launcher_bat``
+    (which lacks them), crashing before ``generate()``. Its remaining option
+    assignments (``Obfuscate`` / ``ObfuscateCommand`` / ``Bypasses`` / ``Delete``)
+    are all defined by the template and pass through as native types.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_privesc_powerup_service_exe_stager"
+
+    launcher = LauncherBat(main_menu_mock)
+    launcher.generate = Mock(return_value="@echo off\nstart /B powershell -enc XYZ789")
+    main_menu_mock.stagertemplatesv2.new_instance = Mock(return_value=launcher)
+
+    params = {
+        "Agent": agent_mock.session_id,
+        "ServiceName": "VulnSvc",
+        "Listener": "http",
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert 'Install-ServiceBinary -ServiceName "VulnSvc"' in res.data
+    assert "start /B powershell -enc XYZ789" in res.data
 
 
 def test_execute_module_task_command_python_agent(module_service, agent_mock):

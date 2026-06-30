@@ -65,20 +65,6 @@ options:
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
     value: ''
-  - name: UserAgent
-    description: User-agent string to use for the staging request (default, none,
-      or other).
-    required: false
-    value: default
-  - name: Proxy
-    description: Proxy to use for request (default, none, or other).
-    required: false
-    value: default
-  - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request
-      (default, none, or other).
-    required: false
-    value: default
 script_path: privesc/PowerUp.ps1
 advanced:
   custom_generate: true
