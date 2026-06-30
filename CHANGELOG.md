@@ -124,6 +124,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+-   Fixed `custom_generate` PowerShell modules emitting `-Option False` for an unset boolean `[switch]` option, producing a malformed command (`find_fruit`, `WireTap`, `runas`, `inveigh_relay`, `deaduser`, and `get_subnet_ranges`, plus the `powershell_template.py` they are copied from). Switch options now key on the native bool type — a set switch emits a bare flag, an unset one emits nothing, and value options pass through unchanged — closes #1518.
 -   Fixed `bof/credentials/nanodump` boolean flags (`valid`, `fork`, `snapshot`, etc.) being silently ignored — the module compared against lowercase `"true"` while option values render as `"True"`, so every flag resolved to `0`. They now read the native bool.
 -   Fixed `bof/management/static_syscalls_inject` and `syscalls_shellcode_injection` reporting success but never delivering a callback: `BeaconDataLength()` includes the 4-byte length prefix, so the shellcode size passed to `NtAllocateVirtualMemory` was 4 bytes too large and the page-rounded value clobbered the write length. The shellcode is now padded so its size is page-aligned.
 -   Fixed agent listener name not updating in the database on rename, causing Starkiller to show the old name.

@@ -103,9 +103,11 @@ Invoke-DeadUserBackdoor"""
                 and values
                 and values != ""
             ):
-                if values.lower() == "true":
-                    # if we're just adding a switch
-                    script += " -" + str(option)
+                if isinstance(raw_value, bool):
+                    # Native boolean -> [switch]: bare flag only when set,
+                    # never "-Option False".
+                    if raw_value:
+                        script += " -" + str(option)
                 else:
                     script += " -" + str(option) + " " + str(values)
 

@@ -40,9 +40,12 @@ class Module:
         for option, raw_value in params.items():
             values = coerce_legacy_value(raw_value)
             if option.lower() != "agent" and values and values != "":
-                if values.lower() == "true":
-                    # if we're just adding a switch
-                    script_end += " -" + str(option)
+                if isinstance(raw_value, bool):
+                    # Native boolean -> PowerShell [switch]: emit a bare flag
+                    # only when set. A False switch must emit nothing, never
+                    # "-Option False".
+                    if raw_value:
+                        script_end += " -" + str(option)
                 else:
                     script_end += " -" + str(option) + " " + str(values)
 

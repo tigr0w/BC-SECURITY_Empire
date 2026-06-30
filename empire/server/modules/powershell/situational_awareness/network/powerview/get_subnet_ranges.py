@@ -54,6 +54,10 @@ class Module:
             if (
                 option.lower() != "agent"
                 and option.lower() != "outputfunction"
+                # IPs is a native bool consumed above via `list_computers`; it is
+                # never a CLI switch on this standalone pipeline, so skip it here
+                # (otherwise an unset IPs leaked as a stray "-IPs False").
+                and option.lower() != "ips"
                 and values
                 and values != ""
             ):

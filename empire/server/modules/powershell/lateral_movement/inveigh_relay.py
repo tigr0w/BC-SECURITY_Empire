@@ -67,9 +67,11 @@ class Module:
                 and values
                 and values != ""
             ):
-                if values.lower() == "true":
-                    # if we're just adding a switch
-                    script_end += " -" + str(option)
+                if isinstance(raw_value, bool):
+                    # Native boolean -> [switch]: bare flag only when set,
+                    # never '-Option "False"'.
+                    if raw_value:
+                        script_end += " -" + str(option)
                 elif "," in str(values):
                     quoted = '"' + str(values).replace(",", '","') + '"'
                     script_end += " -" + str(option) + " " + quoted
