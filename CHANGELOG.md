@@ -26,6 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added `wdtoggle`, `psx`, `psm`, `psk`, `psw`, `psc`, and `winver` BOF modules from the Outflank C2-Tool-Collection:
+    -   `wdtoggle` — patch WDigest/Credential Guard in LSASS to re-enable plaintext credential caching
+    -   `psx` — process list annotated with detected security products (AV/EDR/logging tools)
+    -   `psm` — detailed single-process info by PID (loaded modules, TCP connections, RDP sessions)
+    -   `psk` — loaded kernel modules/drivers annotated with security-product driver detection
+    -   `psw` — enumerate window titles across running processes
+    -   `psc` — process list with active TCP connections and RDP session details
+    -   `winver` — Windows version, build number, and patch revision of the target host
 -   Added `netuse_add`, `netuse_list`, and `netuse_delete` BOF modules splitting the TrustedSec netuse BOF into three focused modes (map a share, enumerate connections, disconnect).
 -   Added `sc_enum` BOF module to bulk-enumerate all services on a local or remote host via SCM (config, query, failure, and trigger data in one call).
 -   Added `sc_qc` BOF module to query a Windows service's configuration (binary path, start type, account, dependencies) via SCM.

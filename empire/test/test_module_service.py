@@ -2135,3 +2135,42 @@ def test_execute_module_bof_reconad(module_service, agent_mock):
     )
     assert err is None
     assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+@pytest.mark.parametrize(
+    ("module_id", "extra_params"),
+    [
+        # psx: two modes — standard listing and extended listing
+        ("bof_situational_awareness_psx", {"Mode": "standard"}),
+        ("bof_situational_awareness_psx", {"Mode": "extended"}),
+        # psm: module accepts an optional target PID
+        ("bof_situational_awareness_psm", {"Pid": "1234"}),
+        # no-arg modules — only need Agent key
+        ("bof_situational_awareness_psk", {}),
+        ("bof_situational_awareness_psw", {}),
+        ("bof_situational_awareness_psc", {}),
+        ("bof_situational_awareness_winver", {}),
+        ("bof_credentials_wdtoggle", {}),
+    ],
+)
+def test_new_outflank_modules_generate_no_error(
+    module_service, agent_mock, module_id, extra_params
+):
+    """Verify custom_generate path works end-to-end for all new Outflank C2TC modules.
+
+    All 7 modules are x64-only (bof.x86='') with custom_generate: true and NO
+    Architecture option exposed to the caller.  This test confirms that executing
+    each module via the custom_generate path does not raise an exception and
+    returns a valid task command — regression guard for the IsADirectoryError
+    crash (adversarial review Critical Finding #1) that would occur if the x86
+    path were ever incorrectly invoked.
+    """
+    agent_mock.language = "csharp"
+    params = {"Agent": agent_mock.session_id, **extra_params}
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None, f"execute_module returned error for {module_id}: {err}"
+    assert res.command == "TASK_CSHARP_CMD_WAIT", (
+        f"Unexpected task command for {module_id}: {res.command}"
+    )
