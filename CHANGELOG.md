@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.7.0] - 2026-07-06
+
 ### Fixed
 
 -   `http_malleable` listener no longer crashes with `AttributeError` when a request arrives on a URI not defined in the malleable profile. It now returns a 404 default response instead of propagating an unhandled exception.
@@ -53,7 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed `undefer(AgentTask.output_original)` referencing a nonexistent attribute (the column is `original_output`).
 
 ## [6.6.0] - 2026-04-25
-
 
 ### Added
 
@@ -1420,7 +1421,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.6.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.0...HEAD
+
+[6.7.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.6.0...v6.7.0
 
 [6.6.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.5.0...v6.6.0
 
