@@ -12,17 +12,33 @@ from empire.server.core.exceptions import ModuleExecutionException
 
 log = logging.getLogger(__name__)
 
+_COMPILER_UNAVAILABLE_MSG = (
+    "Empire Compiler is not available. It could not be downloaded at startup "
+    "(see logs — most often a GitHub API rate-limit). Set GITHUB_TOKEN in the "
+    "environment or configure empire_compiler.directory to a local build."
+)
+
 
 class DotnetCompiler:
     def __init__(self, install_path):
         self.install_path = install_path
-        self.compiler_dir = (
-            sync_empire_compiler(empire_config.empire_compiler) / "EmpireCompiler"
-        )
+        compiler_root = sync_empire_compiler(empire_config.empire_compiler)
+        if compiler_root is None:
+            # Don't hard-crash startup (a bare ``None / "EmpireCompiler"`` used
+            # to raise TypeError and take down the whole server / test suite).
+            # C# compilation is opt-in, so degrade gracefully and only fail when
+            # a caller actually asks to compile.
+            log.error(_COMPILER_UNAVAILABLE_MSG)
+            self.compiler_dir = None
+        else:
+            self.compiler_dir = compiler_root / "EmpireCompiler"
 
     def compile_task(
         self, compiler_yaml, task_name, dot_net_version="net40", confuse=False
     ) -> Path:
+        if self.compiler_dir is None:
+            raise ModuleExecutionException(_COMPILER_UNAVAILABLE_MSG)
+
         random_task_name = f"{task_name}_{random_string(6)}.exe"
 
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
@@ -81,6 +97,9 @@ class DotnetCompiler:
     def compile_stager(
         self, compiler_yaml, task_name, dot_net_version="net40", confuse=False
     ) -> Path:
+        if self.compiler_dir is None:
+            raise ModuleExecutionException(_COMPILER_UNAVAILABLE_MSG)
+
         random_task_name = f"{task_name}_{random_string(4)}.exe"
 
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:

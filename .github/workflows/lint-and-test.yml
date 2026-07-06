@@ -73,6 +73,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mono-runtime mingw-w64 perl
       - name: Run test suite - mysql
+        # Authenticate the Empire Compiler download against the GitHub API so it
+        # isn't throttled by the unauthenticated 60 req/hr shared-runner limit.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
           if [ "${{ matrix.python-version }}" = "3.14" ]; then
@@ -83,6 +87,8 @@ jobs:
       - name: Run test suite - sqlite
         if: ${{ startsWith(github.head_ref, 'release/') || contains(github.event.pull_request.labels.*.name,
           'test-sqlite') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           DATABASE_USE=sqlite poetry run pytest . -v --runslow --durations=10 -m "not mysql"
       - name: Pytest coverage comment
@@ -118,6 +124,10 @@ jobs:
       - name: Build docker image
         run: DOCKER_BUILDKIT=1 docker compose -f .github/docker-compose.yml build
       - name: Run tests on docker image
+        # Forwarded into the container (see docker-compose.yml) so the Empire
+        # Compiler download is authenticated and not rate-limited.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: docker compose -f .github/docker-compose.yml run test
       - name: run structure tests docker
         uses: plexsystems/container-structure-test-action@v0.3.0
