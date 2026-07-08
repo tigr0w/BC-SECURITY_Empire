@@ -70,6 +70,18 @@ This event is triggered after the tasking results are received and after they ar
 
 This event is triggered each time an agent calls back to the C2 server, after the sysinfo has been written to the database. Its arguments are (db: Session, agent_id: str)
 
+* AFTER\_TAG\_CREATED\_HOOK
+
+This event is triggered after a brand-new tag row is created in the tag registry. It does NOT fire when an existing tag is attached — only when the tag itself is created. Its arguments are (db: Session, tag: models.Tag). When a tag is created as part of attaching it to an entity, `AFTER_TAG_ATTACHED_HOOK` fires immediately afterwards with that entity, so this event stays a pure registry-creation signal.
+
+* AFTER\_TAG\_ATTACHED\_HOOK
+
+This event is triggered every time a tag is attached to an entity — an agent, agent task, listener, plugin task, credential, or download — whether the tag was newly created or already existed. This is the "an entity was tagged" signal. It does NOT fire on an idempotent re-attach of a tag the entity already carries. Its arguments are (db: Session, tag: models.Tag, taggable) where `taggable` is the entity the tag was attached to.
+
+* AFTER\_TAG\_UPDATED\_HOOK
+
+This event is triggered after a tag is edited (rename, recolor, or description change). Its arguments are (db: Session, tag: models.Tag) — tag edits are global and have no associated entity.
+
 _The number of events at the moment is very minimal. If there's an event that you would like added, open an issue on the GitHub repo, come chat in our Discord, or put up a pull request._
 
 ### Real World Examples

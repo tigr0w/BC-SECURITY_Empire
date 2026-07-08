@@ -106,12 +106,24 @@ class Hooks:
     # Its arguments are (db: Session, agent_id: str)
     AFTER_AGENT_CALLBACK_HOOK = "after_agent_callback_hook"
 
-    # This event is triggered after a tag is created.
-    # Its arguments are (db: Session, tag: models.Tag, taggable: Union[models.Agent, models.Listener, etc])
+    # This event is triggered after a brand-new tag row is created in the tag
+    # registry (NOT on every attach — attaching an existing tag does not fire
+    # this). Its arguments are (db: Session, tag: models.Tag). When a tag is
+    # created as part of attaching it to an entity, AFTER_TAG_ATTACHED_HOOK fires
+    # immediately afterwards with that entity, so this stays a pure
+    # registry-creation signal.
     AFTER_TAG_CREATED_HOOK = "after_tag_created_hook"
 
-    # This event is triggered after a tag is updated.
-    # Its arguments are (db: Session, tag: models.Tag, taggable: Union[models.Agent, models.Listener, etc])
+    # This event is triggered when a tag is newly attached to an entity (the
+    # "an entity was tagged" signal), whether the tag already existed or was
+    # just created. It does NOT fire on an idempotent re-attach of a tag the
+    # entity already carries. Its arguments are (db: Session, tag: models.Tag,
+    # taggable: Agent|Listener|...).
+    AFTER_TAG_ATTACHED_HOOK = "after_tag_attached_hook"
+
+    # This event is triggered after a tag is edited (rename/recolor/description).
+    # Its arguments are (db: Session, tag: models.Tag) — tag edits are global and
+    # have no associated entity.
     AFTER_TAG_UPDATED_HOOK = "after_tag_updated_hook"
 
     def __init__(self):

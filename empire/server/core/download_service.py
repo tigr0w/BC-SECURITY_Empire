@@ -1,6 +1,5 @@
 import shutil
 import typing
-from operator import and_
 from pathlib import Path
 
 from fastapi import UploadFile
@@ -14,6 +13,7 @@ from empire.server.api.v2.download.download_dto import (
 from empire.server.api.v2.shared_dto import OrderDirection
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
+from empire.server.core.tag_service import tag_name_filter
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -87,13 +87,7 @@ class DownloadService:
             )
 
         if tags:
-            tags_split = [tag.split(":", 1) for tag in tags]
-            stmt = stmt.join(models.Download.tags).where(
-                and_(
-                    models.Tag.name.in_([tag[0] for tag in tags_split]),
-                    models.Tag.value.in_([tag[1] for tag in tags_split]),
-                )
-            )
+            stmt = stmt.where(tag_name_filter(models.Download.tags, tags))
 
         if order_by == DownloadOrderOptions.filename:
             order_by_prop = func.lower(models.Download.filename)
@@ -156,8 +150,8 @@ class DownloadService:
     ):
         """
         Upload the file to the downloads directory and save a reference to the db.
-        Tags strings will be split on the first colon and the first part will be the
-        name and the second part will be the value.
+        Each string in ``tags`` is attached as a label by that exact name (a label
+        is created on miss); the string is used verbatim and is no longer split.
 
         If ``user`` is None, the file is stored under ``uploads_system/`` for
         system-attributed uploads (e.g. listener autorun tasks).
@@ -211,8 +205,7 @@ class DownloadService:
         db.flush()
 
         for tag in tags or []:
-            tag_name, tag_value = tag.split(":", 1)
-            self.tag_service.add_tag(db, download, tag_name, tag_value)
+            self.tag_service.attach_tag(db, download, name=tag)
 
         db.execute(models.upload_download_assc.insert().values(download_id=download.id))
 

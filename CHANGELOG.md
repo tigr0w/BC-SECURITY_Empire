@@ -89,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added a malleable `host_stage` gate to disable the stager URI, plus a Gopire malleable schema version guard.
 -   Added `api.cors_origins` config field (default `["*"]`) to make CORS allowed origins operator-configurable for both the REST API and Socket.IO server. Override via `config.yaml` or `EMPIRE_API__CORS_ORIGINS` (JSON-encoded list).
 -   Migration `0006`: widens `agent_files.session_id` to `String(255)` and adds `ON DELETE CASCADE` FK to `agents.session_id`.
+-   Global tag registry API at `/api/v2/tags`: list (with `usage_count`), get, create, rename/recolor/edit-description, and delete-everywhere.
 
 ### Changed
 
@@ -115,6 +116,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   `BypassService.load_bypasses` runs `ps_convert_to_oneliner` only on `language: powershell` scripts, so multi-line Python/Bash bodies are persisted verbatim.
 -   Python launcher branches in the `http`, `http_malleable`, `http_foreign`, `http_hop`, `port_forward_pivot`, and `smb` listeners now concatenate matching-language bypass scripts (previously Python-targeted bypasses never reached the agent).
 -   Demoted the malleable "accepting `set <key>` but not acting on it" log from INFO to DEBUG (the allow-list spans 60+ keys and flooded consoles); unknown directives still WARN.
+-   **BREAKING:** Tags are now a shared registry: a flat unique `name` with a single shared `color` and `description`, applied many-to-many to entities. The old `key:value` model (per-entity tag rows, `value` field, `name:value` label) is removed.
+-   **BREAKING:** Per-entity tag endpoints now ATTACH/DETACH a shared tag by id: `POST {entity}/{id}/tags` takes `{tag_id}` (attach existing, `200`; `404` if unknown) — create tags first via `POST /api/v2/tags`; `DELETE` detaches but the tag persists. Tag list filters use exact `?tags=name` (no colon).
+-   **BREAKING:** Tag hook contract changed: new `AFTER_TAG_ATTACHED_HOOK` (`db, tag, taggable`) fires on every attach; `AFTER_TAG_CREATED_HOOK` and `AFTER_TAG_UPDATED_HOOK` are now pure registry signals (`db, tag`, no `taggable`).
 
 ### Removed
 
@@ -122,6 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **BREAKING:** Removed deprecated `installPath` string attribute from `MainMenu`. Use `install_path` (a `Path`); third-party plugins and stagers referencing `self.main_menu.installPath` or `self.mainMenu.installPath` must switch.
 -   **BREAKING:** Removed in-agent `shell` command aliases (`ls`, `cd`, `pwd`, `ps`, `ipconfig`, etc.) from the PowerShell, Python, and IronPython agents; `shell <cmd>` now always passes straight to the system shell (matching C#/Go). Use the new `situational_awareness/host/*` modules for structured output and `TASK_CHDIR` for directory changes. Server-side filters and `ps_hook` now trigger on `task.module_name`.
 -   **BREAKING:** Removed unused `stager_retries` parameter from `generate_launcher()` across all listeners and stagers, and the corresponding `StagerRetries` stager option.
+-   **BREAKING:** Removed the per-entity `PUT {entity}/{id}/tags/{tag_id}` endpoint and the `value` / `label` fields on the tag DTO. Tags are now a flat global registry — edit a tag once via `PUT /api/v2/tags/{id}`; entities only attach and detach.
 -   **BREAKING:** Removed the `SafeChecks` option from all stagers, modules, listeners, and the stager API DTO (including the PowerShell version-guard, `Expect: 100-Continue`, and `python_safe_checks()` helpers). Behavior is now opt-in via the `SafeChecksPS`/`SafeChecksPython` bypasses; callers that hardcoded `SafeChecks=True` must add the matching bypass to `Bypasses`.
 -   Removed dead `getIV()` function from agent stager AES code (bypassed by inline `os.urandom()`).
 -   Removed ChaCha20-Poly1305 classes from `encryption.py` and the agent-side `chacha.py` stager — not FIPS-approved; routing packets already use AES-256-GCM.

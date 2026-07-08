@@ -16,7 +16,6 @@ from empire.server.api.v2.credential.credential_dto import (
 from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.api.v2.tag import tag_api
-from empire.server.api.v2.tag.tag_dto import TagStr
 from empire.server.core.credential_service import CredentialService
 from empire.server.core.db import models
 
@@ -69,7 +68,7 @@ def read_credentials(
     credential_service: CredentialServiceDep,
     search: str | None = None,
     credtype: str | None = None,
-    tags: list[TagStr] | None = Query(None),
+    tags: list[str] | None = Query(None),
 ):
     credentials = [
         domain_to_dto_credential(x)

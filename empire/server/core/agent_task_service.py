@@ -23,6 +23,7 @@ from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
+from empire.server.core.tag_service import tag_name_filter
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -85,13 +86,7 @@ class AgentTaskService:
             stmt = stmt.where(or_(*user_filters))
 
         if tags:
-            tags_split = [tag.split(":", 1) for tag in tags]
-            stmt = stmt.join(models.AgentTask.tags).where(
-                and_(
-                    models.Tag.name.in_([tag[0] for tag in tags_split]),
-                    models.Tag.value.in_([tag[1] for tag in tags_split]),
-                )
-            )
+            stmt = stmt.where(tag_name_filter(models.AgentTask.tags, tags))
 
         query_options = [
             joinedload(models.AgentTask.user),

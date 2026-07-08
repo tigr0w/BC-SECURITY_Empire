@@ -38,7 +38,6 @@ from empire.server.api.v2.shared_dto import (
     OrderDirection,
 )
 from empire.server.api.v2.tag import tag_api
-from empire.server.api.v2.tag.tag_dto import TagStr
 from empire.server.core.agent_service import AgentService
 from empire.server.core.agent_task_service import AgentTaskService
 from empire.server.core.db import models
@@ -135,7 +134,7 @@ def read_tasks_all_agents(
     status: AgentTaskStatus | None = None,
     agents: list[str] | None = Query(None),
     users: list[int] | None = Query(None),
-    tags: list[TagStr] | None = Query(None),
+    tags: list[str] | None = Query(None),
     query: str | None = None,
     *,
     agent_task_service: AgentTaskServiceDep,
@@ -189,7 +188,7 @@ def read_tasks(
     order_direction: OrderDirection = OrderDirection.desc,
     status: AgentTaskStatus | None = None,
     users: list[int] | None = Query(None),
-    tags: list[TagStr] | None = Query(None),
+    tags: list[str] | None = Query(None),
     query: str | None = None,
 ):
     tasks, total = agent_task_service.get_tasks(

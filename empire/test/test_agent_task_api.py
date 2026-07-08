@@ -432,7 +432,7 @@ def test_create_task_module_bof(client, admin_auth_header, agent, bof_download):
     assert response.json()["size"] > 0
     tags = response.json()["tags"]
     assert len(tags) > 0
-    assert tags[0]["label"] == "task:input"
+    assert tags[0]["name"] == "task:input"
 
 
 @pytest.mark.slow
@@ -460,7 +460,7 @@ def test_create_task_module_csharp(client, admin_auth_header, agent):
     assert response.json()["size"] > 0
     tags = response.json()["tags"]
     assert len(tags) > 0
-    assert tags[0]["label"] == "task:input"
+    assert tags[0]["name"] == "task:input"
 
 
 def test_create_task_module_modified_input(client, admin_auth_header, agent):

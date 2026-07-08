@@ -1,8 +1,13 @@
 from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, Query
+from sqlalchemy.orm import Session
 from starlette.responses import Response
-from starlette.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from starlette.status import (
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_409_CONFLICT,
+)
 
 from empire.server.api.api_router import APIRouter
 from empire.server.api.jwt_auth import get_current_active_user
@@ -13,11 +18,14 @@ from empire.server.api.v2.shared_dto import (
     OrderDirection,
 )
 from empire.server.api.v2.tag.tag_dto import (
+    TagAttachRequest,
+    TagCreateRequest,
     TagOrderOptions,
-    TagRequest,
     Tags,
     TagSourceFilter,
+    TagUpdateRequest,
     domain_to_dto_tag,
+    domain_to_dto_tag_with_usage,
 )
 from empire.server.core.db import models
 from empire.server.core.tag_service import TagService
@@ -47,7 +55,7 @@ def get_tags(
     tag_service: TagServiceDep,
     limit: int = -1,
     page: int = 1,
-    order_direction: OrderDirection = OrderDirection.asc,
+    order_direction: OrderDirection = OrderDirection.desc,
     order_by: TagOrderOptions = TagOrderOptions.updated_at,
     query: str | None = None,
     sources: list[TagSourceFilter] | None = Query(None),
@@ -61,12 +69,11 @@ def get_tags(
         order_by=order_by,
         order_direction=order_direction,
     )
-
-    tags_converted = [domain_to_dto_tag(x) for x in tags]
-
+    usage = tag_service.usage_counts(db, [t.id for t in tags])
+    records = [domain_to_dto_tag_with_usage(t, usage.get(t.id, 0)) for t in tags]
     page, total_pages = paginate(total, page, limit)
     return Tags(
-        records=tags_converted,
+        records=records,
         page=page,
         total_pages=total_pages,
         limit=limit,
@@ -74,64 +81,79 @@ def get_tags(
     )
 
 
-def add_endpoints_to_taggable(router, path, get_taggable):
-    def get_tag(
-        tag_id: int,
-        db: CurrentSession,
-        tag_service: TagServiceDep,
-    ):
-        tag = tag_service.get_by_id(db, tag_id)
-
-        if tag:
-            return tag
-
+def _get_tag_or_404(tag_id: int, db: Session, tag_service: TagService) -> models.Tag:
+    tag = tag_service.get_by_id(db, tag_id)
+    if tag is None:
         raise HTTPException(404, f"Tag not found for id {tag_id}")
+    return tag
 
-    TagDep = Annotated[models.Tag, Depends(get_tag)]
 
+@router.get("/{tag_id}")
+def get_tag(tag_id: int, db: CurrentSession, tag_service: TagServiceDep):
+    return domain_to_dto_tag(_get_tag_or_404(tag_id, db, tag_service))
+
+
+@router.post("/", status_code=HTTP_201_CREATED)
+def create_tag(req: TagCreateRequest, db: CurrentSession, tag_service: TagServiceDep):
+    try:
+        tag = tag_service.create_tag(db, req.name, req.color, req.description)
+    except ValueError as e:
+        raise HTTPException(HTTP_409_CONFLICT, str(e)) from e
+    return domain_to_dto_tag(tag)
+
+
+@router.put("/{tag_id}")
+def update_tag(
+    tag_id: int, req: TagUpdateRequest, db: CurrentSession, tag_service: TagServiceDep
+):
+    tag = _get_tag_or_404(tag_id, db, tag_service)
+    try:
+        tag = tag_service.update_tag(db, tag, req.name, req.color, req.description)
+    except ValueError as e:
+        raise HTTPException(HTTP_409_CONFLICT, str(e)) from e
+    return domain_to_dto_tag(tag)
+
+
+@router.delete("/{tag_id}", status_code=HTTP_204_NO_CONTENT)
+def delete_tag(tag_id: int, db: CurrentSession, tag_service: TagServiceDep):
+    tag = _get_tag_or_404(tag_id, db, tag_service)
+    try:
+        tag_service.delete_tag(db, tag)
+    except ValueError as e:
+        raise HTTPException(HTTP_409_CONFLICT, str(e)) from e
+    return Response(status_code=HTTP_204_NO_CONTENT)
+
+
+def add_endpoints_to_taggable(router, path, get_taggable):
     def add_tag(
         uid: int | str,
-        tag_req: TagRequest,
+        tag_req: TagAttachRequest,
         db: CurrentSession,
         db_taggable: Annotated[Any, Depends(get_taggable)],
         tag_service: TagServiceDep,
     ):
-        tag = tag_service.add_tag(
-            db, db_taggable, tag_req.name, tag_req.value, tag_req.color
-        )
-
+        tag, _ = tag_service.attach_tag(db, db_taggable, tag_id=tag_req.tag_id)
+        if tag is None:
+            raise HTTPException(404, f"Tag not found for id {tag_req.tag_id}")
         return domain_to_dto_tag(tag)
 
-    def update_tag(
-        uid: int | str,
-        tag_req: TagRequest,
-        db: CurrentSession,
-        db_taggable: Annotated[Any, Depends(get_taggable)],
-        db_tag: TagDep,
-        tag_service: TagServiceDep,
-    ):
-        tag = tag_service.update_tag(db, db_tag, db_taggable, tag_req)
-
-        return domain_to_dto_tag(tag)
-
-    def delete_tag(
+    def detach_tag_route(
         uid: int | str,
         tag_id: int,
         db: CurrentSession,
         db_taggable: Annotated[Any, Depends(get_taggable)],
         tag_service: TagServiceDep,
     ):
-        tag_service.delete_tag(db, db_taggable, tag_id)
-
+        tag_service.detach_tag(db, db_taggable, tag_id)
         return Response(status_code=HTTP_204_NO_CONTENT)
 
-    router.add_api_route(
-        path, endpoint=add_tag, methods=["POST"], status_code=HTTP_201_CREATED
-    )
-    router.add_api_route(path + "/{tag_id}", endpoint=update_tag, methods=["PUT"])
+    # POST attaches an existing tag by id (200, or 404 if unknown). Editing a tag
+    # is global via PUT /api/v2/tags/{id}; there is no per-entity edit route.
+    router.add_api_route(path, endpoint=add_tag, methods=["POST"])
     router.add_api_route(
         path + "/{tag_id}",
-        endpoint=delete_tag,
+        endpoint=detach_tag_route,
         methods=["DELETE"],
         status_code=HTTP_204_NO_CONTENT,
+        name="delete_tag",
     )
