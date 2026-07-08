@@ -178,6 +178,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+-   Empire Compiler downloads now authenticate against the GitHub API with `GITHUB_TOKEN`/`GH_TOKEN` when set, avoiding intermittent `403` rate-limit failures on shared egress IPs (e.g. CI). When the compiler still can't be fetched, the server degrades gracefully and raises a clear error only if C# compilation is attempted, instead of crashing at startup.
+
+## [6.7.0] - 2026-07-06
+
+### Fixed
+
+-   `http_malleable` listener no longer crashes with `AttributeError` when a request arrives on a URI not defined in the malleable profile. It now returns a 404 default response instead of propagating an unhandled exception.
+
 ### Added
 
 -   Performance indexes migration (0002) — apply with `poetry run alembic -c alembic.ini upgrade head` (from the Empire root) on existing databases.
@@ -213,7 +222,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed `undefer(AgentTask.output_original)` referencing a nonexistent attribute (the column is `original_output`).
 
 ## [6.6.0] - 2026-04-25
-
 
 ### Added
 
@@ -1580,9 +1588,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[7.0.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.6.0...HEAD
+[7.0.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.0...HEAD
 
-[6.6.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.6.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.0...HEAD
+
+[6.7.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.6.0...v6.7.0
 
 [6.6.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.5.0...v6.6.0
 

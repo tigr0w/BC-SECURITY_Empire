@@ -21,6 +21,42 @@ def compiler(tmp_path, monkeypatch):
     return DotnetCompiler(install_path=tmp_path)
 
 
+@pytest.fixture
+def unavailable_compiler(tmp_path, monkeypatch):
+    """A DotnetCompiler whose sync failed (e.g. GitHub API rate-limit).
+
+    `sync_empire_compiler` returns None on failure; __init__ must degrade
+    gracefully rather than raising `TypeError: None / "EmpireCompiler"`.
+    """
+    monkeypatch.setattr(
+        "empire.server.core.dotnet.sync_empire_compiler",
+        lambda *_a, **_k: None,
+    )
+    return DotnetCompiler(install_path=tmp_path)
+
+
+def test_init_does_not_crash_when_sync_returns_none(unavailable_compiler):
+    # Regression: a bare `None / "EmpireCompiler"` used to raise TypeError at
+    # construction and take down the whole server / test suite.
+    assert unavailable_compiler.compiler_dir is None
+
+
+def test_compile_task_raises_clear_error_when_compiler_unavailable(
+    unavailable_compiler,
+):
+    with pytest.raises(ModuleExecutionException, match="not available"):
+        unavailable_compiler.compile_task(compiler_yaml="dummy: yaml", task_name="task")
+
+
+def test_compile_stager_raises_clear_error_when_compiler_unavailable(
+    unavailable_compiler,
+):
+    with pytest.raises(ModuleExecutionException, match="not available"):
+        unavailable_compiler.compile_stager(
+            compiler_yaml="dummy: yaml", task_name="stager"
+        )
+
+
 @pytest.mark.parametrize(
     ("returncode", "stdout", "stderr", "expected_substrings"),
     [

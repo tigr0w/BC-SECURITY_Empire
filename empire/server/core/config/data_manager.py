@@ -55,6 +55,21 @@ def _resolve_compiler_platform():
     return os_, arch
 
 
+def _github_api_headers() -> dict[str, str]:
+    """Headers for the GitHub REST API.
+
+    Adds bearer auth when ``GITHUB_TOKEN``/``GH_TOKEN`` is present so requests
+    aren't subject to GitHub's 60 req/hr unauthenticated limit. That limit is
+    keyed on the egress IP, which CI runners share, so unauthenticated calls
+    routinely 403 during test runs.
+    """
+    headers = {"Accept": "application/vnd.github+json"}
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
 def _resolve_compiler_download_url(
     compiler_config: EmpireCompilerConfig, platform_str: str
 ) -> str | None:
@@ -68,7 +83,7 @@ def _resolve_compiler_download_url(
 
     api_url = f"https://api.github.com/repos/{compiler_config.repo}/releases/tags/{compiler_config.ref}"
     log.info(f"Empire Compiler: querying GitHub release {api_url}")
-    resp = requests.get(api_url, timeout=30)
+    resp = requests.get(api_url, timeout=30, headers=_github_api_headers())
     if not resp.ok:
         log.error(
             f"Empire Compiler: failed to fetch release info ({resp.status_code}): {resp.text}"
