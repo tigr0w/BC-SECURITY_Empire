@@ -1550,7 +1550,6 @@ class ExtendedPacketHandler(PacketHandler):
                             break
 
                 if not implementation:
-                    # log invalid uri
                     message = f"{listenerName}: unknown uri /{request_uri} requested by {clientIP}."
                     self.instance_log.warning(message)
                     # Return the shared IIS-7.5 404 page so the listener
