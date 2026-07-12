@@ -93,6 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+-   Parallelized the test suite with pytest-xdist and preserved the cached empire-compiler / Starkiller / Go-build dirs across runs instead of re-downloading them each time (developer/CI change).
 -   **BREAKING:** Base directories now use `platformdirs` for XDG-compliant (Linux) and native (macOS/Windows) paths. Linux defaults are unchanged unless `$XDG_*_HOME` is set; the Go build cache moves to the platform cache dir and rebuilds. macOS/Windows operators now get native paths (`~/Library/Application Support/empire`, `%LOCALAPPDATA%\empire`) — prior `~/.local/share/empire` state needs a one-time manual move.
 -   **BREAKING:** Replaced raw SHA-256 with HKDF-SHA256 (RFC 5869) for DH session key derivation per FIPS SP 800-56C across all agent languages, normalizing the shared secret to 768 bytes (NIST SP 800-56A). All deployed agents must be re-staged.
 -   **BREAKING:** Removed unused `listener` and `external_ip` parameters from `update_agent_sysinfo()` in `AgentCommunicationService`.

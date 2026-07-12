@@ -16,10 +16,14 @@ from empire.server.core.exceptions import (
     ModuleExecutionException,
     ModuleValidationException,
 )
-from empire.server.core.stager_generation_service import StagerGenerationService
+from empire.server.core.stager_generation_service import (
+    StagerGenerationService,
+    _resolve_arch,
+)
 from empire.server.stagers.multi.generate_agent import Stager
 from empire.server.stagers.multi.launcher import Stager as MultiLauncherStager
 from empire.server.stagers.windows.launcher_bat import Stager as LauncherBatStager
+from empire.server.utils.donut_util import donut_create
 from empire.server.utils.file_util import run_as_user
 
 _MIN_GO_BUILD_ARGS = 2
@@ -32,6 +36,36 @@ is_arm = platform.machine().startswith("arm") or platform.machine().startswith(
 @pytest.fixture(scope="module")
 def stager_generation_service(main: MainMenu):
     return main.stagergenv2
+
+
+@pytest.fixture(scope="module")
+def compiled_dotnet_exe(stager_generation_service):
+    """Compile each (kind, .NET version) EXE once and cache the path.
+
+    The ``*_shellcode`` tests differ only by donut arch — the .NET compile is
+    arch-independent, only the donut step varies by arch — so compiling the
+    identical EXE once per version (instead of once per (arch, version) combo)
+    removes the redundant EmpireCompiler runs that dominated this file. The
+    per-version/confuse compile coverage lives in the ``*_exe`` tests and the
+    full ``generate_*_shellcode`` method coverage in the ``*_shellcode_e2e``
+    tests.
+    """
+    cache = {}
+
+    def _get(kind, dot_net_version):
+        key = (kind, dot_net_version)
+        if key not in cache:
+            if kind == "powershell":
+                cache[key] = stager_generation_service.generate_powershell_exe(
+                    "posh_code", dot_net_version
+                )
+            elif kind == "python":
+                cache[key] = stager_generation_service.generate_python_exe(
+                    "python_code", dot_net_version
+                )
+        return cache[key]
+
+    return _get
 
 
 def test_compiler(main, empire_config):
@@ -345,14 +379,12 @@ def test_generate_powershell_exe(stager_generation_service, dot_net_version, obf
         ("both", "net35"),
     ],
 )
-def test_generate_powershell_shellcode(
-    stager_generation_service, arch, dot_net_version
-):
-    shellcode, err = stager_generation_service.generate_powershell_shellcode(
-        "posh_code", arch, dot_net_version
-    )
+def test_generate_powershell_shellcode(compiled_dotnet_exe, arch, dot_net_version):
+    # Compile-once: the EXE is cached per .NET version; only donut varies by arch
+    # (this mirrors generate_powershell_shellcode, which compiles then donuts).
+    exe = compiled_dotnet_exe("powershell", dot_net_version)
+    shellcode = donut_create(file=str(exe), arch=_resolve_arch(arch))
 
-    assert err is None, f"Error occurred: {err}"
     assert isinstance(shellcode, bytes), (
         f"Shellcode should be bytes, but got {type(shellcode)}"
     )
@@ -365,6 +397,18 @@ def test_generate_powershell_shellcode(
     assert re.search(rb"\x00\x00\x00\x00", shellcode), (
         "Expected byte sequence not found in shellcode"
     )
+
+
+@pytest.mark.skipif(is_arm, reason="Skipping test on ARM architecture")
+def test_generate_powershell_shellcode_e2e(stager_generation_service):
+    # Full method coverage (compile + donut) exercised once; the parametrized
+    # test above covers the per-arch donut behavior on a cached compile.
+    shellcode, err = stager_generation_service.generate_powershell_shellcode(
+        "posh_code", "x64", "net40"
+    )
+    assert err is None, f"Error occurred: {err}"
+    assert isinstance(shellcode, bytes)
+    assert len(shellcode) > 100  # noqa: PLR2004
 
 
 @pytest.mark.parametrize(
@@ -507,15 +551,25 @@ def test_patch_launcher_yaml_raises_when_placeholder_absent():
         ("both", "net40"),
     ],
 )
-def test_generate_python_shellcode(stager_generation_service, arch, dot_net_version):
-    shellcode, err = stager_generation_service.generate_python_shellcode(
-        "python_code", arch, dot_net_version
-    )
+def test_generate_python_shellcode(compiled_dotnet_exe, arch, dot_net_version):
+    # Compile-once: the EXE is cached per .NET version; only donut varies by arch.
+    exe = compiled_dotnet_exe("python", dot_net_version)
+    shellcode = donut_create(file=str(exe), arch=_resolve_arch(arch))
 
-    assert err is None, f"Unexpected error: {err}"
     assert shellcode is not None, "Shellcode was not generated"
     assert isinstance(shellcode, bytes), "Generated shellcode is not in bytes format"
     assert len(shellcode) > 0, "Generated shellcode is empty"
+
+
+@pytest.mark.skipif(is_arm, reason="Skipping test on ARM architecture")
+def test_generate_python_shellcode_e2e(stager_generation_service):
+    # Full method coverage (compile + donut) exercised once.
+    shellcode, err = stager_generation_service.generate_python_shellcode(
+        "python_code", "x64", "net40"
+    )
+    assert err is None, f"Unexpected error: {err}"
+    assert isinstance(shellcode, bytes)
+    assert len(shellcode) > 0
 
 
 @pytest.mark.slow

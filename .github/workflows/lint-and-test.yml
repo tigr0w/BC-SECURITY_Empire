@@ -77,6 +77,24 @@ jobs:
           # avoids pulling in the i686 toolchain (~150MB → ~80MB
           # download).
           sudo apt-get install -y mono-runtime gcc-mingw-w64-x86-64 perl
+      - name: Cache external test deps (empire-compiler + starkiller + go cache)
+        # The test app boot downloads a ~540MB empire-compiler + clones Starkiller
+        # into DATA_DIR (~/.local/share/empire-test), and go stager builds populate
+        # a GOCACHE under CACHE_DIR (~/.cache/empire-test/go-build). These are keyed
+        # on the pinned refs in test_server_config (+ the gopire source for the go
+        # cache), so a ref bump busts the cache. Combined with conftest no longer
+        # wiping these dirs, a cache hit skips the download/clone entirely and warms
+        # cold go builds.
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/empire-test/empire-compiler
+            ~/.local/share/empire-test/starkiller
+            ~/.cache/empire-test
+          key: empire-test-deps-v1-${{ runner.os }}-${{ hashFiles('empire/test/test_server_config.yaml',
+            'empire/server/data/agent/gopire/**') }}
+          restore-keys: |
+            empire-test-deps-v1-${{ runner.os }}-
       - name: Run test suite - mysql
         # Authenticate the Empire Compiler download against the GitHub API so it
         # isn't throttled by the unauthenticated 60 req/hr shared-runner limit.
@@ -84,18 +102,31 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
+          # Parallelized via pytest-xdist. --dist=loadfile keeps every test in a
+          # file on one worker, preserving each file's per-DB-state ordering (each
+          # worker runs whole files against its own per-worker DB). test_performance
+          # is excluded here — those tests drive their own concurrency and conflict
+          # with xdist workers; they run serially in the step below.
           if [ "${{ matrix.python-version }}" = "3.14" ]; then
-            DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 --cov=empire/server --junitxml=pytest.xml --cov-report=term-missing:skip-covered . | tee pytest-coverage.txt
+            DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 -n auto --dist=loadfile --ignore=empire/test/test_performance --cov=empire/server --junitxml=pytest.xml --cov-report=term-missing:skip-covered . | tee pytest-coverage.txt
           else
-            DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 .
+            DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 -n auto --dist=loadfile --ignore=empire/test/test_performance .
           fi
+      - name: Run performance tests - mysql (serial)
+        # The perf suite measures pool/concurrency behavior, so it must not share
+        # the parallel worker pool — run it serially in the same job for now. A
+        # follow-up moves it to its own parallel job, off the critical path.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 empire/test/test_performance
       - name: Run test suite - sqlite
         if: ${{ startsWith(github.head_ref, 'release/') || contains(github.event.pull_request.labels.*.name,
           'test-sqlite') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          DATABASE_USE=sqlite poetry run pytest . -v --runslow --durations=10 -m "not mysql"
+          DATABASE_USE=sqlite poetry run pytest . -v --runslow --durations=10 -n auto --dist=loadfile --ignore=empire/test/test_performance -m "not mysql"
       - name: Pytest coverage comment
         if: ${{ matrix.python-version == '3.14' }}
         uses: MishaKav/pytest-coverage-comment@v1.10.0

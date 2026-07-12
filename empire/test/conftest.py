@@ -2,6 +2,7 @@ import importlib
 import os
 import shutil
 import sys
+import time
 from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -32,7 +33,61 @@ def install_path():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def client(_example_2_plugin):
+def _warm_external_caches():
+    """Populate the shared empire-compiler / Starkiller caches exactly once.
+
+    The session app boot (MainMenu -> DotnetCompiler, app.initialize ->
+    Starkiller) downloads these into DATA_DIR. Under pytest-xdist the app boots in
+    every worker, so without coordination N workers would race to download the
+    ~540MB compiler into the shared cache simultaneously, corrupting a partially
+    extracted dir. We serialize the first fetch with a cross-worker mkdir mutex on
+    the shared base; sync_* are idempotent (they short-circuit when the cache
+    already exists), so every worker after the first is a fast no-op. Without
+    xdist this is just a direct warm call.
+    """
+    # config_manager / data_manager are imported lazily here (as elsewhere in this
+    # file): importing config_manager before this module sets sys.argv to the test
+    # config would bind the wrong config.
+    from empire.server.core.config import config_manager, paths
+    from empire.server.core.config.data_manager import (
+        sync_empire_compiler,
+        sync_starkiller,
+    )
+
+    def _warm():
+        sync_empire_compiler(config_manager.empire_config.empire_compiler)
+        if config_manager.empire_config.starkiller.enabled:
+            sync_starkiller(config_manager.empire_config.starkiller)
+
+    if not os.environ.get("PYTEST_XDIST_WORKER"):
+        _warm()
+        return
+
+    # The cross-worker mutex must live on the SHARED base data dir (not the
+    # per-worker DATA_DIR), derived via the same XDG-aware paths helper as
+    # config_manager / root conftest so $XDG_DATA_HOME is honored.
+    shared_base = paths.data_dir("empire-test")
+    shared_base.mkdir(parents=True, exist_ok=True)
+    lock = shared_base / ".cache-warm.lock"
+    deadline = time.monotonic() + 600
+    acquired = False
+    while time.monotonic() < deadline:
+        try:
+            lock.mkdir()
+            acquired = True
+            break
+        except FileExistsError:
+            time.sleep(0.5)
+    try:
+        _warm()
+    finally:
+        if acquired:
+            with suppress(OSError):
+                lock.rmdir()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def client(_warm_external_caches, _example_2_plugin):
     sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
 
     from empire.server.core.db.base import reset_db
@@ -54,18 +109,43 @@ def client(_example_2_plugin):
         reset_db()
 
 
+@pytest.fixture(scope="session")
+def example_2_plugin_name():
+    """Per-worker name for the test-cloned plugin.
+
+    Under pytest-xdist multiple workers cannot share a single ``example_2/``
+    directory under ``installPath/plugins/``, so each worker gets its own copy
+    named ``example_2_<gw>``. Without xdist this is just ``example_2``.
+    """
+    worker = os.environ.get("PYTEST_XDIST_WORKER", "")
+    suffix = f"_{worker}" if worker else ""
+    return f"example_2{suffix}"
+
+
 @pytest.fixture(scope="session", autouse=True)
-def _example_2_plugin(install_path):
+def _example_2_plugin(install_path, example_2_plugin_name):
+    import tempfile
+
     example_plugin_path = Path(install_path) / "plugins" / "example"
-    example_plugin_copy_path = Path(install_path) / "plugins" / "example_2"
+    example_plugin_copy_path = Path(install_path) / "plugins" / example_2_plugin_name
 
-    shutil.copytree(
-        str(example_plugin_path), str(example_plugin_copy_path), dirs_exist_ok=True
-    )
+    # Stage the prepared plugin in a tempdir, then atomically move it into the
+    # shared plugins/ directory. Without staging, another xdist worker's MainMenu
+    # starting up at the same moment can iterate plugins/ and see this worker's
+    # half-copied directory with the *unmodified* plugin.yaml (name: example),
+    # which conflicts with the real example plugin already loaded.
+    with tempfile.TemporaryDirectory() as tmp:
+        staging = Path(tmp) / example_2_plugin_name
+        shutil.copytree(str(example_plugin_path), str(staging))
+        config = (staging / "plugin.yaml").read_text()
+        config = config.replace("name: example", f"name: {example_2_plugin_name}")
+        (staging / "plugin.yaml").write_text(config)
 
-    config = (example_plugin_copy_path / "plugin.yaml").read_text()
-    config = config.replace("name: example", "name: example_2")
-    (example_plugin_copy_path / "plugin.yaml").write_text(config)
+        # A previous crashed run may have left the destination behind; clear it
+        # before the move (shutil.move can't replace a non-empty dir).
+        if example_plugin_copy_path.exists():
+            shutil.rmtree(example_plugin_copy_path)
+        shutil.move(str(staging), str(example_plugin_copy_path))
 
     yield
 
@@ -267,24 +347,31 @@ def agents(session_local, models, main):
     with session_local.begin() as db:
         host = models.Host(name=f"host_{get_random_string(5)}", internal_ip="127.0.0.1")
 
+        # delay=3600 for the non-stale agents pushes the staleness threshold
+        # (30 + delay + delay*jitter) to ~66 min, well beyond any test-session
+        # duration. This session-scoped fixture is built once and lives the whole
+        # run; with the old delay=60 the threshold was ~96s, so on long runs (e.g.
+        # under xdist) the "non-stale" agents could age past it before
+        # test_stale_expression / test_get_agents_include_stale_false executed,
+        # causing intermittent failures. Sequential runs were unaffected.
         agent_defs = [
             {
                 "name": f"TEST123_{random_string}",
-                "delay": 60,
+                "delay": 3600,
                 "high_integrity": False,
                 "hostname": "vinnybod",
                 "host": host,
             },
             {
                 "name": f"SECOND_{random_string}",
-                "delay": 60,
+                "delay": 3600,
                 "high_integrity": False,
                 "hostname": "vinnybod",
                 "host": host,
             },
             {
                 "name": f"ARCHIVED_{random_string}",
-                "delay": 60,
+                "delay": 3600,
                 "high_integrity": False,
                 "hostname": "vinnybod",
                 "host": host,

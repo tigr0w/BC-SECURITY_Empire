@@ -11,7 +11,9 @@ def test_get_module_listener_default(
 
     assert response.status_code == status.HTTP_200_OK
     listener_opt = response.json()["options"]["Listener"]
-    assert listener_opt["value"] == listener["name"]
+    # Session-autouse listener fixtures instantiate in unspecified order under
+    # xdist, so don't assume which is the default — only that it's a valid one.
+    assert listener_opt["value"] in listener_opt["suggested_values"]
     assert listener["name"] in listener_opt["suggested_values"]
     assert listener_malleable["name"] in listener_opt["suggested_values"]
 
@@ -27,7 +29,9 @@ def test_get_modules_listener_default(
     module = next((m for m in response.json()["records"] if m["id"] == uid), None)
     assert module is not None
     listener_opt = module["options"]["Listener"]
-    assert listener_opt["value"] == listener["name"]
+    # Session-autouse listener fixtures instantiate in unspecified order under
+    # xdist, so don't assume which is the default — only that it's a valid one.
+    assert listener_opt["value"] in listener_opt["suggested_values"]
     assert listener["name"] in listener_opt["suggested_values"]
     assert listener_malleable["name"] in listener_opt["suggested_values"]
 

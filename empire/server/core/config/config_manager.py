@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 import sys
+from contextlib import suppress
 from pathlib import Path
 from typing import Annotated
 
@@ -33,10 +34,25 @@ log = logging.getLogger(__name__)
 # CACHE_DIR as a class-level field default, evaluated at import time. TEST_MODE
 # swaps in an isolated "empire-test" app name; on Linux/CI that resolves to the
 # same ~/.local/share/empire-test as before.
+#
+# Under pytest-xdist each worker gets its own DATA_DIR (a worker-<gw> subdir of
+# the shared base) so per-worker writable state — downloads/,
+# obfuscated_module_source/, and the MySQL database name — cannot collide. The
+# heavy read-only caches (empire-compiler, starkiller) still live under DATA_DIR,
+# so they are symlinked back to the shared base near the bottom of this module —
+# fetched once and reused across workers instead of re-downloaded per worker.
+# CACHE_DIR is a single shared location, so it needs no per-worker handling. The
+# first-download race on a cold shared cache is serialized by the
+# _warm_external_caches fixture (empire/test/conftest.py).
 _APP_NAME = "empire-test" if os.environ.get("TEST_MODE") else "empire"
 CONFIG_DIR = paths.config_dir(_APP_NAME)
-DATA_DIR = paths.data_dir(_APP_NAME)
 CACHE_DIR = paths.cache_dir(_APP_NAME)
+_DATA_BASE = paths.data_dir(_APP_NAME)
+_XDIST_WORKER = os.environ.get("PYTEST_XDIST_WORKER", "")
+if os.environ.get("TEST_MODE") and _XDIST_WORKER:
+    DATA_DIR = _DATA_BASE / f"worker-{_XDIST_WORKER}"
+else:
+    DATA_DIR = _DATA_BASE
 CONFIG_PATH = CONFIG_DIR / "config.yaml"
 
 
@@ -345,6 +361,19 @@ DEFAULT_CONFIG = Path("empire/server/config.yaml")
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+# Under pytest-xdist, symlink the shared heavy read-only caches into this
+# worker's isolated DATA_DIR so they are fetched once (into _DATA_BASE) and
+# reused across workers instead of re-downloaded per worker. Placed here (not at
+# the top) so the path-derivation block stays side-effect-free.
+if os.environ.get("TEST_MODE") and _XDIST_WORKER:
+    for _shared_name in ("empire-compiler", "starkiller"):
+        _shared_target = _DATA_BASE / _shared_name
+        _shared_target.mkdir(parents=True, exist_ok=True)
+        _worker_link = DATA_DIR / _shared_name
+        if not _worker_link.exists():
+            with suppress(FileExistsError):
+                _worker_link.symlink_to(_shared_target)
+
 if not CONFIG_PATH.exists():
     shutil.copy(DEFAULT_CONFIG, CONFIG_PATH)
     log.info(f"Copied {DEFAULT_CONFIG} to {CONFIG_PATH}")
@@ -358,3 +387,20 @@ if DEFAULT_USER_CONFIG.exists() and not USER_CONFIG_PATH.exists():
 
 _module_base_config_path: Path | None = _resolve_base_config_path()
 empire_config = EmpireConfig()
+
+# Per-xdist-worker database name. Mutated here (not in a fixture) because
+# db/base.py captures database_config at import time, and that import is
+# triggered transitively before any fixture runs. Each worker thus builds and
+# tears down its own isolated database; without xdist, behavior is unchanged.
+if os.environ.get("TEST_MODE") and os.environ.get("PYTEST_XDIST_WORKER"):
+    _worker = os.environ["PYTEST_XDIST_WORKER"]
+    empire_config.database.mysql.database_name = (
+        f"{empire_config.database.mysql.database_name}_{_worker}"
+    )
+    _sqlite_loc = str(empire_config.database.sqlite.location)
+    if _sqlite_loc.endswith(".db"):
+        empire_config.database.sqlite.location = Path(
+            _sqlite_loc[:-3] + f"_{_worker}.db"
+        )
+    else:
+        empire_config.database.sqlite.location = Path(_sqlite_loc + f"_{_worker}")

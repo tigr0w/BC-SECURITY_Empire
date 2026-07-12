@@ -152,7 +152,11 @@ def test_get_stager_template_listener_default(
     )
     assert response.status_code == status.HTTP_200_OK
     listener_opt = response.json()["options"]["Listener"]
-    assert listener_opt["value"] == listener["name"]
+    # The option is pre-filled with the default (lowest-id) listener. Both
+    # listener fixtures are session-scoped autouse, and under pytest-xdist the
+    # order they instantiate across files isn't fixed, so don't assume *which*
+    # listener is the default — only that it's pre-filled with a valid one.
+    assert listener_opt["value"] in listener_opt["suggested_values"]
     assert listener["name"] in listener_opt["suggested_values"]
     assert listener_malleable["name"] in listener_opt["suggested_values"]
 
@@ -169,7 +173,11 @@ def test_get_stager_templates_listener_default(
     )
     assert template is not None
     listener_opt = template["options"]["Listener"]
-    assert listener_opt["value"] == listener["name"]
+    # The option is pre-filled with the default (lowest-id) listener. Both
+    # listener fixtures are session-scoped autouse, and under pytest-xdist the
+    # order they instantiate across files isn't fixed, so don't assume *which*
+    # listener is the default — only that it's pre-filled with a valid one.
+    assert listener_opt["value"] in listener_opt["suggested_values"]
     assert listener["name"] in listener_opt["suggested_values"]
     assert listener_malleable["name"] in listener_opt["suggested_values"]
 

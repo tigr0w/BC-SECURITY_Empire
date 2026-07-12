@@ -270,8 +270,10 @@ def test_toggle_plugin_enabled_causes_exception(client, admin_auth_header, main)
     assert response.status_code == HTTP_200_OK
 
 
-def test_plugin_settings(client, admin_auth_header, main):
-    response = client.get("/api/v2/plugins/example_2", headers=admin_auth_header)
+def test_plugin_settings(client, admin_auth_header, main, example_2_plugin_name):
+    response = client.get(
+        f"/api/v2/plugins/{example_2_plugin_name}", headers=admin_auth_header
+    )
     assert response.status_code == HTTP_200_OK
 
     assert response.json()["settings_options"] == {
@@ -308,7 +310,7 @@ def test_plugin_settings(client, admin_auth_header, main):
 
     # Validation failure
     response = client.put(
-        "/api/v2/plugins/example_2/settings",
+        f"/api/v2/plugins/{example_2_plugin_name}/settings",
         json={},  # Missing required fields
         headers=admin_auth_header,
     )
@@ -318,7 +320,7 @@ def test_plugin_settings(client, admin_auth_header, main):
 
     # Update the settings
     response = client.put(
-        "/api/v2/plugins/example_2/settings",
+        f"/api/v2/plugins/{example_2_plugin_name}/settings",
         # The only field that is required and missing a default
         json={"SomeEditableSetting": "0.0.0.0"},
         headers=admin_auth_header,
@@ -326,7 +328,9 @@ def test_plugin_settings(client, admin_auth_header, main):
 
     assert response.status_code == HTTP_200_OK
 
-    response = client.get("/api/v2/plugins/example_2", headers=admin_auth_header)
+    response = client.get(
+        f"/api/v2/plugins/{example_2_plugin_name}", headers=admin_auth_header
+    )
 
     # Settings should be updated
     assert response.status_code == HTTP_200_OK
@@ -336,16 +340,20 @@ def test_plugin_settings(client, admin_auth_header, main):
     }
 
 
-def test_plugin_settings_non_editable(client, admin_auth_header, main, session_local):
+def test_plugin_settings_non_editable(
+    client, admin_auth_header, main, session_local, example_2_plugin_name
+):
     with session_local() as db:
         # Check the initial value of the non-editable field
-        internal_plugin = main.pluginsv2.loaded_plugins["example_2"]
+        internal_plugin = main.pluginsv2.loaded_plugins[example_2_plugin_name]
         assert internal_plugin.current_settings(db) == {
             "SomeEditableSetting": "0.0.0.0",
             "SomeNonEditableSetting": "Hello World",
         }
 
-        response = client.get("/api/v2/plugins/example_2", headers=admin_auth_header)
+        response = client.get(
+            f"/api/v2/plugins/{example_2_plugin_name}", headers=admin_auth_header
+        )
         assert response.status_code == HTTP_200_OK
         assert (
             response.json()["settings_options"]
@@ -361,7 +369,7 @@ def test_plugin_settings_non_editable(client, admin_auth_header, main, session_l
         # Trying to edit the field won't result in an error,
         # but it also won't do anything.
         response = client.put(
-            "/api/v2/plugins/example_2/settings",
+            f"/api/v2/plugins/{example_2_plugin_name}/settings",
             json={
                 "SomeEditableSetting": "0.0.0.0",
                 "SomeNonEditableSetting": "new value",
@@ -370,7 +378,9 @@ def test_plugin_settings_non_editable(client, admin_auth_header, main, session_l
         )
         assert response.status_code == HTTP_200_OK
 
-        response = client.get("/api/v2/plugins/example_2", headers=admin_auth_header)
+        response = client.get(
+            f"/api/v2/plugins/{example_2_plugin_name}", headers=admin_auth_header
+        )
         assert response.status_code == HTTP_200_OK
         assert response.json()["current_settings"] == {
             "SomeEditableSetting": "0.0.0.0",
@@ -378,13 +388,17 @@ def test_plugin_settings_non_editable(client, admin_auth_header, main, session_l
         }
 
 
-def test_plugin_state_internal(client, admin_auth_header, main, session_local):
+def test_plugin_state_internal(
+    client, admin_auth_header, main, session_local, example_2_plugin_name
+):
     with session_local() as db:
-        response = client.get("/api/v2/plugins/example_2", headers=admin_auth_header)
+        response = client.get(
+            f"/api/v2/plugins/{example_2_plugin_name}", headers=admin_auth_header
+        )
         assert response.status_code == HTTP_200_OK
         assert response.json()["settings_options"].get("SomeInternalSetting") is None
 
-        internal_plugin = main.pluginsv2.loaded_plugins["example_2"]
+        internal_plugin = main.pluginsv2.loaded_plugins[example_2_plugin_name]
         assert internal_plugin.current_internal_state(db) == {
             "SomeInternalSetting": "internal_state_value"
         }
@@ -394,15 +408,20 @@ def test_plugin_disabled_execution(client, admin_auth_header, main):
     internal_plugin = main.pluginsv2.loaded_plugins["basic_reporting"]
     internal_plugin.execution_enabled = False
 
-    response = client.post(
-        "/api/v2/plugins/basic_reporting/execute",
-        json={"options": {}},
-        headers=admin_auth_header,
-    )
+    try:
+        response = client.post(
+            "/api/v2/plugins/basic_reporting/execute",
+            json={"options": {}},
+            headers=admin_auth_header,
+        )
 
-    # Assert that the plugin execution is disabled and returns the expected response
-    assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response.json() == {"detail": "Plugin execution is disabled"}
+        # Assert that the plugin execution is disabled and returns the expected response
+        assert response.status_code == HTTP_400_BAD_REQUEST
+        assert response.json() == {"detail": "Plugin execution is disabled"}
+    finally:
+        # basic_reporting is a shared session instance; leaving it disabled would
+        # break test_basic_reporting_plugin if both files hit the same worker.
+        internal_plugin.execution_enabled = True
 
 
 def _git_commands(cwd, commands: list[list[str]]):

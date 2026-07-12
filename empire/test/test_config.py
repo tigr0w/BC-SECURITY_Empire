@@ -1,5 +1,6 @@
 import copy
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -57,6 +58,8 @@ def test_config_resolves_path():
     empire_config = EmpireConfig(server_config_dict)
     assert isinstance(empire_config.directories.downloads, Path)
     # A relative `downloads` resolves under DATA_DIR (platform-specific base).
+    # config_manager.DATA_DIR is the per-worker dir under pytest-xdist and the
+    # shared base otherwise, so this equality holds in both shapes.
     assert (
         empire_config.directories.downloads
         == config_manager.DATA_DIR / "empire" / "test"
@@ -283,10 +286,12 @@ def test_user_config_deep_merges_nested_dicts(tmp_path):
 
 def test_base_dirs_derive_from_platformdirs():
     # pytest.ini sets TEST_MODE=true, so the app name is "empire-test".
-    assert (
-        Path(platformdirs.user_data_dir("empire-test", appauthor=False))
-        == config_manager.DATA_DIR
-    )
+    # Under pytest-xdist config_manager gives each worker its own DATA_DIR (a
+    # worker-<gw> subdir of the shared base); CONFIG_DIR/CACHE_DIR stay shared.
+    data_base = Path(platformdirs.user_data_dir("empire-test", appauthor=False))
+    worker = os.environ.get("PYTEST_XDIST_WORKER", "")
+    expected_data_dir = data_base / f"worker-{worker}" if worker else data_base
+    assert expected_data_dir == config_manager.DATA_DIR
     assert (
         Path(platformdirs.user_config_dir("empire-test", appauthor=False))
         == config_manager.CONFIG_DIR

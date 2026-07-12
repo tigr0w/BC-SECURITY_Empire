@@ -1,6 +1,29 @@
 from unittest.mock import Mock
 
+import pytest
+
 from empire.server.core.hooks import hooks
+
+
+@pytest.fixture(autouse=True)
+def _restore_hooks_registry():
+    """Snapshot and restore the process-global hooks/filters registry per test.
+
+    ``hooks`` is a singleton. Several tests below register hooks/filters without
+    unregistering them; in serial alphabetical order nothing downstream noticed,
+    but under pytest-xdist a leaked BEFORE_TASKING_RESULT_FILTER (e.g.
+    ``callback_filter_multi``, which returns a ``{"fake_db": True}`` db) corrupts
+    other test files sharing the worker — _process_agent_packet then runs
+    ``db.flush()`` on a dict. Restoring keeps every test hermetic regardless of
+    cross-file execution order.
+    """
+    saved_hooks = {k: dict(v) for k, v in hooks.hooks.items()}
+    saved_filters = {k: dict(v) for k, v in hooks.filters.items()}
+    yield
+    hooks.hooks.clear()
+    hooks.hooks.update(saved_hooks)
+    hooks.filters.clear()
+    hooks.filters.update(saved_filters)
 
 
 def callback_hook(task):
