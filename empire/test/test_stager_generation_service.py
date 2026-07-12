@@ -5,7 +5,7 @@ import platform
 import re
 import subprocess
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -16,6 +16,7 @@ from empire.server.core.exceptions import (
     ModuleExecutionException,
     ModuleValidationException,
 )
+from empire.server.core.stager_generation_service import StagerGenerationService
 from empire.server.stagers.multi.generate_agent import Stager
 from empire.server.stagers.multi.launcher import Stager as MultiLauncherStager
 from empire.server.stagers.windows.launcher_bat import Stager as LauncherBatStager
@@ -381,6 +382,120 @@ def test_generate_python_exe(stager_generation_service, dot_net_version, obfusca
 
     assert result is not None
     assert result.exists(), f"Generated file not found: {result}"
+
+
+def _extract_launcher_locations(yaml_strs: list[str]) -> list[str]:
+    """Return all patched launcher.txt Location values from a list of YAML strings.
+
+    Filters by basename so CSharpPy.yaml's dozen other Location entries
+    (DLLs, Lib.zip) don't pollute the result.
+    """
+    locations = []
+    for yaml_str in yaml_strs:
+        for raw in re.findall(r"Location:\s*(.+)", yaml_str):
+            loc = raw.strip()
+            if loc.replace("\\", "/").endswith("/launcher.txt"):
+                locations.append(loc)
+    return locations
+
+
+def _assert_unique_launcher_locations(
+    captured_yamls: list[str], compiler_dir: Path, n_calls: int
+) -> None:
+    """Assert isolation invariants shared by powershell and python exe tests."""
+    assert len(captured_yamls) == n_calls
+    locations = _extract_launcher_locations(captured_yamls)
+    assert len(locations) == n_calls, (
+        f"Expected {n_calls} launcher Location entries, got: {locations}"
+    )
+    assert len(set(locations)) == n_calls, f"Duplicate launcher paths: {locations}"
+    # common_dir is shared with real-compile tests via the compiler cache, so
+    # scope cleanup checks to this call's own temp dir rather than asserting the
+    # whole directory has no subdirs (which is racy under parallel test runs).
+    common_dir = compiler_dir / "Data/EmbeddedResources/common"
+    for loc in locations:
+        norm = loc.replace("\\", "/")
+        assert norm.startswith("common/"), f"Location not under common/: {loc!r}"
+        assert norm.endswith("/launcher.txt"), (
+            f"Basename changed from launcher.txt: {loc!r}"
+        )
+        unique_name = norm.split("/")[-2]
+        assert not (common_dir / unique_name).exists(), (
+            f"Temp launcher dir not cleaned up: {unique_name}"
+        )
+
+
+@pytest.mark.parametrize(
+    "method_name", ["generate_powershell_exe", "generate_python_exe"]
+)
+def test_exe_launcher_isolation(stager_generation_service, method_name):
+    """Concurrent calls each write to a unique temp subdirectory, preventing
+    cross-contamination of launcher content."""
+    n_calls = 2
+    captured_yamls = []
+
+    def fake_compile(yaml_str, *args, **kwargs):
+        captured_yamls.append(yaml_str)
+        return Path("/tmp/fake.exe")
+
+    compiler_dir = stager_generation_service.dotnet_compiler.compiler_dir
+    method = getattr(stager_generation_service, method_name)
+
+    with (
+        patch.object(
+            stager_generation_service.dotnet_compiler,
+            "compile_stager",
+            side_effect=fake_compile,
+        ),
+        concurrent.futures.ThreadPoolExecutor(max_workers=n_calls) as executor,
+    ):
+        futures = [executor.submit(method, f"code_{i}") for i in range(n_calls)]
+        for f in futures:
+            f.result()
+
+    _assert_unique_launcher_locations(captured_yamls, compiler_dir, n_calls)
+
+
+@pytest.mark.parametrize(
+    "method_name", ["generate_powershell_exe", "generate_python_exe"]
+)
+def test_exe_launcher_cleanup_on_failure(stager_generation_service, method_name):
+    """The unique launcher dir is removed even when compile_stager raises."""
+    compiler_dir = stager_generation_service.dotnet_compiler.compiler_dir
+    common_dir = compiler_dir / "Data/EmbeddedResources/common"
+    captured_yamls = []
+
+    def failing_compile(yaml_str, *args, **kwargs):
+        captured_yamls.append(yaml_str)
+        raise RuntimeError("simulated compile failure")
+
+    with (
+        patch.object(
+            stager_generation_service.dotnet_compiler,
+            "compile_stager",
+            side_effect=failing_compile,
+        ),
+        pytest.raises(RuntimeError, match="simulated compile failure"),
+    ):
+        getattr(stager_generation_service, method_name)("some_code")
+
+    # Scope to this compilation's own temp dir; common_dir is shared with
+    # real-compile tests via the compiler cache, so a bare before/after diff is
+    # racy under parallel test runs.
+    locations = _extract_launcher_locations(captured_yamls)
+    assert len(locations) == 1, f"Expected one patched launcher Location: {locations}"
+    unique_name = locations[0].replace("\\", "/").split("/")[-2]
+    assert not (common_dir / unique_name).exists(), (
+        f"Temp launcher dir leaked after compile failure: {unique_name}"
+    )
+
+
+def test_patch_launcher_yaml_raises_when_placeholder_absent():
+    """_patch_launcher_yaml raises RuntimeError if the YAML lacks the expected placeholder."""
+    with pytest.raises(RuntimeError, match="YAML patch failed"):
+        StagerGenerationService._patch_launcher_yaml(
+            "no placeholder here", Path("common/abc")
+        )
 
 
 @pytest.mark.skipif(is_arm, reason="Skipping test on ARM architecture")

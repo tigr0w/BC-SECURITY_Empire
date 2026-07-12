@@ -64,18 +64,72 @@ class StagerGenerationService:
         self.obfuscation_service = main_menu.obfuscationv2
         self.dotnet_compiler = main_menu.dotnet_compiler
 
-    def _write_launcher_resource(self, code: str) -> None:
-        """Write launcher code to the embedded resources directory for compilation.
+    def _write_unique_launcher(self, code: str) -> Path:
+        """Write launcher code to a unique per-compilation subdirectory.
 
-        This file path is shared across stager types (PowerShell and Python),
-        so concurrent stager generations can overwrite each other.
+        Returns the unique subdirectory so callers can patch the YAML Location
+        and clean up via shutil.rmtree regardless of whether compilation
+        succeeds or raises. Keeping the basename
+        as ``launcher.txt`` ensures the compiled manifest resource name matches
+        the hardcoded ``GetManifestResourceStream("launcher.txt")`` in the C#.
         """
-        launcher_path = (
-            self.dotnet_compiler.compiler_dir
-            / "Data/EmbeddedResources/common/launcher.txt"
+        common_dir = self.dotnet_compiler.compiler_dir / "Data/EmbeddedResources/common"
+        common_dir.mkdir(parents=True, exist_ok=True)
+        unique_dir = Path(tempfile.mkdtemp(dir=common_dir))
+        try:
+            (unique_dir / "launcher.txt").write_text(code, encoding="utf-8")
+        except OSError:
+            shutil.rmtree(unique_dir, ignore_errors=True)
+            raise
+        return unique_dir
+
+    @staticmethod
+    def _patch_launcher_yaml(stager_yaml: str, launcher_dir: Path) -> str:
+        """Return *stager_yaml* with the shared launcher Location replaced by
+        the unique per-compilation path. Raises RuntimeError if the expected
+        placeholder is absent so a YAML schema change fails loudly rather than
+        silently reintroducing the race condition. The placeholder is
+        ``common\\launcher.txt`` (Windows-style backslash), matching the
+        literal string in ``CSharpPS.yaml`` and ``CSharpPy.yaml``; switching
+        those files to forward slashes will trigger this error.
+        """
+        old = r"common\launcher.txt"
+        if old not in stager_yaml:
+            raise RuntimeError(
+                f"YAML patch failed: {old!r} not found in stager YAML; "
+                "the launcher directory will not be isolated"
+            )
+        return stager_yaml.replace(old, f"common\\{launcher_dir.name}\\launcher.txt")
+
+    def _compile_from_launcher(
+        self,
+        code: str,
+        yaml_rel_path: str,
+        stager_name: str,
+        dot_net_version: str,
+        obfuscate: bool,
+    ) -> Path:
+        stager_yaml = (self.main_menu.install_path / yaml_rel_path).read_text(
+            encoding="utf-8"
         )
-        launcher_path.parent.mkdir(parents=True, exist_ok=True)
-        launcher_path.write_text(code, encoding="utf-8")
+        launcher_dir = self._write_unique_launcher(code)
+        try:
+            patched_yaml = self._patch_launcher_yaml(stager_yaml, launcher_dir)
+            return self.dotnet_compiler.compile_stager(
+                patched_yaml,
+                stager_name,
+                dot_net_version=dot_net_version,
+                confuse=obfuscate,
+            )
+        finally:
+            try:
+                shutil.rmtree(launcher_dir)
+            except OSError:
+                log.warning(
+                    "Failed to remove temp launcher dir %s; stager code may persist on disk",
+                    launcher_dir,
+                    exc_info=True,
+                )
 
     def generate_launcher_fetcher(
         self,
@@ -202,14 +256,8 @@ class StagerGenerationService:
         """
         Generate powershell launcher embedded in csharp
         """
-        stager_yaml = (self.main_menu.install_path / "stagers/CSharpPS.yaml").read_text(
-            encoding="utf-8"
-        )
-
-        self._write_launcher_resource(posh_code)
-
-        return self.dotnet_compiler.compile_stager(
-            stager_yaml, "CSharpPS", dot_net_version=dot_net_version, confuse=obfuscate
+        return self._compile_from_launcher(
+            posh_code, "stagers/CSharpPS.yaml", "CSharpPS", dot_net_version, obfuscate
         )
 
     def generate_powershell_shellcode(
@@ -538,14 +586,8 @@ class StagerGenerationService:
         """
         Generate ironpython launcher embedded in csharp
         """
-        stager_yaml = (self.main_menu.install_path / "stagers/CSharpPy.yaml").read_text(
-            encoding="utf-8"
-        )
-
-        self._write_launcher_resource(python_code)
-
-        return self.dotnet_compiler.compile_stager(
-            stager_yaml, "CSharpPy", dot_net_version=dot_net_version, confuse=obfuscate
+        return self._compile_from_launcher(
+            python_code, "stagers/CSharpPy.yaml", "CSharpPy", dot_net_version, obfuscate
         )
 
     def generate_python_shellcode(

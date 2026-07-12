@@ -183,7 +183,8 @@ def _find_launcher_locations(entries):
 @pytest.mark.parametrize("stager_file", ["CSharpPS.yaml", "CSharpPy.yaml"])
 def test_stager_yaml_launcher_path_matches_service(stager_file):
     """Verify that stager YAML EmbeddedResources Location for launcher.txt
-    is consistent with the path used in StagerGenerationService._write_launcher_resource.
+    is ``common/launcher.txt`` — the base path that StagerGenerationService
+    patches in-memory to a unique subdirectory per compilation.
     """
     stager_data = yaml.safe_load(
         (STAGERS_DIR / stager_file).read_text(encoding="utf-8")
