@@ -184,6 +184,10 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 omit = [
     "empire/server/data/**",
     "empire/test/**",
+    # Agent-side Jinja payload templates (*.py.j2) render code that runs on the
+    # victim implant, not the server -- server tests cannot meaningfully cover
+    # them, so they are excluded from the coverage denominator.
+    "empire/server/**/*.py.j2",
     ]
 
 [tool.coverage.report]
@@ -203,6 +207,10 @@ exclude_also = [
 omit = [
     "empire/server/data/**",
     "empire/test/**",
+    # Agent-side Jinja payload templates (*.py.j2) render code that runs on the
+    # victim implant, not the server -- server tests cannot meaningfully cover
+    # them, so they are excluded from the coverage denominator.
+    "empire/server/**/*.py.j2",
     ]
 
 ignore_errors = true
