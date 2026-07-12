@@ -3,6 +3,7 @@ import hmac
 import logging
 import os
 from datetime import UTC, datetime, timedelta
+from functools import cache
 from typing import Annotated
 
 import jwt
@@ -20,7 +21,6 @@ from empire.server.core.db.base import SessionLocal
 log = logging.getLogger(__name__)
 
 # This all comes from the amazing fastapi docs: https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
-SECRET_KEY = SessionLocal().scalars(select(models.Config)).first().jwt_secret_key
 ALGORITHM = "HS256"
 
 # Long token expiration until refresh token is implemented
@@ -132,14 +132,36 @@ def authenticate_user(db: Session, username: str, password: str):
     return user
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+@cache
+def get_jwt_secret_key() -> str:
+    """
+    Load the JWT secret key from the DB (cached after first call).
+
+    The secret key is generated once at DB creation and never changes,
+    so it's safe to cache for the lifetime of the process.
+
+    Important: this must not run at import-time, so the ASGI app can be imported
+    cleanly by uvicorn/fastapi before DB startup.
+    """
+    with SessionLocal.begin() as db_session:
+        config = db_session.scalars(select(models.Config)).first()
+        if config is None or not config.jwt_secret_key:
+            raise RuntimeError("JWT secret key is not initialized in the database.")
+        return config.jwt_secret_key
+
+
+def create_access_token(
+    data: dict,
+    expires_delta: timedelta | None = None,
+):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
     else:
         expire = datetime.now(UTC) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    secret_key = get_jwt_secret_key()
+    return jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
 
 
 def get_token_from_headers(request: Request) -> str:
@@ -172,7 +194,8 @@ def get_current_user_from_token(
     )
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        secret_key = get_jwt_secret_key()
+        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception

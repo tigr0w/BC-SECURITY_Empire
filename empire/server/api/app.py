@@ -5,7 +5,7 @@ from datetime import datetime
 from json import JSONEncoder
 
 import socketio
-import uvicorn
+import urllib3
 from fastapi import FastAPI
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import WebSocketRoute
@@ -29,8 +29,10 @@ from empire.server.api.v2.stager import stager_api, stager_template_api
 from empire.server.api.v2.tag import tag_api
 from empire.server.api.v2.user import user_api
 from empire.server.api.v2.websocket.socketio import setup_socket_events
+from empire.server.common import empire
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.config.data_manager import sync_starkiller
+from empire.server.core.db import base
 
 log = logging.getLogger(__name__)
 
@@ -88,23 +90,57 @@ def load_starkiller(app, port):
     log.info(f"Starkiller served at http://localhost:{port}/")
 
 
-def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
-    ip = empire_config.api.ip
-    port = empire_config.api.port
-    secure = empire_config.api.secure
-    cors_origins = empire_config.api.cors_origins
+def create_app() -> FastAPI:  # noqa: PLR0915
+    """Build the FastAPI app without running the server.
 
-    from empire.server.server import main
+    The ASGI entrypoint (empire/server/asgi.py) calls this; see it for how to run.
+    """
+    cors_origins = empire_config.api.cors_origins
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        yield
-        if main:
-            main.shutdown()
+        # Startup: module import stays cheap; DB + MainMenu init happens here,
+        # not at import time, so the ASGI app can be imported before DB startup.
+        if empire_config.suppress_self_cert_warning:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        if sio:
-            log.info("Shutting down SocketIO...")
-            await sio.shutdown()
+        # Startup runs inside the try so a failure partway through (e.g. after
+        # MainMenu is built but before serving) still hits the finally and
+        # tears down whatever was started, rather than leaking listeners.
+        try:
+            base.startup_db()
+
+            # A fresh app is built per create_app() and its lifespan runs once,
+            # so this startup work always runs against clean state — no re-entry
+            # guards.
+            app.state.main = empire.MainMenu()
+
+            if app.state.sio:
+                setup_socket_events(app.state.sio, app.state.main)
+
+            if empire_config.starkiller.enabled:
+                log.info("Starkiller enabled. Loading.")
+                load_starkiller(app, empire_config.api.port)
+            else:
+                log.info("Starkiller disabled. Not loading.")
+
+            yield
+        finally:
+            # Shutdown — guard each step so one failure doesn't skip the rest
+            if app.state.main:
+                try:
+                    app.state.main.shutdown()
+                except Exception:
+                    # A failed MainMenu shutdown can leave listeners/plugins and
+                    # their bound ports orphaned, so surface it at error level.
+                    log.error("Error during Empire shutdown", exc_info=True)
+
+            if app.state.sio:
+                try:
+                    log.info("Shutting down SocketIO...")
+                    await app.state.sio.shutdown()
+                except Exception:
+                    log.warning("Error during SocketIO shutdown", exc_info=True)
 
     app = FastAPI(lifespan=lifespan)
 
@@ -157,35 +193,13 @@ def initialize(run: bool = True, cert_path=None):  # noqa: PLR0915
 
         app.add_route("/socket.io/", route=sio_app, methods=["GET", "POST"])
         app.router.routes.append(WebSocketRoute("/socket.io/", sio_app))
-
-        setup_socket_events(sio, main)
     else:
         log.info("Socket.IO disabled via server.socketio config.")
 
-    if empire_config.starkiller.enabled:
-        log.info("Starkiller enabled. Loading.")
-        load_starkiller(app, port)
-    else:
-        log.info("Starkiller disabled. Not loading.")
-
-    if run:
-        if secure and cert_path:
-            uvicorn.run(
-                app,
-                host=ip,
-                port=port,
-                log_config=None,
-                lifespan="on",
-                ssl_keyfile=f"{cert_path}/empire-priv.key",
-                ssl_certfile=f"{cert_path}/empire-chain.pem",
-            )
-        else:
-            uvicorn.run(
-                app,
-                host=ip,
-                port=port,
-                log_config=None,
-                lifespan="on",
-            )
+    # Initialize state up front so the lifespan and request dependencies can use
+    # plain attribute access. main stays None until the lifespan populates it,
+    # which is the window get_main() guards with a 503.
+    app.state.sio = sio
+    app.state.main = None
 
     return app

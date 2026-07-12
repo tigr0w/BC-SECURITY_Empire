@@ -67,7 +67,7 @@ if __name__ == "__main__":
             )
         elif auto_install:
             base.startup_db()
-            main = empire.MainMenu(args=args)
+            main = empire.MainMenu()
 
             _auto_install_plugins(main, auto_install)
 

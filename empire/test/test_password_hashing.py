@@ -1,8 +1,8 @@
 """Tests for PBKDF2 password hashing (FIPS SP 800-132).
 
 Tests use the `client` fixture even though they don't send HTTP requests —
-it triggers the session-scoped DB setup required by jwt_auth's module-level
-SECRET_KEY query.
+it triggers the session-scoped app/DB setup so the suite runs against a fully
+initialized environment.
 """
 
 

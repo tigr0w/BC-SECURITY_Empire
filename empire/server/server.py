@@ -8,7 +8,7 @@ import sys
 import time
 from pathlib import Path
 
-import urllib3
+import uvicorn
 
 from empire.server.common import empire
 from empire.server.core.config import config_manager
@@ -23,12 +23,6 @@ from empire.server.utils.file_util import run_as_user
 from empire.server.utils.log_util import setup_logging
 
 log = logging.getLogger(__name__)
-main = None
-
-
-# Disable http warnings
-if empire_config.suppress_self_cert_warning:
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def clean():
@@ -44,19 +38,15 @@ def reset():
 
 def shutdown_handler(signum, frame):
     """
-    This is used to gracefully shutdown Empire if uvicorn is not running yet.
-    Otherwise, the "shutdown" event in app.py will be used.
+    Handle SIGINT during the pre-uvicorn setup phase (cert generation,
+    submodule checks, etc.) when MainMenu has not yet been created.
+
+    Once uvicorn is running, it manages SIGINT itself and triggers the
+    lifespan's ``finally`` block in app.py, which handles MainMenu shutdown.
     """
     log.info("Shutting down Empire Server...")
 
-    if main:
-        log.info("Shutting down MainMenu...")
-        main.shutdown()
-
     sys.exit(0)
-
-
-signal.signal(signal.SIGINT, shutdown_handler)
 
 
 def get_commit_sha() -> str:
@@ -125,6 +115,8 @@ def check_recommended_configuration():
 
 
 def run(args):
+    signal.signal(signal.SIGINT, shutdown_handler)
+
     if args.version:
         print(empire.VERSION)
         sys.exit()
@@ -160,15 +152,6 @@ def run(args):
         sys.exit()
 
     else:
-        base.startup_db()
-        global main  # noqa: PLW0603
-
-        # Calling run more than once, such as in the test suite
-        # Will generate more instances of MainMenu, which then
-        # causes shutdown failure.
-        if main is None:
-            main = empire.MainMenu(args=args)
-
         cert_path = config_manager.DATA_DIR / "cert"
         cert_path.mkdir(parents=True, exist_ok=True)
         if not (Path(cert_path) / "empire-chain.pem").exists():
@@ -176,8 +159,16 @@ def run(args):
             subprocess.call(["./setup/cert.sh", str(cert_path)])
             time.sleep(3)
 
-        from empire.server.api import app
+        uvicorn_kwargs = {
+            "host": empire_config.api.ip,
+            "port": empire_config.api.port,
+            "log_config": None,
+            "lifespan": "on",
+        }
+        if empire_config.api.secure:
+            uvicorn_kwargs["ssl_keyfile"] = f"{cert_path}/empire-priv.key"
+            uvicorn_kwargs["ssl_certfile"] = f"{cert_path}/empire-chain.pem"
 
-        app.initialize(cert_path=cert_path)
+        uvicorn.run("empire.server.asgi:app", **uvicorn_kwargs)
 
     sys.exit()

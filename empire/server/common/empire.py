@@ -40,12 +40,10 @@ log = logging.getLogger(__name__)
 
 
 class MainMenu:
-    def __init__(self, args=None):
+    def __init__(self):
         log.info("Empire starting up...")
 
         self.install_path = Path(os.path.realpath(__file__)).parent.parent
-
-        self.args = args
 
         self.socketio: SocketIO | None = None
 

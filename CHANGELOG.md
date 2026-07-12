@@ -194,6 +194,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+-   Refactored FastAPI app to use lifespan context manager, `app.state` for singletons, and a standard ASGI entrypoint (`empire.server.asgi`), eliminating module-level globals and import-time side effects
 -   Migrated the data-access layer from the SQLAlchemy 1.x Query API to the 2.0 `select()` idiom across the core services, `data_util`, `jwt_auth`, the `http`/`http_malleable` listeners, and `basic_reporting`. Behavior-preserving and still synchronous; `db.query()` no longer appears in `empire/server`.
 -   Migrated the ORM models in `core/db/models.py` from `Column()`/`declarative_base()` to 2.0 typed declarative (`Mapped[]`/`mapped_column()`). Schema-preserving: generated DDL is identical and `alembic` autogenerate detects no diff.
 -   Modernization quick wins (no behavior change): timezone-aware `datetime.now(UTC)` in `jwt_auth`, O(1) startup existence checks in `core/db/base.py`, removal of the Python-2 `old_div` shim and unused `math_util.py`, and a `ruff` pre-commit bump to match `pyproject.toml`.

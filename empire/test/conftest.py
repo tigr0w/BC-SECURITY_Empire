@@ -35,35 +35,22 @@ def install_path():
 def client(_example_2_plugin):
     sys.argv = ["", "server", "--config", SERVER_CONFIG_LOC]
 
-    import empire.server.core.db.base
-    from empire.server.core.db.base import reset_db, startup_db
-
-    startup_db()
+    from empire.server.core.db.base import reset_db
 
     shutil.rmtree("empire/test/downloads", ignore_errors=True)
     shutil.rmtree("empire/test/data/obfuscated_module_source", ignore_errors=True)
 
-    from empire import arguments
+    from empire.server.api.app import create_app
 
-    args = arguments.parent_parser.parse_args()
-
-    import empire.server.server
-    from empire.server.api.app import initialize
-    from empire.server.common.empire import MainMenu
-
-    empire.server.server.main = MainMenu(args)
-
-    app = initialize(run=False)
+    app = create_app()
 
     # fix for pycharm debugger
     # https://stackoverflow.com/a/77926544/5849681
     # yield TestClient(app, backend_options={"loop_factory": asyncio.new_event_loop})
-    yield TestClient(app)
-
-    from empire.server.server import main
+    with TestClient(app) as client:
+        yield client
 
     with suppress(Exception):
-        main.shutdown()
         reset_db()
 
 
@@ -142,10 +129,9 @@ def regular_auth_token(client, admin_auth_token):
 
 
 @pytest.fixture(scope="session")
-def main():
-    from empire.server.server import main
-
-    return main
+def main(client):
+    # Use the fully initialized app context rather than a global.
+    return client.app.state.main
 
 
 @pytest.fixture(scope="session", autouse=True)
