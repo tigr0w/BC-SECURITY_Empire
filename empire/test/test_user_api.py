@@ -363,6 +363,26 @@ def test_upload_user_avatar_not_image(client, admin_auth_header):
     assert response.json()["detail"] == "File must be an image."
 
 
+def test_upload_user_avatar_blocks_path_traversal(client, admin_auth_header):
+    escaped = Path("/tmp/empire_avatar_traversal.png")
+    escaped.unlink(missing_ok=True)
+    response = client.post(
+        "/api/v2/users/1/avatar",
+        headers=admin_auth_header,
+        files={
+            "file": (
+                "../../../../../../../../tmp/empire_avatar_traversal.png",
+                Path("./empire/test/avatar.png").read_bytes(),
+                "image/png",
+            )
+        },
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == "Invalid filename."
+    assert not escaped.exists(), "traversal avatar escaped the downloads directory"
+
+
 def test_upload_user_avatar(client, admin_auth_header):
     response = client.post(
         "/api/v2/users/1/avatar",

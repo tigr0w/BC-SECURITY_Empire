@@ -22,6 +22,7 @@ from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
+from empire.server.utils.file_util import is_path_within
 from empire.server.utils.string_util import is_valid_session_id
 
 if typing.TYPE_CHECKING:
@@ -68,7 +69,7 @@ class AgentCommunicationService:
     @staticmethod
     def _is_path_safe(save_path: Path, download_dir: Path, session_id: str) -> bool:
         """Check if a file path is safe (not a directory traversal attack)."""
-        if not save_path.resolve().is_relative_to(download_dir.resolve()):
+        if not is_path_within(save_path, download_dir):
             log.warning(
                 "Agent %s attempted skywalker exploit! Path: %s", session_id, save_path
             )
