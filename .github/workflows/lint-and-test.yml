@@ -100,6 +100,12 @@ jobs:
         # isn't throttled by the unauthenticated 60 req/hr shared-runner limit.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # On release branches / the run-all-versions label, run the full suite
+          # including release_only tests (the heavy SharpHound/Rubeus C# compiles).
+          # On normal PRs those two are deselected to keep the wall low; every
+          # other C# module still compiles, and the pair runs before a release.
+          RELEASE_RUN: ${{ startsWith(github.head_ref, 'release/') || contains(github.event.pull_request.labels.*.name,
+            'run-all-versions') }}
         run: |
           set -o pipefail
           # Parallelized via pytest-xdist. --dist=loadfile keeps every test in a
@@ -107,10 +113,13 @@ jobs:
           # worker runs whole files against its own per-worker DB). test_performance
           # is excluded here — those tests drive their own concurrency and conflict
           # with xdist workers; they run in a separate parallel job (test_performance).
+          # release_only (SharpHound/Rubeus compiles) is deselected except on release.
+          MARKEXPR="not release_only"
+          if [ "$RELEASE_RUN" = "true" ]; then MARKEXPR=""; fi
           if [ "${{ matrix.python-version }}" = "3.14" ]; then
-            DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 -n auto --dist=loadfile --ignore=empire/test/test_performance --cov=empire/server --junitxml=pytest.xml --cov-report=term-missing:skip-covered . | tee pytest-coverage.txt
+            DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 -n auto --dist=loadfile --ignore=empire/test/test_performance -m "$MARKEXPR" --cov=empire/server --junitxml=pytest.xml --cov-report=term-missing:skip-covered . | tee pytest-coverage.txt
           else
-            DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 -n auto --dist=loadfile --ignore=empire/test/test_performance .
+            DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 -n auto --dist=loadfile --ignore=empire/test/test_performance -m "$MARKEXPR" .
           fi
       - name: Run test suite - sqlite
         if: ${{ startsWith(github.head_ref, 'release/') || contains(github.event.pull_request.labels.*.name,

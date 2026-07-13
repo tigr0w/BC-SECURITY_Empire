@@ -49,6 +49,11 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "mysql: mark test as requiring MySQL (and Docker)"
     )
+    config.addinivalue_line(
+        "markers",
+        "release_only: heavy test (the SharpHound/Rubeus C# compiles) run only on "
+        "release/label CI, deselected on per-PR runs via -m 'not release_only'",
+    )
     _reset_test_dirs()
 
 

@@ -55,6 +55,16 @@ def _build_compiler_yaml(yaml_module: dict) -> str:
     )
 
 
+# The two heaviest C# compiles (SharpHound ~60s, Rubeus ~20s) dominate the
+# per-PR wall, so they are marked release_only and deselected on PRs; the full
+# sweep still runs on release / `run-all-versions` CI. Every other module still
+# compiles on each PR.
+_RELEASE_ONLY_MODULES = {
+    "situational_awareness/SharpHound",
+    "credentials/Rubeus",
+}
+
+
 def _collect_csharp_modules() -> list[tuple[str, dict]]:
     """Return (module_id, parsed_yaml) for every C# module YAML.
 
@@ -69,7 +79,10 @@ def _collect_csharp_modules() -> list[tuple[str, dict]]:
         if not raw.get("csharp", {}).get("Code"):
             continue
         module_id = path.relative_to(MODULES_DIR).with_suffix("").as_posix()
-        modules.append(pytest.param(module_id, raw, id=module_id))
+        marks = (
+            (pytest.mark.release_only,) if module_id in _RELEASE_ONLY_MODULES else ()
+        )
+        modules.append(pytest.param(module_id, raw, id=module_id, marks=marks))
     return modules
 
 
