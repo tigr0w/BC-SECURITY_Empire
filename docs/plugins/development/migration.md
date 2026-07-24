@@ -57,9 +57,10 @@ This is no different than the way things were pre 5.0.
 * `PluginTask` should now use the id of the plugin instead of the name
 
 ## 6->7 Migration
-* `self.install_path` on `BasePlugin` is now a `Path` object instead of a `str`. If your plugin passes `self.install_path` to APIs that expect a string, wrap it with `str()`.
-* `self.main_menu.installPath` has been removed. Use `self.main_menu.install_path` (a `Path` object) instead.
-* Plugin `execute()` no longer supports returning `(result, error_string)` tuples. Raise `PluginValidationException` or `PluginExecutionException` instead.
-* Custom listener `validate_options()` must return `None` and raise `ListenerValidationException` on failure instead of returning a `(False, "msg")` tuple.
-* Custom stager `generate()` must raise `StagerGenerationException` on failure instead of returning `""` or an error string.
-* `handle_error_message` has been removed from `empire.server.utils.module_util`. Plugin modules that used it to signal errors should raise `ModuleValidationException` or `ModuleExecutionException` instead.
+* `self.install_path` is now a `Path`, not a `str`. Wrap it in `str()` for APIs that require a string.
+* `self.main_menu.installPath` was removed. Use `self.install_path`.
+* `generate_launcher()` dropped its `stager_retries` and `safe_checks` parameters. Remove them from your calls — the signature takes no `**kwargs`, so passing either raises `TypeError`.
+* Plugin `execute()` no longer accepts `(result, error_string)` tuple returns. Raise `PluginValidationException` or `PluginExecutionException`.
+* Custom listener `validate_options()` must return `None` and raise `ListenerValidationException` instead of returning `(False, "msg")`.
+* Custom stager `generate()` must raise `StagerGenerationException` instead of returning `""` or an error string.
+* `handle_error_message` was removed from `empire.server.utils.module_util`. Raise `ModuleValidationException` or `ModuleExecutionException` instead.

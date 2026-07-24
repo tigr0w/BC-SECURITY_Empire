@@ -93,6 +93,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+-   Pointed the plugin registry at the `7.x` branch of `Empire-Plugin-Registry-Sponsors`. Each major line reads its own `<major>.x` branch; `main` stays pinned for 6.x installs.
+-   The persisted plugin registry row is now reconciled from the on-disk clone on every boot instead of written once at first load, so a ref change reaches an already-installed server. A sync or parse failure keeps the last-good row instead of aborting startup.
+-   The plugin marketplace now serves only registries named in the config, so a renamed or removed registry's leftover row can't list plugins or resolve installs against an older major line.
 -   Parallelized the test suite with pytest-xdist and preserved the cached empire-compiler / Starkiller / Go-build dirs across runs instead of re-downloading them each time (developer/CI change).
 -   The two heaviest C# compile tests (SharpHound, Rubeus) now run only on release branches / the `run-all-versions` label instead of every PR; the other C# modules still compile per-PR (developer/CI change).
 -   **BREAKING:** Base directories now use `platformdirs` for XDG-compliant (Linux) and native (macOS/Windows) paths. Linux defaults are unchanged unless `$XDG_*_HOME` is set; the Go build cache moves to the platform cache dir and rebuilds. macOS/Windows operators now get native paths (`~/Library/Application Support/empire`, `%LOCALAPPDATA%\empire`) — prior `~/.local/share/empire` state needs a one-time manual move.
@@ -139,6 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+-   Fixed registry-supplied authors never reaching a plugin installed from the marketplace: `_merge_plugin_config` indexed a single registry entry as if it were a whole registry document, so the lookup always missed.
 -   Fixed `custom_generate` PowerShell modules emitting `-Option False` for an unset boolean `[switch]` option, producing a malformed command (`find_fruit`, `WireTap`, `runas`, `inveigh_relay`, `deaduser`, and `get_subnet_ranges`, plus the `powershell_template.py` they are copied from). Switch options now key on the native bool type — a set switch emits a bare flag, an unset one emits nothing, and value options pass through unchanged — closes #1518.
 -   Fixed `bof/credentials/nanodump` boolean flags (`valid`, `fork`, `snapshot`, etc.) being silently ignored — the module compared against lowercase `"true"` while option values render as `"True"`, so every flag resolved to `0`. They now read the native bool.
 -   Fixed `bof/management/static_syscalls_inject` and `syscalls_shellcode_injection` reporting success but never delivering a callback: `BeaconDataLength()` includes the 4-byte length prefix, so the shellcode size passed to `NtAllocateVirtualMemory` was 4 bytes too large and the page-rounded value clobbered the write length. The shellcode is now padded so its size is page-aligned.

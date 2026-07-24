@@ -11,16 +11,31 @@ from types import SimpleNamespace
 import pytest
 
 from empire.server.core import plugin_service
+from empire.server.core.db.models import PluginInfo
 from empire.server.core.exceptions import PluginValidationException
+from empire.server.core.module_models import EmpireAuthor
 
 
 # --------------------------------------------------------------------------- #
 # _merge_plugin_config (pure static helper)
 # --------------------------------------------------------------------------- #
 def _cfg():
-    return SimpleNamespace(
-        name="myplugin", authors=["orig"], description="orig-desc", comments=["orig"]
+    return PluginInfo(
+        name="myplugin",
+        main="plugin.py",
+        authors=[EmpireAuthor(name="orig", handle="@orig", link="")],
     )
+
+
+def _entry(**overrides):
+    """One registry's entry for one plugin -- what install_plugin passes down."""
+    return {
+        "name": "myplugin",
+        "description": "registry-desc",
+        "versions": [],
+        "registry": "BC-SECURITY",
+        **overrides,
+    }
 
 
 def test_merge_plugin_config_no_registry_returns_unchanged(client, main):
@@ -28,28 +43,39 @@ def test_merge_plugin_config_no_registry_returns_unchanged(client, main):
     assert main.pluginsv2._merge_plugin_config(cfg, None) is cfg
 
 
-def test_merge_plugin_config_plugin_absent_from_registry(client, main):
+def test_merge_plugin_config_prefers_registry_authors(client, main):
     cfg = _cfg()
-    result = main.pluginsv2._merge_plugin_config(cfg, {"plugins": {}})
-    assert result.authors == ["orig"]
-    assert result.description == "orig-desc"
+    entry = _entry(authors=[{"name": "registry-author", "handle": "@reg", "link": "u"}])
+
+    result = main.pluginsv2._merge_plugin_config(cfg, entry)
+
+    assert [a.name for a in result.authors] == ["registry-author"]
 
 
-def test_merge_plugin_config_prefers_registry_fields(client, main):
+def test_merge_plugin_config_coerces_registry_authors(client, main):
+    # The row's `data` is raw YAML, so authors arrive as dicts; PluginInfo has
+    # no validate_assignment, so they'd be stored unvalidated without coercion.
     cfg = _cfg()
-    registry = {
-        "plugins": {
-            "myplugin": {
-                "authors": ["registry-author"],
-                "description": "registry-desc",
-                "comments": ["registry-comment"],
-            }
-        }
-    }
-    result = main.pluginsv2._merge_plugin_config(cfg, registry)
-    assert result.authors == ["registry-author"]
-    assert result.description == "registry-desc"
-    assert result.comments == ["registry-comment"]
+    entry = _entry(authors=[{"name": "registry-author"}])
+
+    result = main.pluginsv2._merge_plugin_config(cfg, entry)
+
+    assert all(isinstance(a, EmpireAuthor) for a in result.authors)
+
+
+@pytest.mark.parametrize(
+    "entry", [_entry(), _entry(authors=[])], ids=["omitted", "empty"]
+)
+def test_merge_plugin_config_keeps_own_authors_without_registry_authors(
+    client, main, entry
+):
+    # An absent key and an explicit `authors: []` are distinguishable here, but
+    # a registry that lists nobody isn't asserting the plugin has no authors.
+    cfg = _cfg()
+
+    result = main.pluginsv2._merge_plugin_config(cfg, entry)
+
+    assert [a.name for a in result.authors] == ["orig"]
 
 
 # --------------------------------------------------------------------------- #
@@ -124,7 +150,7 @@ def test_install_from_git_clones_then_validates(client, main, monkeypatch):
         subdir="sub",
         ref="main",
         version_name="1.0",
-        registry_data={"r": 1},
+        registry_entry={"r": 1},
     )
 
     # temp_dir from the clone is forwarded to validation.
@@ -146,7 +172,7 @@ def test_install_from_tar_downloads_then_validates(client, main, monkeypatch):
         "http://x/y.tar",
         subdir="sub",
         version_name="1.0",
-        registry_data=None,
+        registry_entry=None,
     )
 
     assert captured["args"][1] == "/tmp/extracted-tar"

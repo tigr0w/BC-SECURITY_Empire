@@ -160,9 +160,13 @@ plugin_marketplace:
   registries:
     - name: BC-SECURITY
       git_url: git@github.com:BC-SECURITY/Empire-Plugin-Registry-Sponsors.git
-      ref: main
+      ref: '7.x'
       file: registry.yaml
 ```
+
+`ref` is pinned per Empire major line: every 7.x release reads the registry's
+`7.x` branch, and `main` stays pinned to the already-shipped 6.x installs.
+Repointing it at `main` on a 7.x server resolves plugin refs from the 6.x line.
 
 * **directories** - Control where Empire should read and write specific data.
 

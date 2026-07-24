@@ -30,6 +30,7 @@ from empire.server.core.exceptions import (
     PluginExecutionException,
     PluginValidationException,
 )
+from empire.server.core.module_models import EmpireAuthor
 from empire.server.core.plugins import BasePlugin
 from empire.server.utils import git_util
 from empire.server.utils.option_util import validate_options
@@ -185,12 +186,12 @@ class PluginService:
         plugin_obj.enabled = db_plugin.enabled
 
     def _validate_and_load_plugin(
-        self, db, temp_dir, subdir, version_name, registry_data
+        self, db, temp_dir, subdir, version_name, registry_entry
     ):
         """Shared post-download logic: validate, merge config, load."""
         temp_dir = temp_dir / subdir if subdir else temp_dir
         plugin_dir, plugin_config = self._validate_temp_plugin(db, temp_dir)
-        plugin_config = self._merge_plugin_config(plugin_config, registry_data)
+        plugin_config = self._merge_plugin_config(plugin_config, registry_entry)
         self.load_plugin(db, plugin_dir, plugin_config, version_name)
 
     def _download_tar(self, tar_url):
@@ -236,11 +237,11 @@ class PluginService:
         subdir: str | None = None,
         ref: str | None = None,
         version_name: str | None = None,
-        registry_data: dict | None = None,
+        registry_entry: dict | None = None,
     ):
         temp_dir = git_util.clone_git_repo(git_url, ref)
         self._validate_and_load_plugin(
-            db, temp_dir, subdir, version_name, registry_data
+            db, temp_dir, subdir, version_name, registry_entry
         )
 
     def install_plugin_from_tar(
@@ -249,31 +250,31 @@ class PluginService:
         tar_url: str,
         subdir: str | None = None,
         version_name: str | None = None,
-        registry_data: dict | None = None,
+        registry_entry: dict | None = None,
     ):
         temp_dir = self._download_tar(tar_url)
         self._validate_and_load_plugin(
-            db, temp_dir, subdir, version_name, registry_data
+            db, temp_dir, subdir, version_name, registry_entry
         )
 
     @staticmethod
-    def _merge_plugin_config(plugin_config, registry_data):
+    def _merge_plugin_config(plugin_config, registry_entry):
         """
-        If a plugin is installed from a registry, merge the plugin config with the registry data.
-        Things like author info and description from the registry will take presedence.
+        If a plugin is installed from a registry, let the registry's author info
+        take precedence over the plugin's own.
+
+        `registry_entry` is one registry's entry for this plugin, not a whole
+        registry document. The entry's `description` has nowhere to go --
+        PluginInfo doesn't carry one -- so it stays a marketplace-only field.
         """
-        if not registry_data:
+        if not registry_entry:
             return plugin_config
 
-        registry_plugin = registry_data.get("plugins", {}).get(plugin_config.name)
-        if not registry_plugin:
-            return plugin_config
-
-        plugin_config.authors = registry_plugin.get("authors", plugin_config.authors)
-        plugin_config.description = registry_plugin.get(
-            "description", plugin_config.description
-        )
-        plugin_config.comments = registry_plugin.get("comments", plugin_config.comments)
+        # Raw YAML off the registry row, and PluginInfo doesn't validate on
+        # assignment, so these would otherwise persist as bare dicts.
+        authors = registry_entry.get("authors")
+        if authors:
+            plugin_config.authors = [EmpireAuthor.model_validate(a) for a in authors]
 
         return plugin_config
 

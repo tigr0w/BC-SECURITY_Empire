@@ -71,7 +71,7 @@ plugin_marketplace:
   registries:
     - name: BC-SECURITY
       git_url: git@github.com:BC-SECURITY/Empire-Plugin-Registry-Sponsors.git
-      ref: main
+      ref: '7.x'
       file: registry.yaml
 directories:
   downloads: downloads
