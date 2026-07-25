@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, File, HTTPException, Query, UploadFile
+from fastapi import Depends, HTTPException, Query
 from starlette.responses import FileResponse
 
 from empire.server.api.api_router import APIRouter
@@ -12,7 +12,12 @@ from empire.server.api.v2.download.download_dto import (
     DownloadSourceFilter,
     domain_to_dto_download,
 )
-from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession, paginate
+from empire.server.api.v2.shared_dependencies import (
+    AppCtx,
+    CurrentSession,
+    SafeUploadFile,
+    paginate,
+)
 from empire.server.api.v2.shared_dto import (
     BadRequestResponse,
     NotFoundResponse,
@@ -124,6 +129,6 @@ def create_download(
     user: CurrentActiveUser,
     db: CurrentSession,
     download_service: DownloadServiceDep,
-    file: UploadFile = File(...),
+    file: SafeUploadFile,
 ):
     return domain_to_dto_download(download_service.create_download(db, user, file))
