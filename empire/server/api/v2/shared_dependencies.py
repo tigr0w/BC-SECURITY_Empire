@@ -1,12 +1,13 @@
 import math
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, File, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 from starlette import status
 
 from empire.server.common.empire import MainMenu
 from empire.server.core.db.base import SessionLocal
+from empire.server.utils.file_util import safe_filename
 
 
 def get_db():
@@ -41,5 +42,17 @@ def paginate(total: int, page: int, limit: int) -> tuple[int, int]:
     return page, math.ceil(total / limit)
 
 
+def validate_upload(file: UploadFile = File(...)) -> UploadFile:
+    """Reject an uploaded file whose name is a path-traversal attempt.
+
+    Boundary guard for every upload endpoint; the download service enforces the
+    same rule again at the point it builds the destination path.
+    """
+    if safe_filename(file.filename) is None:
+        raise HTTPException(status_code=400, detail="Invalid filename.")
+    return file
+
+
 CurrentSession = Annotated[Session, Depends(get_db)]
 AppCtx = Annotated[MainMenu, Depends(get_main)]
+SafeUploadFile = Annotated[UploadFile, Depends(validate_upload)]

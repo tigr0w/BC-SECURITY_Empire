@@ -1,8 +1,9 @@
+import logging
 import shutil
 import typing
 from pathlib import Path
 
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -14,9 +15,12 @@ from empire.server.api.v2.shared_dto import OrderDirection
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.tag_service import tag_name_filter
+from empire.server.utils.file_util import is_path_within, safe_filename
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
+
+log = logging.getLogger(__name__)
 
 
 class DownloadService:
@@ -129,9 +133,8 @@ class DownloadService:
         If a subdirectory is supplied, it will use that, otherwise it will use the user
         """
         subdirectory = subdirectory or f"user/{user.username}"
-        location = (
-            empire_config.directories.downloads / "uploads" / subdirectory / filename
-        )
+        base_dir = empire_config.directories.downloads / "uploads" / subdirectory
+        location = self._secure_upload_location(base_dir, filename)
         location.parent.mkdir(parents=True, exist_ok=True)
 
         filename, location = self._increment_filename(location)
@@ -159,16 +162,12 @@ class DownloadService:
         filename = file.name if isinstance(file, Path) else file.filename
 
         if user is not None:
-            location = (
-                empire_config.directories.downloads
-                / "uploads"
-                / user.username
-                / filename
-            )
+            base_dir = empire_config.directories.downloads / "uploads" / user.username
         else:
             # System-attributed uploads (e.g. listener autorun_tasks) have no user.
             # Kept outside uploads/<username>/ so no real username can collide.
-            location = empire_config.directories.downloads / "uploads_system" / filename
+            base_dir = empire_config.directories.downloads / "uploads_system"
+        location = self._secure_upload_location(base_dir, filename)
         location.parent.mkdir(parents=True, exist_ok=True)
 
         filename, location = self._increment_filename(location)
@@ -181,6 +180,24 @@ class DownloadService:
                 shutil.copyfileobj(file.file, buffer)
 
         return self._save_download(db, filename, location, tags)
+
+    @staticmethod
+    def _secure_upload_location(base_dir: Path, filename: str) -> Path:
+        """Resolve a client-supplied filename under base_dir, rejecting traversal.
+
+        Multipart upload filenames are untrusted: Starlette copies the raw
+        Content-Disposition value straight into ``UploadFile.filename``. Require
+        a bare basename and confirm the result stays inside base_dir so ``..``
+        sequences can't escape the downloads directory.
+        """
+        safe_name = safe_filename(filename)
+        location = base_dir / safe_name if safe_name else None
+        if location is None or not is_path_within(location, base_dir):
+            log.warning(
+                "Blocked path traversal attempt in upload filename: %r", filename
+            )
+            raise HTTPException(status_code=400, detail="Invalid filename.")
+        return location
 
     @staticmethod
     def _increment_filename(location: Path) -> tuple[str, Path]:

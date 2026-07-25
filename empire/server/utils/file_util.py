@@ -2,7 +2,7 @@ import logging
 import os
 import pwd
 import subprocess
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 log = logging.getLogger(__name__)
 
@@ -62,6 +62,34 @@ def ensure_user_ownership(path: Path, user: str | None = None) -> None:
                 log.warning(
                     f"ensure_user_ownership: chown {entry} failed ({e}); continuing"
                 )
+
+
+def is_path_within(path: Path, base_dir: Path) -> bool:
+    """Return True if ``path`` stays inside ``base_dir`` once resolved.
+
+    Blocks directory traversal: a path containing ``..`` that escapes
+    ``base_dir`` resolves outside it and returns False.
+    """
+    return path.resolve().is_relative_to(base_dir.resolve())
+
+
+def safe_filename(filename: str | None) -> str | None:
+    """Return ``filename`` when it is already a safe basename, else None.
+
+    Multipart upload filenames are untrusted. Return None (so callers can
+    reject the upload) when the name is empty, carries a null byte, is ``.`` or
+    ``..``, or contains POSIX/Windows path components -- rather than silently
+    rewriting the client's name to its basename.
+    """
+    if not filename or "\x00" in filename:
+        return None
+    # PureWindowsPath splits on both / and \, so .name is the bare final
+    # component on either OS. Keep the ".." set check below -- ".." survives the
+    # stripped != filename guard and must be rejected explicitly.
+    stripped = PureWindowsPath(filename).name
+    if stripped in {"", ".", ".."} or stripped != filename:
+        return None
+    return stripped
 
 
 def run_as_user(  # noqa: PLR0913

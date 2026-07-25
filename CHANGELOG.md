@@ -189,6 +189,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+-   Fixed a path traversal vulnerability where a crafted multipart upload filename could write files outside the downloads directory via the avatar (`POST /api/v2/users/{uid}/avatar`) and download (`POST /api/v2/downloads/`) upload endpoints (#824)
+
 ### Fixed
 -   Empire Compiler downloads now authenticate against the GitHub API with `GITHUB_TOKEN`/`GH_TOKEN` when set, avoiding intermittent `403` rate-limit failures on shared egress IPs (e.g. CI). When the compiler still can't be fetched, the server degrades gracefully and raises a clear error only if C# compilation is attempted, instead of crashing at startup.
 
