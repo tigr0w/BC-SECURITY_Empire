@@ -32,12 +32,12 @@ To apply pending migrations on existing databases, run the following from the Em
 poetry run alembic -c alembic.ini upgrade head
 ```
 
-Empire stamps fresh databases at baseline automatically on startup but does NOT auto-apply migrations. Run the command above after upgrading Empire to a release that includes new migrations.
+Empire stamps fresh databases at baseline automatically on startup but a plain server start does NOT auto-apply pending migrations. The recommended upgrade path, `./ps-empire update`, applies them for you (prompting to back up first, or pass `-y` to auto-confirm) — see [Update](../quickstart/README.md#update). Run the command above manually only if you're upgrading outside of `./ps-empire update`.
 
 ### Backing up before migrations
 
 The `backup_db()` function creates a timestamped backup before applying migrations:
-- **SQLite**: copies the database file to the `backups/` dir under Empire's data directory (Linux default `~/.local/share/empire/backups/`; see [data & config locations](../quickstart/server.md#data--config-locations))
+- **SQLite**: copies the database file to the `backups/` dir under Empire's data directory (`~/.local/share/empire/backups/` by default; see [data & config locations](../quickstart/server.md#data--config-locations))
 - **MySQL**: runs `mysqldump` to the same backup directory
 
 # Docker

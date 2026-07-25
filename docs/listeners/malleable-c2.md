@@ -6,7 +6,11 @@ Malleable C2 is not a new concept, having been employed by Cobalt Strike for sev
 
 This project originated from [Johneiser’s Malleable C2 Parser](https://github.com/johneiser/MalleableC2Parser), which is a Python 2.7 implementation that parses the profile for the listener. Unfortunately, the project was no longer maintained and required a [refactor](https://github.com/BC-SECURITY/MalleableC2Parser) to work with Empire.
 
-The parser takes the profile and executes the set of transforms that were scripted. The transformation order is extremely important, since both directions have to produce the same result. Currently, Empire can only ingest the Global Options and HTTP/S blocks. So a lot of the new functionality that was added in Cobalt Strike 4.0 will not be ingested. In the future, we hope to incorporate this additional functionality.
+The parser takes the profile and executes the set of transforms that were scripted. The transformation order is extremely important, since both directions have to produce the same result. Currently, Empire can ingest the Global Options, HTTP/S, `http-config`, and `https-certificate` blocks. Other Cobalt Strike 4.0 blocks (e.g. `stage`, `process-inject`, `post-ex`) are not yet ingested. In the future, we hope to incorporate this additional functionality.
+
+As of 7.0, the `http-config` block is enforced by the malleable HTTP listener: `trust_x_forwarded_for` (default `false`) enables validated `X-Forwarded-For` parsing, `block_useragents` rejects requests from matching user agents (fnmatch globs) with the shared IIS 7.5 404, and `header` is merged into every response. `set headers` ordering is parsed but not yet enforced. The `https-certificate` block is **parse-only** — Empire still loads the certificate from the listener's `CertPath` and logs a startup warning; runtime certificate generation from the block's fields is deferred.
+
+7.0 also adds a `host_stage` directive (`set host_stage "false";`) to disable the listener's stager URI entirely; it defaults to `true` so existing profiles keep serving stagers unchanged. Serialized profiles carry a schema version that the C# (Sharpire) and Go (Gopire) agents validate before parsing, so an agent build expecting a newer/older schema will refuse a mismatched profile instead of misparsing it.
 
 ![Listener transform functionality from transformation.py](https://i1.wp.com/www.bc-security.org/wp-content/uploads/2020/09/Screenshot_2020-09-06_21-14-54.png?resize=586%2C324\&ssl=1)
 

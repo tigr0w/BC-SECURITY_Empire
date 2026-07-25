@@ -1,7 +1,7 @@
 Logging
 ----
 
-The logging for the server is logged to the file `<data-dir>/logs/empire_server.log` (Linux default `~/.local/share/empire/logs/empire_server.log`; see [data & config locations](../quickstart/server.md#data--config-locations)) and to the console.
+The logging for the server is logged to the file `<data-dir>/logs/empire_server.log` (`~/.local/share/empire/logs/empire_server.log` by default; see [data & config locations](../quickstart/server.md#data--config-locations)) and to the console.
 By default, the logging level is set to `INFO`.
 
 

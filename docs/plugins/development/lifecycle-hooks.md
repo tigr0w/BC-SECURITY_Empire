@@ -9,6 +9,18 @@ def on_load(self, db):
     print("Plugin loaded")
 ```
 
+### Registering a listener template
+
+Plugins can contribute their own listener templates via `self.register_listener(instance, name=None)`, which registers an already-instantiated `Listener(main_menu)` and returns the slugified key it was registered under. Call it from `on_load` so the template exists before `ListenerService.start_existing_listeners` runs on Empire startup.
+
+```python
+@override
+def on_load(self, db):
+    self.register_listener(MyListener(self.main_menu))
+```
+
+Remove it with `self.main_menu.listenertemplatesv2.unregister_listener_template(name)`, e.g. from `on_unload`. This does not stop any listeners already instantiated from the template — stop those first.
+
 ## on_unload
 
 The `on_unload` function is called when the plugin is unloaded from memory.

@@ -64,3 +64,9 @@ This is no different than the way things were pre 5.0.
 * Custom listener `validate_options()` must return `None` and raise `ListenerValidationException` instead of returning `(False, "msg")`.
 * Custom stager `generate()` must raise `StagerGenerationException` instead of returning `""` or an error string.
 * `handle_error_message` was removed from `empire.server.utils.module_util`. Raise `ModuleValidationException` or `ModuleExecutionException` instead.
+* `AgentCommunicationService.update_agent_sysinfo()` dropped its unused `listener` and `external_ip` parameters.
+* The in-agent `shell` aliases (`ls`, `ps`, `ipconfig`, …) were removed, so hooks and filters keyed on that output must now match `task.module_name` against the replacement `situational_awareness/host/*` modules instead of parsing a `shell` task.
+* Tags are now flat, globally-unique names with a shared `color`/`description`, attached to entities by id. The `key:value` shape and the per-entity `value` field are gone, so plugins using the tag service must work against the global registry.
+* Tag hooks changed. The new `AFTER_TAG_ATTACHED_HOOK` (`db, tag, taggable`) fires on every attach; `AFTER_TAG_CREATED_HOOK` and `AFTER_TAG_UPDATED_HOOK` are now registry-only (`db, tag`) and no longer receive a `taggable`.
+* `CredentialParser.parse()` takes `agent: models.Agent | None`. `agent` is `None` for non-agent ingestion paths, so fill `host`/`os` defensively instead of assuming an agent. A `NETNTLMV2` type (hashcat mode 5600) is also available.
+* Plugins can contribute listener templates. `self.register_listener(instance, name=None)` — called from `on_load` — registers an instantiated `Listener(main_menu)` and returns its slugified key; remove it with `self.main_menu.listenertemplatesv2.unregister_listener_template(name)`. See [Lifecycle Hooks](lifecycle-hooks.md).

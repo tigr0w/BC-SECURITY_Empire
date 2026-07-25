@@ -5,6 +5,7 @@
   * [Installation](quickstart/installation/README.md)
     * [Common Issues](quickstart/installation/common-issues.md)
   * [Server](quickstart/server.md)
+  * [Upgrading to 7.0](quickstart/upgrading-to-7.md)
   * [Resetting](quickstart/resetting.md)
 * [Starkiller](starkiller/README.md)
   * [Introduction](starkiller/introduction.md)

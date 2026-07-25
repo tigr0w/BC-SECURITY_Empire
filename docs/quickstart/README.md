@@ -44,12 +44,17 @@ Refresh the Empire source, Starkiller, Empire-Compiler, and plugin registries in
 What it does, in order:
 
 1. **Source.** If the install is a git checkout at a release tag (the documented install path uses `setup/checkout-latest-tag.sh`), runs `git fetch --tags` and re-runs `checkout-latest-tag.sh` to move HEAD to the latest tag for the appropriate channel (`sponsors`, `kali`, or mainline, detected from `origin`). If HEAD is on a development branch, the source step is skipped — manage upstream pulls yourself with git. Skipped entirely if the install is not a git checkout.
-2. **Config.** Overwrites `~/.config/empire/config.yaml` with the shipped template from the repo. **Local customizations belong in `~/.config/empire/config.user.yaml`**, which the server merges on top of the base config at startup (see [User Config Overrides](server.md#user-config-overrides)). Paths shown are the Linux defaults; see [data & config locations](server.md#data--config-locations) for macOS/Windows.
-3. **Starkiller / plugin registries.** Fast-forwards the existing clone of the configured ref. If the configured ref changed (e.g. the new template moved `starkiller.ref`), prompts before downloading the new ref into the cache.
-4. **Empire-Compiler.** Re-downloads the binary if the configured release tag changed.
+2. **Config.** Overwrites `~/.config/empire/config.yaml` with the shipped template from the repo. **Local customizations belong in `~/.config/empire/config.user.yaml`**, which the server merges on top of the base config at startup (see [User Config Overrides](server.md#user-config-overrides)).
+3. **Database.** Checks for pending Alembic migrations and, if any are found, prompts to back up the database and apply them (`-y` auto-confirms). See [Migrations](../database/README.md#migrations).
+4. **Starkiller / plugin registries.** Fast-forwards the existing clone of the configured ref. If the configured ref changed (e.g. 7.0 moves `starkiller.ref` from `sponsors-main` to `4.0-dev`), prompts before downloading the new ref into the cache.
+5. **Empire-Compiler.** Re-downloads the binary if the configured release tag changed.
 
 {% hint style="warning" %}
 Step 2 overwrites the base config every run. Any edits made directly to `~/.config/empire/config.yaml` will be lost — move overrides to `config.user.yaml` first.
+{% endhint %}
+
+{% hint style="info" %}
+**Upgrading from 6.x?** 7.0 has breaking changes and requires a fresh database (`--reset`) — there is no in-place upgrade path. See [Upgrading to 7.0](upgrading-to-7.md) before you touch a running instance.
 {% endhint %}
 
 {% hint style="info" %}
@@ -79,6 +84,10 @@ Password: password123
 It is strongly recommended that these be changed if Empire is used for any operational engagement.
 {% endhint %}
 
+{% hint style="warning" %}
+**Upgrading from pre-7.0?** Empire 7.0 replaced bcrypt password hashing with PBKDF2-HMAC-SHA256 for FIPS compliance, so pre-7.0 password hashes are unusable. 7.0 requires a fresh database — see [Upgrading to 7.0](upgrading-to-7.md).
+{% endhint %}
+
 ## The Basics
 
 {% tabs %}
@@ -89,7 +98,7 @@ The first thing you need to do is set up a local listener. The **listeners** tab
 
 ![](../.gitbook/assets/listeners_tab.png)
 
-HTTP is the most commonly used listener and supports both HTTP and HTTPS. For HTTPS, you must first set the CertPath to be a local .pem file. The provided **./setup/cert.sh** script will generate a self-signed cert and place it in **\~/.local/share/empire/cert/empire.pem**.
+HTTP is the most commonly used listener and supports both HTTP and HTTPS. For HTTPS, you must first set the CertPath to be a local .pem file. The provided **./setup/cert.sh** script will generate a self-signed cert and place it in the data directory's `cert/empire.pem` (**\~/.local/share/empire/cert/empire.pem** by default; see [data & config locations](server.md#data--config-locations)).
 
 Set any optional parameters such as WorkingHours, KillDate, DefaultDelay, and DefaultJitter for the listener, as well as whatever name you want it to be referred to as. You can then hit **submit** to start the listener. If the name is already taken, a nameX variant will be used, and Empire will alert you if the port is already in use.
 

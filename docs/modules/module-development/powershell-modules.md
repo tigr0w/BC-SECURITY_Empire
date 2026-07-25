@@ -48,7 +48,7 @@ advanced:
   custom_generate: true
 ```
 
-The python file should share the same name as the yaml file. For example `Invoke-Assembly.yaml` and `Invoke-Assembly.py` The generate function is a static function that gets passed 5 parameters:
+The python file should share the same name as the yaml file. For example `invoke_shellcode.yaml` and `invoke_shellcode.py` The generate function is a static function that gets passed 5 parameters:
 
 * main\_menu: The main\_menu object that gives the module access to listeners, stagers, and just about everything else it might need
 * module: The module, loaded from the yaml. In case we need to check properties like `opsec_safe`, `background`, etc.
@@ -75,8 +75,8 @@ class Module(object):
 Examples of modules that use this custom generate function:
 
 * [bypassuac\_eventvwr](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/privesc/bypassuac_eventvwr.py)
-* [invoke\_assembly](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/code_execution/invoke_assembly.py)
-* [seatbelt](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/situational_awareness/host/seatbelt.py)
+* [invoke\_shellcode](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/code_execution/invoke_shellcode.py)
+* [screenshot](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/situational_awareness/host/screenshot.py)
 
 #### Error Handling
 
