@@ -108,8 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Migrated server-side module `generate()` methods to read native typed options (`if params["X"]:`) and removed the `normalize_legacy_params` shim. API clients are unaffected; only direct non-API callers of `validate_options` passing a native `bool` against a stringly `depends_on`/`suggested_values` list see a change.
 -   Replaced ChaCha20-Poly1305 with AES-256-GCM for routing-packet encryption across all agent languages (FIPS compliance). The C# agent (Sharpire) must be updated separately.
 -   Increased HMAC-SHA256 truncation from 10 to 16 bytes (128 bits) for AES-CBC payload encryption per FIPS SP 800-107, across all agent languages. The C# agent (Sharpire) must be updated separately.
--   Updated Empire Compiler to v1.1.0-a.9 (FIPS-compliant Sharpire with 16-byte HMAC, HKDF-SHA256, AES-GCM) and migrated C# module YAMLs to its new format.
--   Updated the default Starkiller ref from `sponsors-main` to `4.0-dev`. Existing installs are prompted to migrate on the next `./ps-empire update`.
+-   Updated Empire Compiler to v2.0.0 (FIPS-compliant Sharpire with 16-byte HMAC, HKDF-SHA256, AES-GCM) and migrated C# module YAMLs to its new format.
 -   Fixed Go `CheckPublicKey` to use the Legendre symbol `(prime-1)/2` exponent instead of Fermat's `(prime-1)`, which always returned true.
 -   Set all C# modules to `background: true` so compiled tasks run without blocking the agent.
 -   Renamed VNC module `Username` option to `ServerName` to reflect its purpose (session display name, not a credential).

@@ -24,7 +24,7 @@ Nearly every crypto primitive in the staging/comms path changed for FIPS complia
 
 An agent staged before 7.0 cannot communicate with a 7.0 server — there is no compatibility shim. Re-stage everything after upgrading. See [Staging](../agents/staging.md) for the current process.
 
-The C# agent (Sharpire) implements this crypto independently and needs its own update via the new Empire Compiler release (v1.1.0-a.9+); it isn't picked up automatically by `./ps-empire update`.
+The C# agent (Sharpire) implements this crypto independently and needs its own update via the new Empire Compiler release (v2.0.0+); it isn't picked up automatically by `./ps-empire update`.
 
 ## Recreate operator accounts
 
@@ -40,7 +40,7 @@ The per-stager `SafeChecks` option (PowerShell version guard, `Expect: 100-Conti
 
 ## Tags are now a flat global registry
 
-Per-entity `key:value` tags are gone. Tags are now unique names with a shared color/description, managed once via `/api/v2/tags` and attached/detached from entities by id. If you have automation or a custom frontend against the old tag API, it needs updating — see [Tags](../restful-api/README.md#tags). Starkiller 4.0-dev already speaks the new API.
+Per-entity `key:value` tags are gone. Tags are now unique names with a shared color/description, managed once via `/api/v2/tags` and attached/detached from entities by id. If you have automation or a custom frontend against the old tag API, it needs updating — see [Tags](../restful-api/README.md#tags). Starkiller 4.0 already speaks the new API.
 
 ## Removed in-agent shell aliases
 
