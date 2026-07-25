@@ -302,6 +302,46 @@ def test_base_dirs_derive_from_platformdirs():
     )
 
 
+def test_reset_test_dirs_preserves_caches_when_config_and_data_collide(
+    tmp_path, monkeypatch
+):
+    """Root conftest must not destroy DATA_DIR while reseeding CONFIG_DIR.
+
+    Pins the collision case on every platform: CI is Linux, where the two dirs
+    are distinct, so it would never catch a regression here.
+    """
+    # Deferred: the root conftest is only importable as a bare `conftest`
+    # because pytest puts rootdir on sys.path. Keeping it out of module scope
+    # means importing this file outside a pytest run still works.
+    import conftest as root_conftest  # noqa: PLC0415
+
+    collided = tmp_path / "Application Support" / "empire-test"
+    collided.mkdir(parents=True)
+    monkeypatch.setattr(root_conftest, "_TEST_CONFIG_DIR", collided)
+    monkeypatch.setattr(root_conftest, "_TEST_DATA_DIR", collided)
+    monkeypatch.setattr(root_conftest, "_TEST_CACHE_DIR", tmp_path / "Caches")
+
+    cached_compiler = collided / "empire-compiler" / "EmpireCompiler"
+    cached_compiler.parent.mkdir(parents=True)
+    cached_compiler.write_text("expensive to re-download")
+    (collided / "config.yaml").write_text("stale config")
+    (collided / "config.user.yaml").write_text("stale user config")
+
+    # The mutable per-run dirs live under the (possibly per-xdist-worker) data
+    # dir, so ask conftest where rather than assuming the base.
+    worker_data_dir = root_conftest._worker_data_dir()
+    stale_download = worker_data_dir / "downloads" / "leftover.txt"
+    stale_download.parent.mkdir(parents=True)
+    stale_download.write_text("per-run state")
+
+    root_conftest._reset_test_dirs()
+
+    assert cached_compiler.read_text() == "expensive to re-download"
+    assert not (collided / "config.yaml").exists(), "config must still be reseeded"
+    assert not (collided / "config.user.yaml").exists(), "user config too"
+    assert not stale_download.exists(), "per-run state must still be scrubbed"
+
+
 def test_cache_defaults_to_platform_cache_dir():
     # With no `cache` key in any config source, the field falls through to its
     # CACHE_DIR default (XDG cache home), NOT under DATA_DIR.

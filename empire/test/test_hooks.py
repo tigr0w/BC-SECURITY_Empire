@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import Mock
 
 import pytest
@@ -62,6 +63,108 @@ def test_register_filter():
     assert (
         hooks.filters.get(hooks.BEFORE_TASKING_RESULT_FILTER).get("test_filter") is None
     )
+
+
+def test_unregister_without_event_tolerates_a_miss():
+    """A hook is registered under one event, not all of them."""
+    hooks.register_hook(hooks.AFTER_TASKING_RESULT_HOOK, "test_hook", callback_hook)
+    # A second event with a registration, so the no-event sweep has to survive
+    # a key that doesn't hold the name. Registered here rather than relying on
+    # whatever the app boot happened to leave in the singleton.
+    hooks.register_hook(hooks.AFTER_AGENT_CHECKIN_HOOK, "survivor", callback_hook)
+    hooks.register_filter(
+        hooks.BEFORE_TASKING_RESULT_FILTER, "test_filter", callback_filter
+    )
+
+    hooks.unregister_hook("test_hook")
+    hooks.unregister_filter("test_filter")
+    # The realistic trigger: an on_unload defensively unregistering a hook its
+    # on_start never got as far as registering.
+    hooks.unregister_hook("never_registered")
+    hooks.unregister_filter("never_registered")
+
+    assert hooks.hooks.get(hooks.AFTER_TASKING_RESULT_HOOK).get("test_hook") is None
+    assert (
+        hooks.filters.get(hooks.BEFORE_TASKING_RESULT_FILTER).get("test_filter") is None
+    )
+    # Unregistering one name must not clear unrelated events.
+    assert hooks.hooks[hooks.AFTER_AGENT_CHECKIN_HOOK]["survivor"] is callback_hook
+
+
+def test_run_hooks_survives_a_hook_that_unregisters_itself():
+    """Now that the no-event form works, the one-shot-hook pattern is reachable."""
+    ran = []
+
+    def self_removing(task):
+        ran.append("self_removing")
+        hooks.unregister_hook("self_removing")
+
+    def other(task):
+        ran.append("other")
+
+    hooks.register_hook(hooks.AFTER_TASKING_RESULT_HOOK, "self_removing", self_removing)
+    hooks.register_hook(hooks.AFTER_TASKING_RESULT_HOOK, "other", other)
+
+    # Without the list() snapshot in run_hooks this raises RuntimeError out of
+    # the iterator -- past the handler -- and `other` never runs.
+    hooks.run_hooks(hooks.AFTER_TASKING_RESULT_HOOK, {})
+
+    assert ran == ["self_removing", "other"]
+    assert hooks.hooks[hooks.AFTER_TASKING_RESULT_HOOK].get("self_removing") is None
+
+
+def test_run_filters_survives_a_filter_that_unregisters_itself():
+    """run_filters needs the same snapshot as run_hooks, on a hotter path.
+
+    Filters run from _process_agent_packet, so a RuntimeError out of the
+    iterator lands in agent packet processing rather than being logged.
+    """
+    ran = []
+
+    def self_removing(task):
+        ran.append("self_removing")
+        hooks.unregister_filter("self_removing")
+        return task
+
+    def other(task):
+        ran.append("other")
+        return {"test": "updated"}
+
+    hooks.register_filter(
+        hooks.BEFORE_TASKING_RESULT_FILTER, "self_removing", self_removing
+    )
+    hooks.register_filter(hooks.BEFORE_TASKING_RESULT_FILTER, "other", other)
+
+    returned = hooks.run_filters(hooks.BEFORE_TASKING_RESULT_FILTER, {"test": "test"})
+
+    assert ran == ["self_removing", "other"]
+    assert returned.get("test") == "updated"
+
+
+def test_unregister_warns_when_nothing_matched(caplog):
+    """Tolerating the miss is deliberate; doing it silently is not.
+
+    A typo'd or renamed name looks exactly like a legitimate defensive
+    unregister, but leaves the real hook firing against a torn-down plugin
+    with its exceptions swallowed by run_hooks.
+    """
+    hooks.register_hook(hooks.AFTER_TASKING_RESULT_HOOK, "real_name", callback_hook)
+
+    with caplog.at_level(logging.WARNING):
+        hooks.unregister_hook("typo_name")
+        hooks.unregister_hook("typo_with_event", hooks.AFTER_TASKING_RESULT_HOOK)
+        hooks.unregister_filter("typo_filter")
+
+    assert "typo_name" in caplog.text
+    assert "typo_with_event" in caplog.text
+    assert "typo_filter" in caplog.text
+    # The hook that does exist is untouched, and removing it says nothing.
+    # Not `caplog.text == ""`: caplog captures the root logger, so any warning
+    # from the session-scoped app's threads would fail this for no reason.
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        hooks.unregister_hook("real_name")
+    assert "real_name" not in caplog.text
 
 
 def test_run_hook():

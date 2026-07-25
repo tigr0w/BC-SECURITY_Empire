@@ -91,9 +91,12 @@ def _reset_test_dirs():
     if not os.environ.get("TEST_MODE"):
         return
 
-    # CONFIG_DIR is tiny (just a copied config.yaml); a clean slate is cheap.
-    shutil.rmtree(_TEST_CONFIG_DIR, ignore_errors=True)
+    # Delete the seeded files, not the directory: CONFIG_DIR *is* DATA_DIR on
+    # macOS and Windows (see paths.py), so rmtree'ing it took the caches the
+    # rest of this function preserves.
     _TEST_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    for seeded in paths.SEEDED_CONFIG_FILENAMES:
+        (_TEST_CONFIG_DIR / seeded).unlink(missing_ok=True)
 
     # CACHE_DIR (separate platform cache dir) holds the shared Go build cache.
     # Without xdist we wipe it for a fresh per-session slate (7.0-dev behavior).

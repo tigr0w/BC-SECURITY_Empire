@@ -53,7 +53,7 @@ if os.environ.get("TEST_MODE") and _XDIST_WORKER:
     DATA_DIR = _DATA_BASE / f"worker-{_XDIST_WORKER}"
 else:
     DATA_DIR = _DATA_BASE
-CONFIG_PATH = CONFIG_DIR / "config.yaml"
+CONFIG_PATH = CONFIG_DIR / paths.CONFIG_FILENAME
 
 
 class EmpireBaseModel(BaseModel):
@@ -292,7 +292,7 @@ class EmpireConfig(BaseSettings):
         ]
 
         # User config: config.user.yaml next to base config
-        user_path = base_path.parent / "config.user.yaml"
+        user_path = base_path.parent / paths.USER_CONFIG_FILENAME
         if user_path.exists():
             log.info(f"Loading user config from {user_path}")
             sources.append(
@@ -352,7 +352,7 @@ def _resolve_base_config_path() -> Path:
     return CONFIG_PATH
 
 
-DEFAULT_CONFIG = Path("empire/server/config.yaml")
+DEFAULT_CONFIG = Path("empire/server") / paths.CONFIG_FILENAME
 
 # CONFIG_DIR / DATA_DIR / CACHE_DIR / CONFIG_PATH are defined near the top of this
 # module (platformdirs). The TEST_MODE wipe lives in root conftest.py::
@@ -378,8 +378,8 @@ if not CONFIG_PATH.exists():
     shutil.copy(DEFAULT_CONFIG, CONFIG_PATH)
     log.info(f"Copied {DEFAULT_CONFIG} to {CONFIG_PATH}")
 
-DEFAULT_USER_CONFIG = DEFAULT_CONFIG.parent / "config.user.yaml"
-USER_CONFIG_PATH = CONFIG_DIR / "config.user.yaml"
+DEFAULT_USER_CONFIG = DEFAULT_CONFIG.parent / paths.USER_CONFIG_FILENAME
+USER_CONFIG_PATH = CONFIG_DIR / paths.USER_CONFIG_FILENAME
 if DEFAULT_USER_CONFIG.exists() and not USER_CONFIG_PATH.exists():
     shutil.copy(DEFAULT_USER_CONFIG, USER_CONFIG_PATH)
     log.info(f"Copied {DEFAULT_USER_CONFIG} to {USER_CONFIG_PATH}")

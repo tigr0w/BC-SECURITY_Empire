@@ -146,27 +146,36 @@ class Hooks:
             self.filters[event] = {}
         self.filters[event][name] = filter
 
+    @staticmethod
+    def _unregister(
+        registry: dict[str, dict[str, Callable]],
+        kind: str,
+        name: str,
+        event: str | None,
+    ):
+        """Drop `name` from one event, or from every event when none is given.
+
+        A miss is tolerated but warned about: an on_unload may defensively
+        unregister something on_start never registered, but a typo'd name looks
+        identical and leaves the real callback firing against a torn-down plugin.
+        """
+        events = list(registry) if event is None else [event]
+        # A list, not a generator: all() short-circuits on the first hit and
+        # would leave the remaining events un-popped.
+        removed = [registry.get(ev, {}).pop(name, None) for ev in events]
+        if all(hook is None for hook in removed):
+            where = f" for event {event}" if event else ""
+            log.warning(
+                f"No {kind} named {name!r} was registered{where}; nothing removed"
+            )
+
     def unregister_hook(self, name: str, event: str | None = None):
-        """
-        Unregister a hook.
-        """
-        if event is None:
-            for ev in self.hooks:
-                self.hooks[ev].pop(name)
-            return
-        if name in self.hooks.get(event, {}):
-            self.hooks[event].pop(name)
+        """Drop a hook from one event, or from all events when none is given."""
+        self._unregister(self.hooks, "hook", name, event)
 
     def unregister_filter(self, name: str, event: str | None = None):
-        """
-        Unregister a filter.
-        """
-        if event is None:
-            for ev in self.filters:
-                self.filters[ev].pop(name)
-            return
-        if name in self.filters.get(event, {}):
-            self.filters[event].pop(name)
+        """Drop a filter from one event, or from all events when none is given."""
+        self._unregister(self.filters, "filter", name, event)
 
     def run_hooks(self, event: str, *args):
         """Run all hooks for a hook type.
@@ -182,7 +191,11 @@ class Hooks:
         """
         if event not in self.hooks:
             return
-        for hook in self.hooks.get(event, {}).values():
+        # Snapshot: a hook that unregisters itself would otherwise mutate the
+        # dict being iterated, and that RuntimeError comes from the iterator —
+        # past the handler below. Unregistering takes effect from the next
+        # dispatch.
+        for hook in list(self.hooks[event].values()):
             try:
                 if inspect.iscoroutinefunction(hook):
                     try:  # https://stackoverflow.com/a/61331974/
@@ -224,7 +237,8 @@ class Hooks:
         """
         if event not in self.filters:
             return None
-        for filter in self.filters.get(event, {}).values():
+        # Snapshot, same reason as run_hooks.
+        for filter in list(self.filters[event].values()):
             if not isinstance(args, tuple):
                 args = (args,)
             try:
