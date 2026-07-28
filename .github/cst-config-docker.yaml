@@ -63,7 +63,7 @@ fileExistenceTests:
     path: '/root/.local/share/empire/empire-compiler/'
     shouldExist: true
   - name: 'plugin-registries'
-    path: '/root/.local/share/empire/plugin-registries/BC-SECURITY/main/registry.yaml'
+    path: '/root/.local/share/empire/plugin-registries/BC-SECURITY/7.x/registry.yaml'
     shouldExist: true
   - name: 'openssl mingw prefix'
     path: '/opt/openssl-mingw64/'
