@@ -82,6 +82,10 @@ This event is triggered every time a tag is attached to an entity — an agent, 
 
 This event is triggered after a tag is edited (rename, recolor, or description change). Its arguments are (db: Session, tag: models.Tag) — tag edits are global and have no associated entity.
 
+* AFTER\_CHAT\_MESSAGE\_HOOK
+
+This event is triggered after a chat message is persisted to the general chat channel. Its arguments are (db: Session, message: models.ChatMessage). The message is expunged before the session commits, so the hook receives a fully-populated detached instance and can read its attributes without a `DetachedInstanceError`. Like the tasking and callback hooks, it is fired with `None` as the session argument so the async dispatch opens its own managed session.
+
 _The number of events at the moment is very minimal. If there's an event that you would like added, open an issue on the GitHub repo, come chat in our Discord, or put up a pull request._
 
 ### Real World Examples

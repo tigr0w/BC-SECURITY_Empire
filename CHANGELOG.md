@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added an `AFTER_CHAT_MESSAGE_HOOK` core hook, fired after a chat message is persisted with `(db, message: ChatMessage)`, so plugins can observe chat traffic. Refactored the `chat/message` Socket.IO handler onto a testable `persist_and_fire_chat` helper (behavior-preserving).
 -   **BREAKING:** Added a `./ps-empire update` subcommand that moves the checkout to the latest release tag, refreshes `config.yaml`, and fast-forwards Starkiller, the plugin registry, and the Empire Compiler binary (skips source on dev branches). The base `config.yaml` is overwritten on every update — move local customizations to `config.user.yaml`.
 -   `./ps-empire update` now applies pending Alembic migrations during the upgrade (prompts to back up first, `-y` to auto-confirm), so a schema mismatch no longer crashes the server on next start.
 -   Smoothed the bcrypt → PBKDF2 upgrade: a bcrypt-shaped default-user hash is auto-reset to PBKDF2 on startup (logged with recovery steps) and non-default bcrypt users are left untouched. **Manual recovery:** an admin `PUT /api/v2/users/{id}/password` (or Starkiller) stores a PBKDF2 hash.

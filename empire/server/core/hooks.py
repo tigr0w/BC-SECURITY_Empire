@@ -126,6 +126,11 @@ class Hooks:
     # have no associated entity.
     AFTER_TAG_UPDATED_HOOK = "after_tag_updated_hook"
 
+    # Triggered after a chat message is persisted. Args: (db: Session, message: models.ChatMessage).
+    # Fired with None as the session arg (like the tasking/callback hooks) so the
+    # async dispatch opens its own managed session.
+    AFTER_CHAT_MESSAGE_HOOK = "after_chat_message_hook"
+
     def __init__(self):
         self.hooks: dict[str, dict[str, Callable]] = {}
         self.filters: dict[str, dict[str, Callable]] = {}

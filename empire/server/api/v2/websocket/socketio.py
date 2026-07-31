@@ -18,6 +18,25 @@ from empire.server.core.hooks import hooks
 log = logging.getLogger(__name__)
 
 
+def persist_and_fire_chat(db: Session, user_id: int, username: str, text: str):
+    """Persist a chat message and fire AFTER_CHAT_MESSAGE_HOOK with it.
+
+    Factored out of on_message so it is unit-testable without a live socket.
+    The message is expunged before commit so it stays fully populated
+    (avoids DetachedInstanceError) for callers that read its attributes -
+    e.g. hooks.run_hooks merging it into a fresh session, and on_message's
+    emit reading msg.created_at - even though the session commits with
+    expire_on_commit=True.
+    """
+    msg = models.ChatMessage(user_id=user_id, username=username, message=text)
+    db.add(msg)
+    db.flush()
+    db.expunge(msg)
+    db.commit()
+    hooks.run_hooks(hooks.AFTER_CHAT_MESSAGE_HOOK, None, msg)
+    return msg
+
+
 def setup_socket_events(sio, empire_menu):  # noqa: PLR0915
     empire_menu.socketio = sio
 
@@ -130,14 +149,13 @@ def setup_socket_events(sio, empire_menu):  # noqa: PLR0915
             user = get_user_from_sid(sid, db)
             if isinstance(data, str):
                 data = json.loads(data)
-            msg = models.ChatMessage(
-                user_id=user.id,
-                username=user.username,
-                message=data["message"],
-            )
             try:
-                db.add(msg)
-                db.commit()
+                msg = persist_and_fire_chat(
+                    db,
+                    user_id=user.id,
+                    username=user.username,
+                    text=data["message"],
+                )
             except SQLAlchemyError:
                 db.rollback()
                 log.exception("Failed to persist chat message")
