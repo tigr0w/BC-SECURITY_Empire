@@ -23,12 +23,38 @@ from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
+from empire.server.core.hooks_internal import (
+    CSHARP_PROCESSES_MODULE,
+    PYTHON_PROCESSES_MODULE,
+)
 from empire.server.core.tag_service import tag_name_filter
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
+
+_WINDOWS_NATIVE_LANGUAGES: typing.Final = frozenset(
+    {"powershell", "ironpython", "csharp"}
+)
+
+
+def _resolve_processes_module(agent: "models.Agent") -> str | None:
+    """Pick the process-enumeration module for an agent, or None if unsupported.
+
+    Windows agents (PowerShell/IronPython/C#, plus Go on a Windows host) use the
+    C# SharpSploit ProcessList module so every Windows agent type shares one code
+    path. Python agents use the native Python module. Everything else -- notably a
+    Go agent on a non-Windows host -- has no supported module.
+    """
+    language = (agent.language or "").lower()
+    if language in _WINDOWS_NATIVE_LANGUAGES:
+        return CSHARP_PROCESSES_MODULE
+    if language == "go" and "windows" in (agent.os_details or "").lower():
+        return CSHARP_PROCESSES_MODULE
+    if language == "python":
+        return PYTHON_PROCESSES_MODULE
+    return None
 
 
 class AgentTaskService:
@@ -564,6 +590,25 @@ class AgentTaskService:
             user=user,
             files=resp.files,
         )
+
+    def create_task_processes(
+        self,
+        db: Session,
+        agent: models.Agent,
+        user: models.User | None = None,
+    ):
+        """Task an agent to enumerate host processes for Starkiller's Processes tab.
+
+        Resolves the module from the agent's language/OS and runs it through the
+        normal module path so `module_name` is set and `ps_hook` fires. Returns
+        (None, error) for agents with no supported module.
+        """
+        module_id = _resolve_processes_module(agent)
+        if module_id is None:
+            return None, f"Process listing is not supported for {agent.language} agents"
+
+        module_req = ModulePostRequest(module_id=module_id, options={})
+        return self.create_task_module(db, agent, module_req, user)
 
     def create_task_directory_list(
         self,

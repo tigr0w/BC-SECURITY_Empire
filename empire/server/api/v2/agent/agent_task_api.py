@@ -358,6 +358,35 @@ def create_task_module(
     return domain_to_dto_task(resp)
 
 
+@router.post("/{agent_id}/tasks/processes", status_code=201, response_model=AgentTask)
+def create_task_processes(
+    db: CurrentSession,
+    current_user: CurrentActiveUser,
+    db_agent: AgentDep,
+    agent_task_service: AgentTaskServiceDep,
+):
+    """
+    Enumerate host processes for the agent. The module is chosen server-side from
+    the agent's language/OS (C# SharpSploit for Windows agents, the Python module
+    for Python agents). Powers Starkiller's Processes-tab refresh.
+    """
+    try:
+        resp, err = agent_task_service.create_task_processes(db, db_agent, current_user)
+    except HTTPException:
+        raise
+    except ModuleValidationException as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ModuleExecutionException as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+
+    return domain_to_dto_task(resp)
+
+
 @router.post("/{agent_id}/tasks/upload", status_code=201, response_model=AgentTask)
 def create_task_upload(
     upload_request: UploadPostRequest,

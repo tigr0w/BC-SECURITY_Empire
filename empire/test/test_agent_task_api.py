@@ -72,6 +72,18 @@ def agent_python(session_local, models, main):
 
 
 @pytest.fixture(scope="module")
+def agent_go_linux(session_local, models, main):
+    return _get_or_create_agent(
+        session_local,
+        models,
+        main,
+        name="golinux",
+        language="go",
+        os_details="Linux 5.15.0-kali",
+    )
+
+
+@pytest.fixture(scope="module")
 def download(client, admin_auth_header, session_local, models):
     response = client.post(
         "/api/v2/downloads",
@@ -696,6 +708,38 @@ def test_create_task_module_unexpected_exception(
 
     assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert response.json()["detail"] == "Error generating script."
+
+
+def test_create_task_processes_agent_not_found(client, admin_auth_header):
+    response = client.post(
+        "/api/v2/agents/abc/tasks/processes",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Agent not found for id abc"
+
+
+def test_create_task_processes_python_agent(client, admin_auth_header, agent_python):
+    response = client.post(
+        f"/api/v2/agents/{agent_python}/tasks/processes",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    body = response.json()
+    assert body["id"] > 0
+    assert body["agent_id"] == agent_python
+    assert body["module_name"] == "python_situational_awareness_host_processes"
+
+
+def test_create_task_processes_unsupported_agent(
+    client, admin_auth_header, agent_go_linux
+):
+    response = client.post(
+        f"/api/v2/agents/{agent_go_linux}/tasks/processes",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "not supported" in response.json()["detail"]
 
 
 def test_create_task_upload_file_not_found(client, admin_auth_header, agent):

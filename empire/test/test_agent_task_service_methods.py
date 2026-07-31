@@ -5,15 +5,42 @@ API tests don't reach.
 
 import time
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 
 from empire.server.api.v2.agent.agent_task_dto import AgentTaskOrderOptions
 from empire.server.api.v2.shared_dto import OrderDirection
+from empire.server.core.agent_task_service import _resolve_processes_module
 
 
 def _db_agent(db, models, session_id):
     return db.query(models.Agent).filter(models.Agent.session_id == session_id).first()
+
+
+_CSHARP = "csharp_situational_awareness_sharpsploit_processlist"
+_PYTHON = "python_situational_awareness_host_processes"
+
+
+@pytest.mark.parametrize(
+    ("language", "os_details", "expected"),
+    [
+        ("powershell", "Windows 10", _CSHARP),
+        ("ironpython", "Windows 10", _CSHARP),
+        ("csharp", "Windows Server 2019", _CSHARP),
+        ("go", "Windows 10 x64", _CSHARP),
+        ("go", "Linux 5.15", None),
+        ("go", None, None),
+        ("python", "Linux 5.15", _PYTHON),
+        ("python", None, _PYTHON),
+        ("PowerShell", "Windows 10", _CSHARP),  # case-insensitive language
+        ("perl", "whatever", None),
+        (None, None, None),
+    ],
+)
+def test_resolve_processes_module(language, os_details, expected):
+    agent = SimpleNamespace(language=language, os_details=os_details)
+    assert _resolve_processes_module(agent) == expected
 
 
 # --------------------------------------------------------------------------- #
