@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **Fixed** for any bug fixes.
 -   **Security** in case of vulnerabilities.
 
-## Unreleased
+## [Unreleased]
 
 ### Security
 
@@ -1604,8 +1604,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Add an "output function" option on several modules (@jamarir)
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
-
-[7.0.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.1...HEAD
 
 [Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.1...HEAD
 
