@@ -187,8 +187,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed `ShellPostRequest.literal` firing a spurious `DeprecationWarning` on every shell POST; the handler no longer reads the field and `literal` was dropped from `create_task_shell`, though the DTO keeps it `deprecated=` for clients.
 -   Fixed `is_option_required` raising `KeyError` on a `depends_on` entry that omits a `values` list; a valueless dependency now imposes no value constraint, matching `evaluate_dependencies`. No shipped module triggers this, but it crashed validation for any valueless `depends_on`.
 
-## [Unreleased]
-
 ## [6.7.1] - 2026-07-25
 
 ### Security
