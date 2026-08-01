@@ -1,9 +1,7 @@
-import logging
 import re
 
 from empire.server.common import helpers
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -56,22 +54,10 @@ class Stager:
                 "SuggestedValues": ["powershell", "python"],
                 "Strict": True,
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
                 "Required": False,
                 "Value": "",
-            },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
             },
             "PixelTrackURL": {
                 "Description": "URL to add in pixel tracking which OS attempted macro opening, useful for shell debugging and confirmation.",
@@ -96,9 +82,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -143,14 +127,10 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
         pixel_track_url = self.options["PixelTrackURL"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
 
-        invoke_obfuscation = False
-        if obfuscate.lower() == "true":
-            invoke_obfuscation = True
+        invoke_obfuscation = obfuscate
 
         # generate the python launcher code
         pylauncher = self.mainMenu.stagergenv2.generate_launcher(
@@ -158,12 +138,12 @@ class Stager:
             language="python",
             encode=True,
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
 
         if pylauncher == "":
-            log.error("Error in python launcher command generation.")
-            return ""
+            raise StagerGenerationException(
+                "Error in python launcher command generation."
+            )
 
         # render python launcher into python payload
         pylauncher = pylauncher.replace('"', '""')
@@ -180,14 +160,13 @@ class Stager:
             user_agent=user_agent,
             proxy=proxy,
             proxy_creds=proxy_creds,
-            stager_retries=stager_retries,
-            safe_checks=safe_checks,
             bypasses=bypasses,
         )
 
         if poshlauncher == "":
-            log.error("Error in powershell launcher command generation.")
-            return ""
+            raise StagerGenerationException(
+                "Error in powershell launcher command generation."
+            )
 
         # render powershell launcher into powershell payload
         poshchunks = list(helpers.chunks(poshlauncher, 50))

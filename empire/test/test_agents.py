@@ -60,23 +60,39 @@ class compress:
 
 
 def test_stale_expression(empire_config, session_local, models, agents):
+    # Scope queries to this fixture's own agents: the worker DB is shared across
+    # files under xdist, and unrelated agents sitting near the staleness boundary
+    # (where the SQL and Python stale checks can disagree) would otherwise flake
+    # the stale/not-stale counts.
+    agent_ids = agents
     with session_local.begin() as db:
-        agents = db.query(models.Agent).all()
+        agents = (
+            db.query(models.Agent).filter(models.Agent.session_id.in_(agent_ids)).all()
+        )
 
         # assert one of the agents is stale via its hybrid property
         assert any(agent.stale for agent in agents)
         # assert any one of the agents is not stale via its hybrid property
         assert any(not agent.stale for agent in agents)
         # assert we can filter on stale via the hybrid expressions
-
         stale = (
-            db.query(models.Agent).filter(models.Agent.stale == True).all()  # noqa: E712
+            db.query(models.Agent)
+            .filter(
+                models.Agent.session_id.in_(agent_ids),
+                models.Agent.stale == True,  # noqa: E712
+            )
+            .all()
         )
         assert all(agent.stale for agent in stale)
 
         # assert we can filter on stale via the hybrid expression
         not_stale = (
-            db.query(models.Agent).filter(models.Agent.stale == False).all()  # noqa: E712
+            db.query(models.Agent)
+            .filter(
+                models.Agent.session_id.in_(agent_ids),
+                models.Agent.stale == False,  # noqa: E712
+            )
+            .all()
         )
         assert all(not agent.stale for agent in not_stale)
 
@@ -239,7 +255,7 @@ def test_skywalker_exploit_protection(caplog, agent, session_local, main: MainMe
     with session_local.begin() as db:
         # Malicious file path attempting directory traversal
         malicious_directory = (
-            main.installPath + r"/downloads/..\\..\\..\\..\\..\\etc\\cron.d\\evil"
+            str(main.install_path) + r"/downloads/..\\..\\..\\..\\..\\etc\\cron.d\\evil"
         )
         encodedPart = b"test"
         c = compress()

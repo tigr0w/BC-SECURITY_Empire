@@ -1,6 +1,6 @@
 import re
 
-from empire.server.common import helpers
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -56,13 +56,6 @@ class Stager:
                 "Required": False,
                 "Value": "",
             },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,
@@ -98,7 +91,6 @@ class Stager:
         # extract all of our options
         listener_name = self.options["Listener"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
         version = self.options["Version"]["Value"]
 
         try:
@@ -112,12 +104,12 @@ class Stager:
             language="python",
             encode=True,
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
 
         if pylauncher == "":
-            print(helpers.color("[!] Error in python launcher command generation."))
-            return ""
+            raise StagerGenerationException(
+                "Error in python launcher command generation."
+            )
 
         # render python launcher into python payload
         pylauncher = pylauncher.replace('"', '""')

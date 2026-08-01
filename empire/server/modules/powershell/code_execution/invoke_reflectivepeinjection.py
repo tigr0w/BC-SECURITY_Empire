@@ -6,6 +6,7 @@ from empire.server.common.empire import MainMenu
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
 from empire.server.core.module_service import auto_finalize, auto_get_source
+from empire.server.utils.option_util import coerce_legacy_value
 
 
 class Module:
@@ -25,7 +26,8 @@ class Module:
         # check if file or PEUrl is set. Both are required params in their respective parameter sets.
         if params["File"] == "" and params["PEUrl"] == "":
             raise ModuleValidationException("Please provide a PEUrl or File")
-        for option, values in params.items():
+        for option, raw_value in params.items():
+            values = coerce_legacy_value(raw_value)
             if option.lower() != "agent":
                 if option.lower() == "file":
                     if values != "":

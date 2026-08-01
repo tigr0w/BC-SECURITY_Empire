@@ -10,12 +10,8 @@ description: |
 
   Typical use cases include enabling automated email operations, bypassing security prompts for malicious macros, or preparing a target environment for further email-based attacks.
 software: ''
-tactics: [TA0005, TA0002]
-techniques:
-  - T1012
-  - T1047
-  - T1112
-  - T1562.001
+tactics: [TA0003, TA0007, TA0112]
+techniques: [T1012, T1112, T1685]
 background: true
 output_extension:
 needs_admin: false
@@ -47,11 +43,7 @@ options:
     description: Reset security settings to default values (set to True to restore
       defaults).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
       "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").

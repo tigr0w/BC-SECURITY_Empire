@@ -21,7 +21,7 @@ class Module:
         # here-string is a line that starts with '@, which closes the block.
         csharp_code = params["CSharpCode"]
         output_path = params["OutputPath"]
-        execute_literal = "$true" if params["Execute"].lower() == "true" else "$false"
+        execute_literal = "$true" if params["Execute"] else "$false"
 
         # Guard against the one sequence that would prematurely close the
         # single-quoted here-string and allow arbitrary PowerShell injection.

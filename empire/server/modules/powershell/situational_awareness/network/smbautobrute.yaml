@@ -36,11 +36,7 @@ options:
   - name: ShowVerbose
     description: Show failed attempts & skipped accounts in addition to success.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: LockoutThreshold
     description: The max number of bad password attempts until the account locks.
       Autobrute will try till one less than this setting.
@@ -54,10 +50,6 @@ options:
   - name: StopOnSuccess
     description: Quit running after the first successful authentication.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 script_path: situational_awareness/network/Invoke-SMBAutoBrute.ps1
 script_end: Invoke-SMBAutoBrute {{ PARAMS }}

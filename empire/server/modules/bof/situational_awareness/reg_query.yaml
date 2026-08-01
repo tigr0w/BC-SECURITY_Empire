@@ -1,0 +1,73 @@
+name: reg_query
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: >-
+  Beacon Object File (BOF) that queries or enumerates Windows registry keys and values
+  on a local or remote system directly from the agent, without touching disk. Wraps
+  the TrustedSec reg_query BOF. When Key is blank the entire path is enumerated;
+  when Key is specified only that named value is returned. Set Recursive to 1 to
+  walk the key tree (equivalent to reg_query_recursive).
+software: ''
+tactics: [TA0007]
+techniques: [T1012]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/trustedsec/CS-Situational-Awareness-BOF
+options:
+  - name: Architecture
+    description: Architecture of the beacon_funcs.o to generate with (x64 or x86).
+    required: true
+    value: x64
+    strict: true
+    suggested_values:
+      - x64
+      - x86
+  - name: Hostname
+    description: Remote host to target. Leave blank to query the local system.
+    required: false
+    value: ''
+  - name: Hive
+    description: >-
+      Registry hive as an integer offset: 0=HKCR, 1=HKCU, 2=HKLM, 3=HKU.
+    required: true
+    value: '2'
+    strict: true
+    suggested_values:
+      - '0'
+      - '1'
+      - '2'
+      - '3'
+  - name: Path
+    description: >-
+      Registry key path to query, e.g. SOFTWARE\Microsoft\Windows\CurrentVersion.
+    required: true
+    value: 'SOFTWARE\Microsoft\Windows\CurrentVersion'
+  - name: Key
+    description: >-
+      Specific value name to retrieve. Leave blank to enumerate all values and subkeys
+      under Path.
+    required: false
+    value: ''
+  - name: Recursive
+    description: Recursively enumerate subkeys (1) or query only the specified path
+      (0).
+    required: true
+    value: '0'
+    strict: true
+    suggested_values:
+      - '0'
+      - '1'
+bof:
+  x86: bof/situational_awareness/reg_query/reg_query.x86.o
+  x64: bof/situational_awareness/reg_query/reg_query.x64.o
+  entry_point: ''
+  format_string: zizzi
+script_path: ''
+script_end: ''

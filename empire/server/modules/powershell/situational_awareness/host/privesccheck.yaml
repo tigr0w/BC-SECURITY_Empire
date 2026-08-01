@@ -31,12 +31,8 @@ options:
     value: ''
   - name: Extended
     description: Set this flag to enable extended checks.
-    required: true
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    required: false
+    value: false
   - name: Format
     description: 'Select the format of the output file (e.g.: TXT, HTML or CSV).'
     required: true

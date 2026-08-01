@@ -34,12 +34,10 @@ pytestmark = [pytest.mark.slow, pytest.mark.mysql]
 _STAGER_OPTIONS = {
     "Listener": "",  # filled in per-call
     "Language": "powershell",
-    "StagerRetries": "0",
     "OutFile": "",
     "Base64": "True",
     "Obfuscate": "False",
     "ObfuscateCommand": "Token\\All\\1",
-    "SafeChecks": "True",
     "UserAgent": "default",
     "Proxy": "default",
     "ProxyCreds": "default",
@@ -228,7 +226,6 @@ def test_csharp_stager_does_not_block_management_api(
                             "Listener": listener_name,
                             "Language": "csharp",
                             "DotNetVersion": "net40",
-                            "StagerRetries": "0",
                             "OutFile": "perf-test.exe",
                             "Obfuscate": "True",
                             "ObfuscateCommand": "",

@@ -8,6 +8,11 @@ api:
   ip: 0.0.0.0
   port: 1337
   secure: false
+  # cors_origins:
+  #   - "http://localhost:8080"
+  #   - "http://my-starkiller.example.com"
+  # If not set, defaults to ["*"] (allow all origins).
+  # Env override must be JSON-encoded: EMPIRE_API__CORS_ORIGINS='["http://localhost:8080","http://my-starkiller.example.com"]'
 server:
   socketio: true
 database:
@@ -52,7 +57,7 @@ database:
     ip_deny_list: []
 empire_compiler:
   repo: BC-SECURITY/Empire-Compiler
-  ref: v1.0.0
+  ref: v2.0.0
   # Path to the confuser xml project file you want to use
   confuser_proj: empire/server/data/confuser.crproj
 starkiller:
@@ -66,13 +71,15 @@ plugin_marketplace:
   registries:
     - name: BC-SECURITY
       git_url: git@github.com:BC-SECURITY/Empire-Plugin-Registry-Sponsors.git
-      ref: main
+      ref: '7.x'
       file: registry.yaml
 directories:
   downloads: downloads
-  # Persistent on-disk caches (currently: Go build cache). Relative paths land
-  # under DATA_DIR (~/.local/share/empire); set to an absolute path to override.
-  cache: .cache
+  # Persistent on-disk caches (currently: Go build cache). Defaults to the
+  # platform cache dir (~/.cache/empire on Linux, honoring $XDG_CACHE_HOME;
+  # ~/Library/Caches/empire on macOS). Uncomment to override; a relative path
+  # lands under the data dir.
+  # cache: .cache
 logging:
   level: INFO
   simple_console: true

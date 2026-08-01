@@ -18,7 +18,6 @@ from empire.server.api.v2.shared_dto import (
     OrderDirection,
 )
 from empire.server.api.v2.tag import tag_api
-from empire.server.api.v2.tag.tag_dto import TagStr
 from empire.server.core.db import models
 from empire.server.core.db.models import PluginTaskStatus
 from empire.server.core.download_service import DownloadService
@@ -109,7 +108,7 @@ def read_tasks_all_plugins(
     status: PluginTaskStatus | None = None,
     plugins: list[str] | None = Query(None),
     users: list[int] | None = Query(None),
-    tags: list[TagStr] | None = Query(None),
+    tags: list[str] | None = Query(None),
     query: str | None = None,
     *,
     plugin_task_service: PluginTaskServiceDep,
@@ -158,7 +157,7 @@ def read_tasks(
     order_direction: OrderDirection = OrderDirection.desc,
     status: PluginTaskStatus | None = None,
     users: list[int] | None = Query(None),
-    tags: list[TagStr] | None = Query(None),
+    tags: list[str] | None = Query(None),
     query: str | None = None,
 ):
     tasks, total = plugin_task_service.get_tasks(

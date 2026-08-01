@@ -67,27 +67,15 @@ options:
   - name: SkipDiscovery
     description: Treat all hosts as online.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: PingOnly
     description: Ping only, don't scan for ports.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: Open
     description: Only show hosts with open ports.
     required: false
-    value: 'True'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: true
   - name: GrepOut
     description: Greppable (.gnmap) output file.
     required: false

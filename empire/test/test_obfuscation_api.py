@@ -54,7 +54,7 @@ def test_create_keyword_validate_length(client, admin_auth_header):
         json={"keyword": "a", "replacement": "b"},
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert (
         response.json()["detail"][0]["msg"]
         == "String should have at least 3 characters"

@@ -1,10 +1,26 @@
 """Tests for Alembic database migration infrastructure."""
 
+import importlib.util
 import textwrap
 from pathlib import Path
 
 import pytest
 from sqlalchemy import inspect, text
+
+
+def _load_0007_migration():
+    """Load the 0007 tags-as-labels migration module by path. Its filename starts
+    with a digit, so it can't be imported normally; each call returns a fresh module."""
+    from empire.server.core.db.base import _alembic_cfg
+
+    versions_dir = Path(_alembic_cfg().get_main_option("script_location")) / "versions"
+    spec = importlib.util.spec_from_file_location(
+        "mig_0007", versions_dir / "0007_tags_as_labels.py"
+    )
+    mig = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mig)
+    return mig
+
 
 # ---------------------------------------------------------------------------
 # Safety net: clean up any stale test migration files on session teardown
@@ -13,16 +29,16 @@ from sqlalchemy import inspect, text
 
 @pytest.fixture(autouse=True, scope="session")
 def _cleanup_stale_test_migrations():
-    """Remove any 0002_test_* migration files left by crashed tests."""
+    """Remove any 0004_test_* migration files left by crashed tests."""
     yield
     from empire.server.core.db.base import _alembic_cfg
 
     versions_dir = Path(_alembic_cfg().get_main_option("script_location")) / "versions"
-    for stale in versions_dir.glob("0002_test_*"):
+    for stale in versions_dir.glob("0004_test_*"):
         stale.unlink(missing_ok=True)
     pycache = versions_dir / "__pycache__"
     if pycache.exists():
-        for cached in pycache.glob("0002_test_*"):
+        for cached in pycache.glob("0004_test_*"):
             cached.unlink(missing_ok=True)
 
 
@@ -304,7 +320,7 @@ def test_real_migration_add_and_remove_column(client):
     test_rev = "0002_test_add_column"
 
     # Write a migration file that adds a test column to the 'users' table
-    migration_file = versions_dir / "0002_test_add_column.py"
+    migration_file = versions_dir / "0004_test_add_column.py"
     migration_file.write_text(
         textwrap.dedent("""\
         \"\"\"test add column
@@ -371,7 +387,7 @@ def test_migrate_db_applies_pending_migration(client):
     head = _head_revision()
     test_rev = "0002_test_pending"
 
-    migration_file = versions_dir / "0002_test_pending.py"
+    migration_file = versions_dir / "0004_test_pending.py"
     migration_file.write_text(
         textwrap.dedent("""\
         \"\"\"test pending migration
@@ -438,7 +454,7 @@ def test_failed_migration_does_not_corrupt_version(client):
     head = _head_revision()
     test_rev = "0002_test_broken"
 
-    migration_file = versions_dir / "0002_test_broken.py"
+    migration_file = versions_dir / "0004_test_broken.py"
     migration_file.write_text(
         textwrap.dedent("""\
         \"\"\"broken migration
@@ -530,17 +546,157 @@ def test_stamp_then_migrate_consistent(client):
         assert "listeners" in tables
 
 
+def test_migrate_legacy_bcrypt_default_user_resets(client):
+    """A bcrypt-shaped hash on the configured default user gets auto-reset
+    to PBKDF2(default_password). Verifies the auth flow that recovers an
+    operator who upgraded across PR #1236.
+    """
+    import logging
+
+    from empire.server.api.jwt_auth import verify_password
+    from empire.server.core.db import models
+    from empire.server.core.db.base import (
+        SessionLocal,
+        migrate_legacy_bcrypt_default_user,
+    )
+    from empire.server.core.db.defaults import database_config as defaults_config
+
+    bcrypt_hash = "$2b$12$LJ3m4ys3LfDLqMEnOaaFreFEHrWdEFmSHOuDKLmmkbLhLmKCuby4q"
+
+    # Plant a fake bcrypt hash on the default user.
+    with SessionLocal.begin() as db:
+        u = (
+            db.query(models.User)
+            .filter(models.User.username == defaults_config.username)
+            .first()
+        )
+        original_hash = u.hashed_password
+        u.hashed_password = bcrypt_hash
+
+    try:
+        # Run the migrator and capture the WARNING log.
+        with SessionLocal.begin() as db:
+            logger = logging.getLogger("empire.server.core.db.base")
+            records: list[logging.LogRecord] = []
+            handler = logging.Handler()
+            handler.emit = records.append  # type: ignore[assignment]
+            handler.setLevel(logging.WARNING)
+            logger.addHandler(handler)
+            try:
+                assert migrate_legacy_bcrypt_default_user(db) is True
+            finally:
+                logger.removeHandler(handler)
+
+        assert any(
+            "Auto-reset" in rec.getMessage() and "PR-#1236" in rec.getMessage()
+            for rec in records
+        ), "Expected a WARNING log naming the auto-reset and PR-#1236"
+
+        # Hash on disk must now verify against the configured default
+        # password and look like a PBKDF2 hash, not bcrypt.
+        with SessionLocal() as db:
+            u = (
+                db.query(models.User)
+                .filter(models.User.username == defaults_config.username)
+                .first()
+            )
+            assert u.hashed_password.startswith("pbkdf2:sha256:")
+            assert verify_password(defaults_config.password, u.hashed_password)
+    finally:
+        # Restore for any later tests in the session.
+        with SessionLocal.begin() as db:
+            u = (
+                db.query(models.User)
+                .filter(models.User.username == defaults_config.username)
+                .first()
+            )
+            u.hashed_password = original_hash
+
+
+def test_migrate_legacy_bcrypt_default_user_noop_when_already_pbkdf2(client):
+    """If the default user's hash is already PBKDF2, the migrator is a no-op."""
+    from empire.server.core.db import models
+    from empire.server.core.db.base import (
+        SessionLocal,
+        migrate_legacy_bcrypt_default_user,
+    )
+    from empire.server.core.db.defaults import database_config as defaults_config
+
+    with SessionLocal.begin() as db:
+        u_before = (
+            db.query(models.User)
+            .filter(models.User.username == defaults_config.username)
+            .first()
+        )
+        assert u_before.hashed_password.startswith("pbkdf2:")
+        before = u_before.hashed_password
+
+        assert migrate_legacy_bcrypt_default_user(db) is False
+
+        u_after = (
+            db.query(models.User)
+            .filter(models.User.username == defaults_config.username)
+            .first()
+        )
+        assert u_after.hashed_password == before
+
+
+def test_migrate_legacy_bcrypt_does_not_touch_non_default_user(client):
+    """Non-default users with bcrypt hashes are left alone — operator must
+    reset those manually so the auto-recovery can't be used as a privilege
+    escalation vector via DB tampering.
+    """
+    from empire.server.core.db import models
+    from empire.server.core.db.base import (
+        SessionLocal,
+        migrate_legacy_bcrypt_default_user,
+    )
+
+    bcrypt_hash = "$2b$12$LJ3m4ys3LfDLqMEnOaaFreFEHrWdEFmSHOuDKLmmkbLhLmKCuby4q"
+    extra_username = "not_the_default_user_for_bcrypt_test"
+
+    with SessionLocal.begin() as db:
+        db.add(
+            models.User(
+                username=extra_username,
+                hashed_password=bcrypt_hash,
+                enabled=True,
+                admin=False,
+            )
+        )
+
+    try:
+        with SessionLocal.begin() as db:
+            # Migrator targets only the configured default user.
+            migrate_legacy_bcrypt_default_user(db)
+
+        with SessionLocal() as db:
+            u = (
+                db.query(models.User)
+                .filter(models.User.username == extra_username)
+                .first()
+            )
+            assert u.hashed_password == bcrypt_hash, (
+                "Non-default user's bcrypt hash must not be auto-rewritten"
+            )
+    finally:
+        with SessionLocal.begin() as db:
+            db.query(models.User).filter(
+                models.User.username == extra_username
+            ).delete()
+
+
 def test_startup_does_not_restamp_tracked_db(client):
     """startup_db only stamps untracked databases; already-tracked DBs keep their revision."""
     from empire.server.core.db.base import SessionLocal, _get_alembic_revision
 
     # DB should already be tracked from the test session's startup_db()
-    assert _get_alembic_revision() == "0001"
+    current = _get_alembic_revision()
+    assert current is not None, "DB should be tracked by Alembic after startup"
 
-    # Verify the revision doesn't change if we query again
-    # (confirms no unconditional stamp-to-head behavior)
+    # Verify the revision is consistent across calls (startup doesn't reset it)
     with SessionLocal() as session:
-        assert _get_alembic_version(session) == "0001"
+        assert _get_alembic_version(session) == current
 
 
 # ---------------------------------------------------------------------------
@@ -722,9 +878,330 @@ def test_backup_db_mysql_port_parsing(client, tmp_path, monkeypatch):
     result.unlink(missing_ok=True)
 
 
+# ---------------------------------------------------------------------------
+# Migration 0007: fold tags
+# ---------------------------------------------------------------------------
+
+
+def test_fold_tags_migration_is_idempotent_and_dedupes(tmp_path):
+    """The 0007 fold is row-level idempotent and folds name:value -> name."""
+    from sqlalchemy import create_engine, text
+
+    mig = _load_0007_migration()
+
+    # Build a tiny OLD-shape tags table + one association table in a temp SQLite DB.
+    engine = create_engine(f"sqlite:///{tmp_path}/old.db")
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE TABLE tags (id INTEGER PRIMARY KEY, name TEXT NOT NULL, "
+                "value TEXT NOT NULL, color TEXT)"
+            )
+        )
+        conn.execute(
+            text("CREATE TABLE download_tag_assc (download_id INTEGER, tag_id INTEGER)")
+        )
+        # Two rows folding to the SAME label, plus a case-variant, plus task:input.
+        conn.execute(
+            text(
+                "INSERT INTO tags (id, name, value, color) VALUES "
+                "(1, 'os', 'windows', NULL), (2, 'os', 'windows', '#abc123'), "
+                "(3, 'OS', 'Windows', NULL), (4, 'task', 'input', NULL)"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO download_tag_assc (download_id, tag_id) VALUES "
+                "(10, 1), (10, 2), (11, 3), (12, 4)"
+            )
+        )
+
+    with engine.begin() as conn:
+        mig._fold_tags(conn)
+        # Re-run to prove no double-fold.
+        mig._fold_tags(conn)
+
+    with engine.connect() as conn:
+        names = sorted(r[0] for r in conn.execute(text("SELECT name FROM tags")))
+        # os:windows collapsed to one survivor (case-insensitive), task:input folded.
+        assert names == ["os:windows", "task:input"]
+        # No double-fold:
+        assert "os:windows:windows" not in names
+        assert "task:input:input" not in names
+        # All download associations rewired to surviving tag ids and deduped.
+        rows = conn.execute(
+            text(
+                "SELECT download_id, tag_id FROM download_tag_assc ORDER BY download_id"
+            )
+        ).all()
+        tag_ids = {r[1] for r in rows}
+        assert tag_ids.issubset(
+            {r[0] for r in conn.execute(text("SELECT id FROM tags"))}
+        )
+        # The duplicated (10, survivor) association row was deduped to one.
+        assert len(rows) == 3  # noqa: PLR2004
+
+
+def test_fold_name_sql_is_dialect_aware():
+    """The fold concat MUST use CONCAT on MySQL — `||` there is logical OR, not
+    string concatenation, and would rewrite every tag name to a number."""
+    mig = _load_0007_migration()
+
+    assert mig._fold_name_sql("mysql") == "CONCAT(name, ':', value)"
+    assert mig._fold_name_sql("sqlite") == "name || ':' || value"
+
+
+def test_0007_frozen_copies_match_live_source():
+    """0007 deliberately FREEZES copies of two things it cannot import from live
+    code (migrations must be stable): the color helper and the association-table
+    list. Guard against silent drift — if the live source changes, these assertions
+    flag that the frozen copies (and the back-compat fold they drive) need review."""
+    from empire.server.core.db import models
+    from empire.server.core.tag_service import color_from_name
+
+    mig = _load_0007_migration()
+
+    for name in ("prod", "os:windows", "task:input", "Staging-2"):
+        assert mig._color_from_name(name) == color_from_name(name), (
+            f"0007._color_from_name diverged from tag_service.color_from_name for {name!r}"
+        )
+
+    # Subset, not equality: 0007 is frozen to the six tables that existed at 7.0, so
+    # a LATER migration adding a 7th taggable table (which 0007 needn't fold) must
+    # not fail this. The invariant is that every table 0007 references still exists.
+    assert set(mig._ASSC_TABLES) <= {t.name for t in models.all_tag_assc_tables}, (
+        "0007._ASSC_TABLES references an association table that no longer exists in "
+        "models.all_tag_assc_tables — the frozen migration is stale."
+    )
+
+
+def test_upgrade_0007_full_old_shape_e2e(tmp_path):  # noqa: PLR0915
+    """Full upgrade() of 0007 against a real OLD-shape (6.x) database.
+
+    Exercises every DDL step in the real 6.x→7.0 upgrade path:
+      - add description column
+      - fold name:value → name + case-insensitive dedupe
+      - backfill color + make NOT NULL
+      - drop value column
+      - add uq_tags_name unique constraint
+      - add six composite-unique constraints via batch_alter_table
+
+    The specific sharp edge under test: SQLite batch-mode rebuilds of tables
+    with composite FKs (agent_task_tag_assc has a composite FK to agent_tasks).
+    Alembic must carry the FK over during the rebuild — this asserts it does.
+
+    SCOPE: this is SQLite-backed, so it covers the DDL-step ordering, the fold
+    DML, and the batch-rebuild FK carry-over — but NOT the MySQL-only implicit-
+    COMMIT-between-DDL-steps semantics the migration is written around (on SQLite
+    DDL is transactional). The CONCAT-vs-`||` dialect hazard is covered separately
+    by test_fold_name_sql_is_dialect_aware; the implicit-commit ordering is not
+    exercised here.
+    """
+    from alembic.migration import MigrationContext
+    from alembic.operations import Operations
+    from sqlalchemy import create_engine, inspect, text
+
+    mig = _load_0007_migration()
+
+    # Build the old-shape schema in a fresh temp SQLite DB.
+    engine = create_engine(f"sqlite:///{tmp_path}/old.db")
+    with engine.begin() as conn:
+        # Minimal stub tables so composite FK targets exist for reflection.
+        conn.execute(text("CREATE TABLE listeners (id INTEGER PRIMARY KEY)"))
+        conn.execute(text("CREATE TABLE agents (session_id TEXT PRIMARY KEY)"))
+        conn.execute(
+            text(
+                "CREATE TABLE agent_tasks "
+                "(id INTEGER, agent_id TEXT, PRIMARY KEY(id, agent_id))"
+            )
+        )
+        conn.execute(text("CREATE TABLE plugin_tasks (id INTEGER PRIMARY KEY)"))
+        conn.execute(text("CREATE TABLE credentials (id INTEGER PRIMARY KEY)"))
+        conn.execute(text("CREATE TABLE downloads (id INTEGER PRIMARY KEY)"))
+
+        # Old-shape tags: has value, color nullable, NO unique on name, NO description.
+        conn.execute(
+            text(
+                "CREATE TABLE tags "
+                "(id INTEGER PRIMARY KEY, name TEXT NOT NULL, "
+                "value TEXT NOT NULL, color TEXT)"
+            )
+        )
+
+        # Six association tables in old shape (no unique constraints yet).
+        conn.execute(
+            text(
+                "CREATE TABLE listener_tag_assc "
+                "(listener_id INTEGER, tag_id INTEGER, "
+                "FOREIGN KEY (listener_id) REFERENCES listeners(id), "
+                "FOREIGN KEY (tag_id) REFERENCES tags(id))"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE TABLE agent_tag_assc "
+                "(agent_id TEXT, tag_id INTEGER, "
+                "FOREIGN KEY (agent_id) REFERENCES agents(session_id), "
+                "FOREIGN KEY (tag_id) REFERENCES tags(id))"
+            )
+        )
+        # agent_task_tag_assc: composite FK — the SQLite batch-rebuild sharp edge.
+        conn.execute(
+            text(
+                "CREATE TABLE agent_task_tag_assc "
+                "(agent_task_id INTEGER, agent_id TEXT, tag_id INTEGER, "
+                "FOREIGN KEY (agent_task_id, agent_id) "
+                "REFERENCES agent_tasks(id, agent_id), "
+                "FOREIGN KEY (tag_id) REFERENCES tags(id))"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE TABLE plugin_task_tag_assc "
+                "(plugin_task_id INTEGER, tag_id INTEGER, "
+                "FOREIGN KEY (plugin_task_id) REFERENCES plugin_tasks(id), "
+                "FOREIGN KEY (tag_id) REFERENCES tags(id))"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE TABLE credential_tag_assc "
+                "(credential_id INTEGER, tag_id INTEGER, "
+                "FOREIGN KEY (credential_id) REFERENCES credentials(id), "
+                "FOREIGN KEY (tag_id) REFERENCES tags(id))"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE TABLE download_tag_assc "
+                "(download_id INTEGER, tag_id INTEGER, "
+                "FOREIGN KEY (download_id) REFERENCES downloads(id), "
+                "FOREIGN KEY (tag_id) REFERENCES tags(id))"
+            )
+        )
+
+        # Seed old-shape tags: two rows that fold+dedupe to os:windows, plus task:input.
+        conn.execute(
+            text(
+                "INSERT INTO tags (id, name, value, color) VALUES "
+                "(1, 'os', 'windows', NULL), "
+                "(2, 'os', 'windows', '#abc123'), "
+                "(3, 'task', 'input', NULL)"
+            )
+        )
+        # Seed agent_tasks and agent_task_tag_assc rows (exercises the composite FK path).
+        conn.execute(text("INSERT INTO agent_tasks VALUES (1, 'abc123')"))
+        conn.execute(text("INSERT INTO agent_task_tag_assc VALUES (1, 'abc123', 1)"))
+        # Seed download_tag_assc (duplicate rows that should dedupe post-fold).
+        conn.execute(
+            text(
+                "INSERT INTO download_tag_assc (download_id, tag_id) VALUES (10, 1), (10, 2)"
+            )
+        )
+
+    # Run the FULL upgrade() using Alembic's Operations.context to install op proxy.
+    with engine.begin() as conn:
+        mc = MigrationContext.configure(conn)
+        with Operations.context(mc):
+            mig.upgrade()
+
+    # ---------- assertions ----------
+    with engine.connect() as conn:
+        insp = inspect(conn)
+
+        # 1. tags schema: no value, has description, color NOT NULL, uq_tags_name exists.
+        tags_cols = {c["name"]: c for c in insp.get_columns("tags")}
+        assert "value" not in tags_cols, "value column should have been dropped"
+        assert "description" in tags_cols, "description column must be present"
+        color_col = tags_cols["color"]
+        assert not color_col["nullable"], "color must be NOT NULL after migration"
+
+        all_uq = {u["name"] for u in insp.get_unique_constraints("tags")}
+        all_idx = {i["name"] for i in insp.get_indexes("tags")}
+        assert "uq_tags_name" in (all_uq | all_idx), "uq_tags_name must exist on tags"
+
+        # 2. Composite-unique constraints on all six association tables.
+        expected_uq = {
+            "listener_tag_assc": "uq_listener_tag",
+            "agent_tag_assc": "uq_agent_tag",
+            "agent_task_tag_assc": "uq_agent_task_tag",
+            "plugin_task_tag_assc": "uq_plugin_task_tag",
+            "credential_tag_assc": "uq_credential_tag",
+            "download_tag_assc": "uq_download_tag",
+        }
+        for tbl, uq_name in expected_uq.items():
+            tbl_uq = {u["name"] for u in insp.get_unique_constraints(tbl)}
+            tbl_idx = {i["name"] for i in insp.get_indexes(tbl)}
+            assert uq_name in (tbl_uq | tbl_idx), (
+                f"{tbl} is missing unique constraint {uq_name}"
+            )
+
+        # 3. The composite FK on agent_task_tag_assc survived the batch rebuild.
+        fks = insp.get_foreign_keys("agent_task_tag_assc")
+        composite_fk = next(
+            (
+                fk
+                for fk in fks
+                if fk["referred_table"] == "agent_tasks"
+                and set(fk["constrained_columns"]) == {"agent_task_id", "agent_id"}
+            ),
+            None,
+        )
+        assert composite_fk is not None, (
+            "Composite FK (agent_task_id, agent_id) → agent_tasks was LOST during "
+            "the batch rebuild — Alembic dropped it. This is a bug in the migration."
+        )
+        assert set(composite_fk["referred_columns"]) == {"id", "agent_id"}, (
+            "Composite FK referred columns must be (id, agent_id) on agent_tasks"
+        )
+
+        # 4. Data integrity: fold+dedupe produced two surviving tags.
+        tag_rows = conn.execute(
+            text("SELECT name, color FROM tags ORDER BY name")
+        ).all()
+        tag_names = [r[0] for r in tag_rows]
+        assert tag_names == ["os:windows", "task:input"], (
+            f"Unexpected tag names after fold+dedupe: {tag_names}"
+        )
+        # os:windows survivor should have been assigned the non-null color from id=2.
+        os_color = next(r[1] for r in tag_rows if r[0] == "os:windows")
+        assert os_color == "#abc123", f"Expected survivor color #abc123, got {os_color}"
+        # task:input had no color — migration should have backfilled one.
+        task_color = next(r[1] for r in tag_rows if r[0] == "task:input")
+        assert task_color is not None, (
+            f"task:input color must be backfilled, got {task_color!r}"
+        )
+        assert task_color.startswith("#"), (
+            f"task:input color must be a hex string, got {task_color!r}"
+        )
+
+        # 5. Association rows survived and deduplicated.
+        att_rows = conn.execute(text("SELECT * FROM agent_task_tag_assc")).all()
+        assert len(att_rows) == 1, (
+            f"agent_task_tag_assc should have 1 row, got {att_rows}"
+        )
+        surviving_tag_ids = {
+            r[0] for r in conn.execute(text("SELECT id FROM tags")).all()
+        }
+        assert att_rows[0][2] in surviving_tag_ids, (
+            "agent_task_tag_assc.tag_id must point to a surviving tag"
+        )
+
+        # download_tag_assc: two rows pointing to the same tag post-fold must dedupe to one.
+        dt_rows = conn.execute(text("SELECT * FROM download_tag_assc")).all()
+        assert len(dt_rows) == 1, (
+            f"download_tag_assc should have deduplicated to 1 row, got {dt_rows}"
+        )
+        assert dt_rows[0][1] in surviving_tag_ids, (
+            "download_tag_assc.tag_id must point to a surviving tag"
+        )
+
+    engine.dispose()
+
+
 @pytest.mark.usefixtures("_restore_db_to_baseline_after")
-def test_migration_0002_upgrade_downgrade_roundtrip(client):
-    """0002.upgrade() is idempotent against existing indexes; downgrade() drops them; re-upgrade restores."""
+def test_migration_0004_upgrade_downgrade_roundtrip(client):
+    """0004.upgrade() is idempotent against existing indexes; downgrade() drops them; re-upgrade restores."""
     from alembic import command
     from sqlalchemy import inspect as sa_inspect
 
@@ -736,9 +1213,9 @@ def test_migration_0002_upgrade_downgrade_roundtrip(client):
         # Ensure we start at head.
         command.stamp(cfg, "head")
 
-        # 0002.upgrade() against a DB that already has the indexes (via
+        # 0004.upgrade() against a DB that already has the indexes (via
         # create_all on fresh installs) must no-op cleanly.
-        command.downgrade(cfg, "0001")
+        command.downgrade(cfg, "0003")
         insp = sa_inspect(engine)
 
         # After downgrade, the three freely-droppable indexes should be gone.

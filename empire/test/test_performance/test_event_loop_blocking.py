@@ -18,6 +18,8 @@ from __future__ import annotations
 import inspect
 import logging
 
+from fastapi.routing import iter_route_contexts
+
 log = logging.getLogger(__name__)
 
 
@@ -36,21 +38,26 @@ def test_no_async_handlers_in_empire_api(client):
     """
     app = client.app
 
+    empire_routes = []
     async_handlers = []
-    for route in app.routes:
+    for route in iter_route_contexts(app.routes):
         if not hasattr(route, "endpoint"):
-            continue
-        if not inspect.iscoroutinefunction(route.endpoint):
             continue
         path = getattr(route, "path", "")
         # Only check Empire's own API routes, not FastAPI builtins
         if not path.startswith(("/api/", "/token")):
+            continue
+        empire_routes.append(route)
+        if not inspect.iscoroutinefunction(route.endpoint):
             continue
         methods = getattr(route, "methods", {"?"})
         async_handlers.append(
             (route.endpoint.__name__, path, ",".join(sorted(methods)))
         )
 
+    assert len(empire_routes) > 0, (
+        "iter_route_contexts returned no Empire routes — route inspection is broken"
+    )
     assert not async_handlers, (
         f"Found {len(async_handlers)} async def handlers that block the "
         f"event loop with synchronous DB calls.  Convert to plain def:\n"

@@ -45,11 +45,7 @@ options:
   - name: API
     description: Use Win32 API
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: Domain
     description: The domain whose trusts to enumerate, defaults to the current domain.
     required: false
@@ -57,11 +53,7 @@ options:
   - name: FindOne
     description: Return one object.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: LDAPFilter
     description: Specifies an LDAP query string that is used to filter Active Directory
       objects.
@@ -70,11 +62,7 @@ options:
   - name: NET
     description: Use .NET methods
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: Properties
     description: Specifies the properties of the output object to retrieve from the
       server.
@@ -108,11 +96,7 @@ options:
     description: Specifies that the search should also return deleted/tombstoned
       objects.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
       "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").

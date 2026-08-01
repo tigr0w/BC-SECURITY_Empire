@@ -1,6 +1,7 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.core.module_service import auto_finalize, auto_get_source
+from empire.server.utils.option_util import coerce_legacy_value
 
 
 class Module:
@@ -19,13 +20,14 @@ class Module:
 
         script = script + "\n"
         script_end = ""
-        if reset.lower() == "true":
+        if reset:
             # if the flag is set to restore the security settings
             script_end += "Reset-SecuritySettings "
         else:
             script_end += "Disable-SecuritySettings "
 
-        for option, values in params.items():
+        for option, raw_value in params.items():
+            values = coerce_legacy_value(raw_value)
             if (
                 (
                     option.lower() != "agent"

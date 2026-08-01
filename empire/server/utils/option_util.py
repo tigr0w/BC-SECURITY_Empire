@@ -1,17 +1,76 @@
+import logging
 import typing
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from empire.server.core.db import models
 from empire.server.core.module_models import EmpireModuleOption
+from empire.server.core.option_types import py_type_for_tag
+
+log = logging.getLogger(__name__)
+
+LISTENER_OPTION_NAMES = {"listener", "listenername", "listener_name"}
+
+
+def get_listener_defaults(db: Session) -> tuple[str | None, list[str] | None]:
+    """Return (first_active_listener_name, all_active_listener_names) ordered by id.
+
+    Returns (None, None) on DB error so callers can fall back to template defaults.
+    Returns (None, []) when the DB is healthy but no listeners are active.
+    """
+    try:
+        active = (
+            db.scalars(
+                select(models.Listener)
+                .where(models.Listener.enabled.is_(True))
+                .order_by(models.Listener.id)
+            )
+        ).all()
+        names = [listener.name for listener in active]
+        return (names[0] if names else None), names
+    except Exception:
+        log.error(
+            "Failed to query active listeners for default pre-fill", exc_info=True
+        )
+        return None, None
 
 
 def safe_cast(option: typing.Any, expected_option_type: type) -> typing.Any | None:
-    try:
-        if expected_option_type is bool:
-            return option.lower() in ["true", "1"]
-        return expected_option_type(option)
-    except ValueError:
+    """Coerce `option` into `expected_option_type`, returning None on failure.
+
+    `bool` is special-cased: a native bool passes through, any other value is
+    truthy-string tested. `expected_option_type is None` (an unknown YAML
+    `type:` tag) short-circuits to None so callers can distinguish it from
+    "valid type, bad value" — only reachable for non-module callers, since
+    `EmpireModuleOption` rejects unknown tags at load time.
+    """
+    if expected_option_type is None:
         return None
+    if expected_option_type is bool:
+        if isinstance(option, bool):
+            return option
+        return str(option).lower() in ("true", "1")
+    try:
+        return expected_option_type(option)
+    except (ValueError, TypeError) as e:  # TypeError tolerates int(None) etc.
+        log.debug("safe_cast: %s(%r) failed: %s", expected_option_type, option, e)
+        return None
+
+
+def coerce_legacy_value(value: typing.Any) -> typing.Any:
+    """Stringify a native ``bool``/``int``/``float`` option value to its legacy
+    string form for generate-path consumers that build command text — switch
+    detection (`value.lower() == "true"`), `str.replace` substitution, and `+`
+    concatenation all assume strings.
+
+    Strings, ``None``, and non-primitive values (e.g. file-download objects)
+    pass through unchanged. This is the per-value form of the removed
+    ``normalize_legacy_params`` dict-level shim: apply it only at the point a
+    typed value must become text, so native reads elsewhere (`if params["X"]:`)
+    keep their real types.
+    """
+    return str(value) if isinstance(value, bool | int | float) else value
 
 
 def convert_module_options(options: list[EmpireModuleOption]) -> dict:
@@ -55,6 +114,8 @@ def validate_options(  # noqa: PLR0912
     plugins for now).
     """
     options = {}
+    # Copy so the default-injection below (`params[instance_key] = ...`) never
+    # mutates the caller's dict.
     params = params.copy()
 
     for instance_key, option_meta in instance_options.items():
@@ -62,8 +123,15 @@ def validate_options(  # noqa: PLR0912
             continue
 
         if not evaluate_dependencies(option_meta, params):
-            # Dependencies not met: include with default value but skip validation
+            # Dependencies not met: include with default value but skip validation.
+            # Cast the default to the option's native type so a gated bool/int
+            # option matches the validated branch — otherwise a bool option's
+            # stringly "False" default reaches generate() as a truthy string and
+            # a native `if params["X"]:` check silently inverts.
             default_value = option_meta.get("Value", "")
+            casted, _ = _safe_cast_option(instance_key, default_value, option_meta)
+            if casted is not None:
+                default_value = casted
             if option_meta.get("NameInCode"):
                 options[option_meta["NameInCode"]] = default_value
             else:
@@ -135,10 +203,15 @@ def is_option_required(option_meta: dict, params: dict) -> bool:
     # If there are dependencies, check if all are satisfied
     for dependency in dependencies:
         dependent_option = dependency["name"]
-        required_values = dependency["values"]
+        required_values = dependency.get("values")
 
-        # Check if the dependent option's value matches any of the required values
-        if params.get(dependent_option) not in required_values:
+        # A dependency with no "values" list imposes no value constraint, so it
+        # is treated as satisfied; gate on a specific value only when one is
+        # listed. (Presence of the dependent option is enforced separately by
+        # validate_options, which calls evaluate_dependencies first.)
+        if required_values is not None and (
+            params.get(dependent_option) not in required_values
+        ):
             return (
                 False  # If any dependency is not satisfied, the option is not required
             )
@@ -200,21 +273,10 @@ def get_file_options(db, download_service, options, params):
     return files, None
 
 
-def _parse_type(type_str: str = "", value: str = ""):  # noqa: PLR0911
+def _parse_type(type_str: str = "", value: str = ""):
     if not type_str:
         return type(value)
-
-    if type_str.lower() in ["int", "integer"]:
-        return int
-    if type_str.lower() in ["bool", "boolean"]:
-        return bool
-    if type_str.lower() in ["str", "string"]:
-        return str
-    if type_str.lower() == "float":
-        return float
-    if type_str.lower() == "file":
-        return "file"
-    return None
+    return py_type_for_tag(type_str)
 
 
 def _safe_cast_option(

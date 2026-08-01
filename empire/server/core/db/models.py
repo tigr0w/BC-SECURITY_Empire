@@ -19,6 +19,7 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    UniqueConstraint,
     func,
     select,
     text,
@@ -101,6 +102,7 @@ listener_tag_assc = Table(
     Base.metadata,
     Column("listener_id", Integer, ForeignKey("listeners.id")),
     Column("tag_id", Integer, ForeignKey("tags.id")),
+    UniqueConstraint("listener_id", "tag_id", name="uq_listener_tag"),
 )
 
 agent_tag_assc = Table(
@@ -108,6 +110,7 @@ agent_tag_assc = Table(
     Base.metadata,
     Column("agent_id", String(255), ForeignKey("agents.session_id")),
     Column("tag_id", Integer, ForeignKey("tags.id")),
+    UniqueConstraint("agent_id", "tag_id", name="uq_agent_tag"),
 )
 
 agent_task_tag_assc = Table(
@@ -119,6 +122,7 @@ agent_task_tag_assc = Table(
     ForeignKeyConstraint(
         ("agent_task_id", "agent_id"), ("agent_tasks.id", "agent_tasks.agent_id")
     ),
+    UniqueConstraint("agent_task_id", "agent_id", "tag_id", name="uq_agent_task_tag"),
 )
 
 plugin_task_tag_assc = Table(
@@ -126,6 +130,7 @@ plugin_task_tag_assc = Table(
     Base.metadata,
     Column("plugin_task_id", Integer, ForeignKey("plugin_tasks.id")),
     Column("tag_id", Integer, ForeignKey("tags.id")),
+    UniqueConstraint("plugin_task_id", "tag_id", name="uq_plugin_task_tag"),
 )
 
 credential_tag_assc = Table(
@@ -133,6 +138,7 @@ credential_tag_assc = Table(
     Base.metadata,
     Column("credential_id", Integer, ForeignKey("credentials.id")),
     Column("tag_id", Integer, ForeignKey("tags.id")),
+    UniqueConstraint("credential_id", "tag_id", name="uq_credential_tag"),
 )
 
 download_tag_assc = Table(
@@ -140,6 +146,19 @@ download_tag_assc = Table(
     Base.metadata,
     Column("download_id", Integer, ForeignKey("downloads.id")),
     Column("tag_id", Integer, ForeignKey("tags.id")),
+    UniqueConstraint("download_id", "tag_id", name="uq_download_tag"),
+)
+
+# Single source of truth for the taggable association tables, so code that must
+# touch every one (e.g. deleting a label everywhere, counting label usage) can
+# iterate this rather than re-listing the six tables and risking drift.
+all_tag_assc_tables = (
+    listener_tag_assc,
+    agent_tag_assc,
+    agent_task_tag_assc,
+    plugin_task_tag_assc,
+    credential_tag_assc,
+    download_tag_assc,
 )
 
 
@@ -219,13 +238,25 @@ class User(Base):
         return f"<User(username='{self.username}')>"
 
 
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id: Mapped[int] = mapped_column(Sequence("chat_message_seq"), primary_key=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    user: Mapped["User | None"] = relationship()
+    # Snapshot the username so deleted/renamed users still render in chat history.
+    username: Mapped[str] = mapped_column(String(255))
+    message: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime, default=utcnow(), index=True
+    )
+
+
 class Listener(Base):
     __tablename__ = "listeners"
     id: Mapped[int] = mapped_column(Sequence("listener_id_seq"), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), unique=True)
     module: Mapped[str] = mapped_column(String(255))
     listener_type: Mapped[str | None] = mapped_column(String(255))
-    listener_category: Mapped[str] = mapped_column(String(255))
     enabled: Mapped[bool]
     host_address: Mapped[str | None] = mapped_column(String(255))
     options: Mapped[dict | None] = mapped_column(JSON)
@@ -313,6 +344,7 @@ class Agent(Base):
     lost_limit: Mapped[int | None]
     notes: Mapped[str | None] = mapped_column(Text)
     architecture: Mapped[str | None] = mapped_column(String(255))
+    dotnet_version: Mapped[str | None] = mapped_column(String(255))
     archived: Mapped[bool]
     socks: Mapped[bool | None]
     socks_port: Mapped[int | None]
@@ -369,7 +401,11 @@ class AgentFile(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     # Indexed for AgentFileService / AgentCommunicationService lookups
     # by agent session_id (file-tree navigation + download wiring).
-    session_id: Mapped[str | None] = mapped_column(String(50), index=True)
+    session_id: Mapped[str | None] = mapped_column(
+        String(255),
+        ForeignKey("agents.session_id", ondelete="CASCADE"),
+        index=True,
+    )
     name: Mapped[str] = mapped_column(Text)
     path: Mapped[str] = mapped_column(Text)
     is_file: Mapped[bool]
@@ -652,10 +688,15 @@ class ObfuscationConfig(Base):
 
 class Tag(Base):
     __tablename__ = "tags"
+    # Name uniqueness via an EXPLICITLY NAMED constraint so create_all and the
+    # 0007 migration agree on the name (`uq_tags_name`) — otherwise a fresh
+    # install's auto-named unique wouldn't match the migration's guard and the
+    # migration would add a duplicate (caught by test_autogenerate_no_diff).
+    __table_args__ = (UniqueConstraint("name", name="uq_tags_name"),)
     id: Mapped[int] = mapped_column(Sequence("tag_seq"), primary_key=True)
     name: Mapped[str] = mapped_column(String(255))
-    value: Mapped[str] = mapped_column(String(255))
-    color: Mapped[str | None] = mapped_column(String(12))
+    color: Mapped[str] = mapped_column(String(12))
+    description: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow())
     updated_at: Mapped[datetime] = mapped_column(
         UtcDateTime, onupdate=utcnow(), default=utcnow()

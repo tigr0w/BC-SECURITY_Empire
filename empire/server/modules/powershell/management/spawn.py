@@ -19,7 +19,7 @@ class Module:
         sys_wow64 = params["SysWow64"]
         language = params["Language"]
 
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
+        launcher_obfuscate = params["Obfuscate"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         if language == "powershell":
@@ -55,7 +55,7 @@ class Module:
         if launcher == "":
             raise ModuleValidationException("Error in launcher command generation.")
 
-        if sys_wow64.lower() == "true":
+        if sys_wow64:
             stager_code = (
                 "$Env:SystemRoot\\SysWow64\\WindowsPowershell\\v1.0\\" + launcher
             )

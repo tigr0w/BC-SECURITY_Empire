@@ -11,7 +11,7 @@ description: |
   Copies and optionally executes the binary from the destination.
 software: ''
 tactics: [TA0005]
-techniques: [T1036]
+techniques: [T1036, T1036.005]
 background: true
 output_extension:
 needs_admin: false
@@ -32,11 +32,7 @@ options:
   - name: Execute
     description: Execute the copied binary.
     required: false
-    value: 'True'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: true
   - name: OutputFunction
     description: PowerShell output function to use.
     required: false

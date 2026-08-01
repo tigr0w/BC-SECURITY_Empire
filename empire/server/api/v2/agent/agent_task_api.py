@@ -1,5 +1,5 @@
-import base64
 from datetime import datetime
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Query
@@ -15,7 +15,7 @@ from empire.server.api.v2.agent.agent_task_dto import (
     AgentTask,
     AgentTaskOrderOptions,
     AgentTasks,
-    CommsPostRequest,
+    ChdirPostRequest,
     DirectoryListPostRequest,
     DownloadPostRequest,
     ExitPostRequest,
@@ -38,7 +38,6 @@ from empire.server.api.v2.shared_dto import (
     OrderDirection,
 )
 from empire.server.api.v2.tag import tag_api
-from empire.server.api.v2.tag.tag_dto import TagStr
 from empire.server.core.agent_service import AgentService
 from empire.server.core.agent_task_service import AgentTaskService
 from empire.server.core.db import models
@@ -135,7 +134,7 @@ def read_tasks_all_agents(
     status: AgentTaskStatus | None = None,
     agents: list[str] | None = Query(None),
     users: list[int] | None = Query(None),
-    tags: list[TagStr] | None = Query(None),
+    tags: list[str] | None = Query(None),
     query: str | None = None,
     *,
     agent_task_service: AgentTaskServiceDep,
@@ -189,7 +188,7 @@ def read_tasks(
     order_direction: OrderDirection = OrderDirection.desc,
     status: AgentTaskStatus | None = None,
     users: list[int] | None = Query(None),
-    tags: list[TagStr] | None = Query(None),
+    tags: list[str] | None = Query(None),
     query: str | None = None,
 ):
     tasks, total = agent_task_service.get_tasks(
@@ -292,11 +291,35 @@ def create_task_shell(
     agent_task_service: AgentTaskServiceDep,
 ):
     """
-    Executes a command on the agent. If literal is true, it will ignore the built-in aliases
-    such a whoami or ps and execute the command directly.
+    Executes a command on the agent via the system shell. The `literal` flag is
+    accepted in the request body for API backwards compatibility but is ignored:
+    agent-side command aliases were removed in 7.0, so every command is run by
+    the system shell.
     """
     resp, err = agent_task_service.create_task_shell(
-        db, db_agent, shell_request.command, shell_request.literal, current_user
+        db, db_agent, shell_request.command, current_user
+    )
+
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+
+    return domain_to_dto_task(resp)
+
+
+@router.post("/{agent_id}/tasks/chdir", status_code=201, response_model=AgentTask)
+def create_task_chdir(
+    chdir_request: ChdirPostRequest,
+    db: CurrentSession,
+    current_user: CurrentActiveUser,
+    db_agent: AgentDep,
+    agent_task_service: AgentTaskServiceDep,
+):
+    """
+    Changes the agent's working directory. Subsequent shell tasks run in the new
+    directory until another chdir is issued.
+    """
+    resp, err = agent_task_service.create_task_chdir(
+        db, db_agent, chdir_request.path, current_user
     )
 
     if err:
@@ -335,6 +358,35 @@ def create_task_module(
     return domain_to_dto_task(resp)
 
 
+@router.post("/{agent_id}/tasks/processes", status_code=201, response_model=AgentTask)
+def create_task_processes(
+    db: CurrentSession,
+    current_user: CurrentActiveUser,
+    db_agent: AgentDep,
+    agent_task_service: AgentTaskServiceDep,
+):
+    """
+    Enumerate host processes for the agent. The module is chosen server-side from
+    the agent's language/OS (C# SharpSploit for Windows agents, the Python module
+    for Python agents). Powers Starkiller's Processes-tab refresh.
+    """
+    try:
+        resp, err = agent_task_service.create_task_processes(db, db_agent, current_user)
+    except HTTPException:
+        raise
+    except ModuleValidationException as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ModuleExecutionException as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+
+    return domain_to_dto_task(resp)
+
+
 @router.post("/{agent_id}/tasks/upload", status_code=201, response_model=AgentTask)
 def create_task_upload(
     upload_request: UploadPostRequest,
@@ -352,22 +404,36 @@ def create_task_upload(
             detail=f"Download not found for id {upload_request.file_id}",
         )
 
-    file_data = download.get_base64_file()
-    raw_data = base64.b64decode(file_data)
-
-    # We can probably remove this file size limit with updates to the agent code.
-    #  At the moment the data is expected as a string of "filename|filedata"
-    #  We could instead take a larger file, store it as a file on the server and store a reference to it in the db.
-    #  And then change the way the agents pull down the file.
-    MAX_BYTES = 1048576
-    if len(raw_data) > MAX_BYTES:
+    try:
+        file_size = Path(download.location).stat().st_size
+    except FileNotFoundError as e:
         raise HTTPException(
-            status_code=400, detail="file size too large. Maximum file size of 1MB"
-        )
+            status_code=404,
+            detail=f"File for download id {upload_request.file_id} not found on disk",
+        ) from e
+    except OSError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to read file for download id {upload_request.file_id}: {e}",
+        ) from e
 
-    resp, err = agent_task_service.create_task_upload(
-        db, db_agent, file_data, upload_request.path_to_file, current_user
-    )
+    chunk_size = 524288  # 512KB
+
+    if file_size <= chunk_size:
+        file_data = download.get_base64_file()
+        resp, err = agent_task_service.create_task_upload(
+            db, db_agent, file_data, upload_request.path_to_file, current_user
+        )
+    else:
+        resp, err = agent_task_service.create_task_upload_chunked(
+            db,
+            db_agent,
+            download.location,
+            file_size,
+            upload_request.path_to_file,
+            current_user,
+            chunk_size=chunk_size,
+        )
 
     if err:
         raise HTTPException(status_code=400, detail=err)
@@ -402,26 +468,6 @@ def create_task_sysinfo(
     agent_task_service: AgentTaskServiceDep,
 ):
     resp, err = agent_task_service.create_task_sysinfo(db, db_agent, current_user)
-
-    if err:
-        raise HTTPException(status_code=400, detail=err)
-
-    return domain_to_dto_task(resp)
-
-
-@router.post(
-    "/{agent_id}/tasks/update_comms", status_code=201, response_model=AgentTask
-)
-def create_task_update_comms(
-    comms_request: CommsPostRequest,
-    db: CurrentSession,
-    current_user: CurrentActiveUser,
-    db_agent: AgentDep,
-    agent_task_service: AgentTaskServiceDep,
-):
-    resp, err = agent_task_service.create_task_update_comms(
-        db, db_agent, comms_request.new_listener_id, current_user
-    )
 
     if err:
         raise HTTPException(status_code=400, detail=err)

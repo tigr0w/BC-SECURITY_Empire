@@ -7,8 +7,8 @@ description: Enumerates reachable computers and resources in the current domain 
   workgroup. Provides detailed information about network hosts including computer
   names, operating systems, and share availability.
 software: ''
-tactics: [TA0007, TA0043]
-techniques: [T1135, T1018]
+tactics: [TA0007]
+techniques: [T1018, T1135]
 background: false
 output_extension:
 needs_admin: false

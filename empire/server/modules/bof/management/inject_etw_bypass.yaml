@@ -8,8 +8,8 @@ description: |
   using syscalls (HellsGate/HalosGate). Patches EtwEventWrite in the target
   process to blind ETW-based security logging and monitoring. x64 only.
 software: ''
-tactics: [TA0005]
-techniques: [T1562.001]
+tactics: [TA0004, TA0005, TA0112]
+techniques: [T1055, T1685]
 background: false
 output_extension:
 needs_admin: false
@@ -19,10 +19,19 @@ min_language_version: ''
 comments:
   - https://github.com/sliverarmory/injectEtwBypass
 options:
+  - name: InjectSelf
+    description: Inject the ETW bypass into the agent's own process. Set to False
+      to target a specific remote PID.
+    required: true
+    value: true
   - name: Pid
     description: Process ID of the remote process to inject the ETW bypass into.
+      Only used when InjectSelf is False.
     required: true
     value: ''
+    depends_on:
+      - name: InjectSelf
+        values: ['False']
 bof:
   x86: ''
   x64: bof/injectEtwBypass/injectEtwBypass.x64.o

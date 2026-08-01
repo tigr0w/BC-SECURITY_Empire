@@ -8,12 +8,10 @@ description: |
   to remote systems via SSH. Uses password authentication to connect
   to target systems and executes the Empire launcher script to
   establish a new agent connection back to the specified listener.
-  Includes safety checks for security software like LittleSnitch
-  and sandbox detection to avoid detection. Supports configurable
-  User-Agent strings for the staging request. Useful for lateral
-  movement across network segments, establishing persistence on
-  remote systems, and expanding the attack surface through
-  legitimate SSH connections.
+  Supports configurable User-Agent strings for the staging request.
+  Useful for lateral movement across network segments, establishing
+  persistence on remote systems, and expanding the attack surface
+  through legitimate SSH connections.
 software: ''
 tactics: [TA0008]
 techniques:
@@ -43,15 +41,6 @@ options:
     description: Listener to use.
     required: true
     value: ''
-  - name: SafeChecks
-    description: Checks for LittleSnitch or a SandBox, exit the staging process if
-      true. Defaults to True.
-    required: true
-    value: 'True'
-    strict: true
-    suggested_values:
-      - True
-      - False
   - name: UserAgent
     description: User-agent string to use for the staging request (default, none,
       or other).

@@ -3,6 +3,7 @@ from pathlib import Path
 from empire.server.common.empire import MainMenu
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
+from empire.server.utils.option_util import coerce_legacy_value
 
 
 class Module:
@@ -45,13 +46,18 @@ class Module:
             + """$Servers = Get-DomainComputer | ForEach-Object {try{Resolve-DNSName $_.dnshostname -Type A -errorAction SilentlyContinue}catch{Write-Warning 'Computer Offline or Not Responding'} } | Select-Object -ExpandProperty IPAddress -ErrorAction SilentlyContinue; $count = 0; $subarry =@(); foreach($i in $Servers){$IPByte = $i.Split("."); $subarry += $IPByte[0..2] -join"."} $final = $subarry | group; Write-Output{The following subnetworks were discovered:}; $final | ForEach-Object {Write-Output "$($_.Name).0/24 - $($_.Count) Hosts"}; """
         )
 
-        if list_computers.lower() == "true":
+        if list_computers:
             script_end += "$Servers;"
 
-        for option, values in params.items():
+        for option, raw_value in params.items():
+            values = coerce_legacy_value(raw_value)
             if (
                 option.lower() != "agent"
                 and option.lower() != "outputfunction"
+                # IPs is a native bool consumed above via `list_computers`; it is
+                # never a CLI switch on this standalone pipeline, so skip it here
+                # (otherwise an unset IPs leaked as a stray "-IPs False").
+                and option.lower() != "ips"
                 and values
                 and values != ""
             ):

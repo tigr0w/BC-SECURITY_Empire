@@ -103,11 +103,33 @@ def patch_install_plugin_from_git(plugin_service):
     plugin_service.install_plugin_from_git = original
 
 
-class IsDict:
+class IsRegistryEntry:
+    """Matches the *entry* for one plugin in one registry.
+
+    `_merge_plugin_config` reads this argument as a plugin entry; it silently
+    no-opped for as long as it read it as a whole registry document instead.
+    A bare `isinstance(other, dict)` matcher accepts either shape, so pin the
+    entry's discriminating keys here.
+    """
+
     __hash__ = None  # not hashable; used only for __eq__ assertions
 
+    def __init__(self, name, registry):
+        self.name = name
+        self.registry = registry
+
     def __eq__(self, other):
-        return isinstance(other, dict)
+        return (
+            isinstance(other, dict)
+            and other.get("name") == self.name
+            and other.get("registry") == self.registry
+            and "versions" in other
+            # A whole registry document, the shape the old merge assumed.
+            and "plugins" not in other
+        )
+
+    def __repr__(self):
+        return f"<registry entry name={self.name!r} registry={self.registry!r}>"
 
 
 def test_install_plugin_git(client, admin_auth_header, plugin_service):
@@ -124,14 +146,14 @@ def test_install_plugin_git(client, admin_auth_header, plugin_service):
         # subdir: str | None = None,
         # ref: str | None = None,
         # version_name: str | None = None,
-        # registry_data: dict | None = None,
+        # registry_entry: dict | None = None,
         mock.assert_called_once_with(
             ANY,
             "https://github.com/bc-security/slack-plugin",
             None,
             "v1.0.0",
             "1.0.0",
-            IsDict(),
+            IsRegistryEntry("slack", "BC-SECURITY"),
         )
 
 
@@ -159,13 +181,13 @@ def test_install_plugin_tar(client, admin_auth_header, plugin_service):
         # tar_url: str,
         # subdir: str | None = None,
         # version_name: str | None = None,
-        # registry_data: dict | None = None,
+        # registry_entry: dict | None = None,
         mock.assert_called_once_with(
             ANY,
             "https://github.com/bc-security/slack-other/releases/download/v1.0.0/slack.tar.gz",
             None,
             "1.0.0",
-            IsDict(),
+            IsRegistryEntry("slack", "BC-SECURITY-TEST"),
         )
 
 
@@ -195,7 +217,7 @@ def test_install_plugin_calls_sync_service(plugin_registry_service, plugin_servi
             None,
             "v1.0.0",
             "1.0.0",
-            IsDict(),
+            IsRegistryEntry("slack", "BC-SECURITY"),
         )
     finally:
         plugin_service.install_plugin_from_git = original_git

@@ -17,14 +17,8 @@ description: |
   injection attacks, code execution in foreign processes, and
   evading detection by executing code within legitimate processes.
 software: ''
-tactics:
-  - TA0002
-  - TA0005
-  - TA0004
-techniques:
-  - T1059
-  - T1055
-  - T1055.001
+tactics: [TA0002, TA0004, TA0005]
+techniques: [T1055, T1059, T1059.006]
 background: false
 output_extension:
 needs_admin: true

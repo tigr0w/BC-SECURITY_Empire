@@ -1,4 +1,4 @@
-from empire.server.common import helpers
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -37,19 +37,10 @@ class Stager:
                 "Required": False,
                 "Value": "",
             },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
-            },
             "Base64": {
                 "Description": "Base64 encode the output.",
                 "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": True,
             },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
@@ -68,11 +59,8 @@ class Stager:
         listener_name = self.options["Listener"]["Value"]
         base64 = self.options["Base64"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
 
-        encode = False
-        if base64.lower() == "true":
-            encode = True
+        encode = base64
 
         # generate the launcher code
         launcher = self.mainMenu.stagergenv2.generate_launcher(
@@ -80,11 +68,9 @@ class Stager:
             language=language,
             encode=encode,
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
-        if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         launcher = launcher.replace("'", "\\'")
         launcher = launcher.replace('"', '\\\\"')

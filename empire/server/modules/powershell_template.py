@@ -1,6 +1,7 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.core.module_service import auto_finalize, auto_get_source
+from empire.server.utils.option_util import coerce_legacy_value
 
 
 class Module:
@@ -36,11 +37,15 @@ class Module:
         # The params dict contains the validated options that were sent.
         script_end = ""
         # Add any arguments to the end execution of the script
-        for option, values in params.items():
+        for option, raw_value in params.items():
+            values = coerce_legacy_value(raw_value)
             if option.lower() != "agent" and values and values != "":
-                if values.lower() == "true":
-                    # if we're just adding a switch
-                    script_end += " -" + str(option)
+                if isinstance(raw_value, bool):
+                    # Native boolean -> PowerShell [switch]: emit a bare flag
+                    # only when set. A False switch must emit nothing, never
+                    # "-Option False".
+                    if raw_value:
+                        script_end += " -" + str(option)
                 else:
                     script_end += " -" + str(option) + " " + str(values)
 

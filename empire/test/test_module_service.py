@@ -8,16 +8,20 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from empire.server.core.exceptions import ModuleValidationException
+from empire.server.core.exceptions import (
+    ModuleExecutionException,
+    ModuleValidationException,
+)
 from empire.server.core.module_models import EmpireModule, LanguageEnum
 from empire.server.core.module_service import ModuleService
 from empire.server.core.obfuscation_service import ObfuscationService
+from empire.server.stagers.windows.launcher_bat import Stager as LauncherBat
+from empire.server.utils.dotnet_version_util import parse_agent_dotnet_versions
 
 
 @pytest.fixture(scope="module")
 def main_menu_mock(models, install_path):
     main_menu = Mock()
-    main_menu.installPath = install_path
     main_menu.install_path = Path(install_path)
     main_menu.listeners.activeListeners = {}
     main_menu.listeners.listeners = {}
@@ -50,6 +54,7 @@ def module_service(main_menu_mock):
 def agent_mock():
     agent_mock = Mock()
     agent_mock.session_id = "ABC123"
+    agent_mock.process_id = None
     return agent_mock
 
 
@@ -130,6 +135,470 @@ def test_execute_module_custom_generate_no_obfuscation_config_powershell_agent(
     script = res.data
 
     assert script == 'cmd = "find /Users/ -name *.emlx 2>/dev/null"\nrun_command(cmd)'
+
+
+def test_execute_module_custom_generate_native_bool_gates_branch(
+    module_service, agent_mock
+):
+    """Boolean options must reach a custom_generate module as native bools so an
+    ``if params["X"]:`` gate fires only when the option is truthy.
+
+    Regression guard for the removed ``normalize_legacy_params`` shim, which
+    re-stringified ``False`` -> ``"False"`` (truthy) before dispatch and so
+    silently triggered bool-gated branches (e.g. ThreadlessInject's always-on
+    launcher obfuscation). ``computerdetails`` emits ``Get-ComputerDetails
+    -Limit 100`` only from its all-false fallthrough, so that string's
+    presence/absence proves whether any ``if params["X"]:`` gate fired.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_situational_awareness_host_computerdetails"
+    base = {"Agent": agent_mock.session_id}
+
+    # All switches false (defaults) -> no gate fires -> fallthrough invocation.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, base, True, True, None
+    )
+    assert err is None
+    assert "Get-ComputerDetails -Limit 100" in res.data
+
+    # Explicit string "False" (the API/coerced_dict wire form) must stay falsy.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, {**base, "4624": "False"}, True, True, None
+    )
+    assert err is None
+    assert "Get-ComputerDetails -Limit 100" in res.data
+
+    # A truthy switch fires its branch and returns early, skipping the fallthrough.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, {**base, "4624": "True"}, True, True, None
+    )
+    assert err is None
+    assert "Get-ComputerDetails -Limit 100" not in res.data
+
+
+@pytest.mark.parametrize(
+    ("module_id", "extra_params"),
+    [
+        ("powershell_persistence_userland_registry", {}),
+        ("powershell_persistence_userland_schtasks", {}),
+        (
+            "powershell_persistence_userland_backdoor_lnk",
+            {"Listener": "http", "LNKPath": "C:\\Users\\test\\test.lnk"},
+        ),
+        ("powershell_persistence_elevated_registry", {}),
+        ("powershell_persistence_elevated_schtasks", {}),
+        ("powershell_persistence_elevated_wmi", {"Listener": "http"}),
+        ("powershell_persistence_elevated_wmi_updater", {}),
+    ],
+)
+def test_execute_persistence_module_extfile_mode(
+    module_service, agent_mock, tmp_path, module_id, extra_params
+):
+    """ExtFile mode must base64-encode the external payload into the script.
+
+    ``helpers.enc_powershell`` returns ``bytes``. The registry/schtasks/wmi
+    modules concatenate ``enc_script`` into a ``str`` PowerShell script, so
+    without decoding they raise ``TypeError`` — which ``execute_module`` re-raises
+    as ``ModuleExecutionException("Error generating script.")``. ``backdoor_lnk``
+    instead f-string-interpolates it, silently embedding the ``b'...'`` bytes-repr;
+    the negative assertion below catches that corruption, while ``err is None`` and
+    the positive assertion catch the crash. ``main_menu`` is a truthy ``Mock``, so
+    the listener checks pass and the test isolates the ExtFile encoding path.
+    """
+    agent_mock.language = "powershell"
+    payload = tmp_path / "payload.ps1"
+    payload_content = "Write-Host 'persist-check'"
+    payload.write_text(payload_content)
+    expected_b64 = base64.b64encode(payload_content.encode("UTF-16LE")).decode("UTF-8")
+
+    params = {
+        "Agent": agent_mock.session_id,
+        "ExtFile": str(payload),
+        **extra_params,
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+
+    assert err is None
+    # The decoded base64 string is present...
+    assert expected_b64 in res.data
+    # ...and not as a Python bytes repr (the backdoor_lnk silent-corruption form).
+    assert f"b'{expected_b64}'" not in res.data
+
+
+def test_execute_module_dcsync_hashdump_native_bool_toggles(module_service, agent_mock):
+    """dcsync_hashdump gates ``-DumpForest``/``-GetComputers``/``-OnlyActive:$false``
+    on native-bool options.
+
+    Regression guard for the pre-existing ``!= ""`` / ``== ""`` comparisons
+    against bool options: a native bool is never ``== ""``, so
+    ``-DumpForest`` and ``-GetComputers`` were appended unconditionally and
+    ``-OnlyActive:$false`` never was -- the toggles were dead. ``Active`` defaults
+    to true (only-active), matching its description and the ``$OnlyActive = $true``
+    default in Invoke-DCSync.ps1.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_credentials_mimikatz_dcsync_hashdump"
+    base = {"Agent": agent_mock.session_id}
+
+    # Defaults: Forest/Computers false, Active true -> no extra switches.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, base, True, True, None
+    )
+    assert err is None
+    assert "-DumpForest" not in res.data
+    assert "-GetComputers" not in res.data
+    assert "-OnlyActive:$false" not in res.data
+
+    # Forest + Computers on -> both switches appended.
+    res, err = module_service.execute_module(
+        None,
+        agent_mock,
+        module_id,
+        {**base, "Forest": "True", "Computers": "True"},
+        True,
+        True,
+        None,
+    )
+    assert err is None
+    assert "-DumpForest" in res.data
+    assert "-GetComputers" in res.data
+
+    # Active off -> only-active restriction lifted.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, {**base, "Active": "False"}, True, True, None
+    )
+    assert err is None
+    assert "-OnlyActive:$false" in res.data
+
+
+def test_execute_module_osx_prompt_native_bool_branches(module_service, agent_mock):
+    """osx/prompt selects its script branch from the ``ListApps``/``SandboxMode``
+    bools.
+
+    Regression guard for the pre-existing ``!= ""`` comparisons: a native
+    bool is always ``!= ""`` so the ``ListApps`` branch was always taken and the
+    sandbox / AppName-prompt branches were dead.
+    """
+    agent_mock.language = "python"
+    module_id = "python_collection_osx_prompt"
+    base = {"Agent": agent_mock.session_id, "AppName": "App Store"}
+
+    # Defaults: both false -> AppName prompt branch (the else fallthrough).
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, base, True, True, None
+    )
+    assert err is None
+    assert "App Store" in res.data
+    assert "Available applications" not in res.data
+
+    # ListApps on -> application-listing branch.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, {**base, "ListApps": "True"}, True, True, None
+    )
+    assert err is None
+    assert "Available applications" in res.data
+
+    # SandboxMode on (ListApps off) -> sandbox prompt branch.
+    res, err = module_service.execute_module(
+        None,
+        agent_mock,
+        module_id,
+        {**base, "SandboxMode": "True"},
+        True,
+        True,
+        None,
+    )
+    assert err is None
+    assert "Software Update requires" in res.data
+    assert "Available applications" not in res.data
+
+
+def test_execute_module_invoke_sqloscmd_obfuscate_options_present(
+    module_service, agent_mock
+):
+    """invoke_sqloscmd reads ``params["Obfuscate"]`` / ``params["ObfuscateCommand"]``
+    unconditionally.
+
+    Regression guard for the pre-existing KeyError: those options were
+    missing from the module YAML, so ``validate_options`` dropped them and the
+    read raised ``KeyError`` on every invocation. A ``Command`` is supplied to
+    skip the listener/launcher path so the test needs no active listener.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_lateral_movement_invoke_sqloscmd"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Instance": "SQL01",
+        "Command": "whoami",
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert 'Invoke-SQLOSCmd -Instance "SQL01" -Command "whoami"' in res.data
+
+
+def test_windowlist_all_flag_reads_correct_option_key():
+    """windowlist packs its BOF ``All`` flag from the ``All`` option.
+
+    Regression guard for the pre-existing key mismatch: the module read
+    ``params.get("all")`` (lowercase) which never matched the ``All`` option, so
+    the flag was hard-wired to ``"0"`` regardless of the toggle. Exercised
+    directly (the BOF path otherwise needs the .NET compiler) by capturing the
+    params handed to ``generate_script_bof``.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "windowlist_mod",
+        Path(__file__).parents[1]
+        / "server/modules/bof/situational_awareness/windowlist.py",
+    )
+    windowlist = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(windowlist)
+
+    captured = {}
+    main_menu = Mock()
+    main_menu.modulesv2.generate_script_bof = Mock(
+        side_effect=lambda module, params, obfuscate: captured.update(params)
+    )
+
+    windowlist.Module.generate(main_menu, Mock(), {"Architecture": "x64", "All": True})
+    assert captured["All"] == "1"
+
+    captured.clear()
+    windowlist.Module.generate(main_menu, Mock(), {"Architecture": "x64", "All": False})
+    assert captured["All"] == "0"
+
+
+def test_execute_module_credential_injection_winlogon_guard_fires(
+    module_service, agent_mock
+):
+    """credential_injection requires ``NewWinLogon`` or ``ExistingWinLogon`` to be
+    set.
+
+    Regression guard for the pre-existing ``== ""`` comparison on bool options:
+    a native bool is never ``== ""`` so the guard never raised and the
+    module proceeded with neither WinLogon option selected.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_credentials_credential_injection"
+    base = {"Agent": agent_mock.session_id}
+
+    # Neither WinLogon option set (both default false) -> validation must fire.
+    with pytest.raises(
+        ModuleValidationException, match="NewWinLogon or ExistingWinLogon"
+    ):
+        module_service.execute_module(
+            None, agent_mock, module_id, base, True, True, None
+        )
+
+
+def test_execute_module_credential_injection_omits_unset_winlogon_switch(
+    module_service, agent_mock
+):
+    """credential_injection emits the set ``[Switch]`` flag but not the unset one,
+    and never drops a value option.
+
+    Regression guard for the bespoke option loop: it emitted every option
+    as ``-Name Value``, so a normal ``NewWinLogon`` run still appended the unset
+    ``-ExistingWinLogon False``. Because the two are ``[Switch]`` parameters in
+    mutually-exclusive parameter sets, that command fails to bind on the agent.
+    The loop now keys on the option's native type: boolean switches emit a bare
+    flag only when set; value options pass through unchanged -- including a
+    literal ``"False"`` (e.g. a password), which must not be dropped as if it
+    were an unset switch.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_credentials_credential_injection"
+    params = {
+        "Agent": agent_mock.session_id,
+        "NewWinLogon": "True",
+        "DomainName": "demo",
+        "UserName": "administrator",
+        "Password": "Password1",
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert "Invoke-CredentialInjection -NewWinLogon" in res.data
+    assert "-ExistingWinLogon False" not in res.data
+
+    # A value option whose literal text is "False" must be passed through, not
+    # skipped as if it were an unset switch.
+    res, err = module_service.execute_module(
+        None,
+        agent_mock,
+        module_id,
+        {**params, "Password": "False"},
+        True,
+        True,
+        None,
+    )
+    assert err is None
+    assert "-Password False" in res.data
+
+
+def test_execute_module_packet_capture_persistent_native_bool(
+    module_service, agent_mock
+):
+    """packet_capture appends ``persistent=yes`` only when the ``Persistent``
+    bool is set.
+
+    Regression guard for the pre-existing ``!= ""`` comparison: a native
+    bool is always ``!= ""`` so persistence was always enabled regardless of the
+    toggle.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_situational_awareness_host_packet_capture"
+    base = {"Agent": agent_mock.session_id}
+
+    # Persistent false (default), StopTrace false -> start capture, no persistence.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, base, True, True, None
+    )
+    assert err is None
+    assert "netsh trace start" in res.data
+    assert "persistent=yes" not in res.data
+
+    # Persistent on -> persistence flag appended.
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, {**base, "Persistent": "True"}, True, True, None
+    )
+    assert err is None
+    assert "persistent=yes" in res.data
+
+
+def test_execute_module_fodhelper_custom_command_without_listener(
+    module_service, agent_mock
+):
+    """bypassuac_fodhelper supports a custom ``Command`` instead of a Listener.
+
+    Regression guard for the missing ``Command`` option: the YAML never
+    declared it (so ``params.get("Command", "")`` was always empty) and
+    ``Listener`` was ``required: true``, so the custom-command branch was
+    unreachable. ``Command`` is now declared and ``Listener`` is optional.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_privesc_bypassuac_fodhelper"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Command": "powershell -enc ABC123",
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert "Invoke-FodHelperBypass" in res.data
+    assert "ABC123" in res.data
+
+
+def test_execute_module_schtasks_onlogon_native_bool_selects_trigger(
+    module_service, agent_mock, tmp_path
+):
+    """schtasks selects the ONLOGON trigger only when the ``OnLogon`` bool is set.
+
+    Regression guard for the pre-existing ``!= ""`` comparison: a native
+    bool is always ``!= ""`` so ``ONLOGON`` was always chosen and BOTH the idle
+    and daily trigger branches were unreachable. ``ExtFile`` supplies the payload
+    so the test needs no active listener; ``enc_powershell`` is patched to return
+    bytes, matching its real return type (the module base64-decodes the result).
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_persistence_elevated_schtasks"
+    ext_file = tmp_path / "payload.ps1"
+    ext_file.write_text("Write-Output hi")
+    base = {"Agent": agent_mock.session_id, "ExtFile": str(ext_file)}
+
+    with patch(
+        "empire.server.common.helpers.enc_powershell", return_value=b"ENCPAYLOAD"
+    ):
+        # OnLogon false (default) -> daily trigger, not ONLOGON.
+        res, err = module_service.execute_module(
+            None, agent_mock, module_id, base, True, True, None
+        )
+        assert err is None
+        assert "/SC DAILY" in res.data
+        assert "/SC ONLOGON" not in res.data
+
+        # IdleTime set (OnLogon still off) -> idle trigger, the formerly-dead branch.
+        res, err = module_service.execute_module(
+            None, agent_mock, module_id, {**base, "IdleTime": "5"}, True, True, None
+        )
+        assert err is None
+        assert "/SC ONIDLE" in res.data
+        assert "/SC ONLOGON" not in res.data
+
+        # OnLogon on -> ONLOGON trigger selected.
+        res, err = module_service.execute_module(
+            None, agent_mock, module_id, {**base, "OnLogon": "True"}, True, True, None
+        )
+        assert err is None
+        assert "/SC ONLOGON" in res.data
+
+
+def test_execute_module_service_stager_no_proxy_options_on_launcher_bat(
+    module_service, main_menu_mock, agent_mock
+):
+    """service_stager only sets options that ``windows_launcher_bat`` defines.
+
+    Regression guard for the pre-existing KeyError: the module set
+    ``UserAgent`` / ``Proxy`` / ``ProxyCreds`` on the ``windows_launcher_bat``
+    template, which does not define them, so the assignment raised ``KeyError``
+    before ``generate()`` was reached -- the module crashed on every invocation.
+    A real ``windows_launcher_bat`` instance supplies the faithful option surface;
+    its ``generate()`` is stubbed so the test needs no active listener.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_privesc_powerup_service_stager"
+
+    launcher = LauncherBat(main_menu_mock)
+    launcher.generate = Mock(return_value="@echo off\nstart /B powershell -enc ABC123")
+    main_menu_mock.stagertemplatesv2.new_instance = Mock(return_value=launcher)
+
+    params = {
+        "Agent": agent_mock.session_id,
+        "ServiceName": "VulnSvc",
+        "Listener": "http",
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert 'Invoke-ServiceAbuse -ServiceName "VulnSvc"' in res.data
+    assert "start /B powershell -enc ABC123" in res.data
+
+
+def test_execute_module_service_exe_stager_no_proxy_options_on_launcher_bat(
+    module_service, main_menu_mock, agent_mock
+):
+    """service_exe_stager only sets options that ``windows_launcher_bat`` defines.
+
+    Regression guard for the same pre-existing KeyError: the module
+    set ``UserAgent`` / ``Proxy`` / ``ProxyCreds`` on ``windows_launcher_bat``
+    (which lacks them), crashing before ``generate()``. Its remaining option
+    assignments (``Obfuscate`` / ``ObfuscateCommand`` / ``Bypasses`` / ``Delete``)
+    are all defined by the template and pass through as native types.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_privesc_powerup_service_exe_stager"
+
+    launcher = LauncherBat(main_menu_mock)
+    launcher.generate = Mock(return_value="@echo off\nstart /B powershell -enc XYZ789")
+    main_menu_mock.stagertemplatesv2.new_instance = Mock(return_value=launcher)
+
+    params = {
+        "Agent": agent_mock.session_id,
+        "ServiceName": "VulnSvc",
+        "Listener": "http",
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert 'Install-ServiceBinary -ServiceName "VulnSvc"' in res.data
+    assert "start /B powershell -enc XYZ789" in res.data
 
 
 def test_execute_module_task_command_python_agent(module_service, agent_mock):
@@ -252,14 +721,14 @@ def test_execute_module_background_override_default_false(
 ):
     """Test background_override on a module whose YAML background defaults to false."""
     agent_mock.language = "csharp"
-    module_id = "csharp_credentials_certify"
+    module_id = "csharp_management_patchetw"
 
     module = module_service.get_by_id(module_id)
-    assert module.background is False, "Certify should have background=false in YAML"
+    assert module.background is False, "PatchETW should have background=false in YAML"
 
     params = {
         "Agent": agent_mock.session_id,
-        "Command": "find",
+        "Method": "patch",
     }
     res, err = module_service.execute_module(
         None,
@@ -343,7 +812,7 @@ def test_execute_csharp_module(module_service, agent_mock):
 
     assert err is None
     task_command = res.command
-    assert task_command == "TASK_CSHARP_CMD_WAIT"
+    assert task_command == "TASK_CSHARP_CMD_JOB"
 
 
 def test_execute_bof_module_missing_option(module_service, agent_mock):
@@ -1322,6 +1791,182 @@ def test_finalize_module_obfuscates_script_end_not_source(install_path):
     )
 
 
+# ---------------------------------------------------------------------------
+# .NET version auto-selection tests
+# ---------------------------------------------------------------------------
+
+
+def _make_csharp_module(module_service, compatible_versions: list[str]):
+    """Return a real C# module patched with specific CompatibleDotNetVersions."""
+    module = module_service.get_by_id("csharp_persistence_sharpsploit_persistwmi")
+    assert module is not None, "PersistWMI module must be loaded"
+    # Patch CompatibleDotNetVersions for this test
+    module.csharp.CompatibleDotNetVersions = compatible_versions
+    # Ensure DotNetVersion option reflects new values
+    if "DotNetVersion" in module.options:
+        module.options["DotNetVersion"].value = compatible_versions[0]
+        module.options["DotNetVersion"].suggested_values = compatible_versions
+    return module
+
+
+@pytest.mark.parametrize(
+    ("agent_dotnet", "user_dotnet", "expected"),
+    [
+        # no agent info → fallback to highest compatible version
+        (None, None, "net40"),
+        # agent exact match → picks highest compatible ≤ agent (CLR4)
+        ("net40", None, "net40"),
+        # agent CLR4 only (net48) → picks highest CLR4 compatible (net40), not net35
+        ("net48", None, "net40"),
+        # case-variant stored value normalised correctly
+        ("Net40", None, "net40"),
+        # agent CLR2 only → picks net35 (CLR4 not available)
+        ("net35", None, "net35"),
+        # explicit user choice honoured
+        (None, "Net35", "net35"),
+        # user choice takes precedence over agent version
+        ("net40", "Net35", "net35"),
+        # agent has both CLRs → picks highest compatible (net40 over net35)
+        ("net48,net35", None, "net40"),
+    ],
+)
+def test_dotnet_version_autoselect(
+    module_service, agent_mock, agent_dotnet, user_dotnet, expected
+):
+    """_validate_module_params selects the correct DotNetVersion for C# modules."""
+    module = _make_csharp_module(module_service, ["Net35", "Net40"])
+
+    agent_mock.language = "powershell"
+    agent_mock.language_version = "5"
+    agent_mock.high_integrity = True
+    agent_mock.dotnet_version = agent_dotnet
+
+    params = {"Agent": agent_mock.session_id}
+    if user_dotnet:
+        params["DotNetVersion"] = user_dotnet
+
+    options, err = module_service._validate_module_params(
+        None, module, agent_mock, params, ignore_admin_check=True
+    )
+
+    assert err is None
+    assert options["DotNetVersion"] == expected
+
+
+def test_dotnet_version_clr2_only_agent_with_clr2_only_module(
+    module_service, agent_mock
+):
+    """Agent with both CLRs but module only supports net35 → selects net35."""
+    module = _make_csharp_module(module_service, ["Net35"])
+    agent_mock.language = "powershell"
+    agent_mock.language_version = "5"
+    agent_mock.high_integrity = True
+    agent_mock.dotnet_version = "net48,net35"
+
+    params = {"Agent": agent_mock.session_id}
+    options, err = module_service._validate_module_params(
+        None, module, agent_mock, params, ignore_admin_check=True
+    )
+
+    assert err is None
+    assert options["DotNetVersion"] == "net35"
+
+
+def test_dotnet_version_clr4_only_agent_clr2_only_module_raises(
+    module_service, agent_mock
+):
+    """Agent with CLR4 only but module requires only net35 → raises ModuleValidationException."""
+    module = _make_csharp_module(module_service, ["Net35"])
+    agent_mock.language = "powershell"
+    agent_mock.language_version = "5"
+    agent_mock.high_integrity = True
+    agent_mock.dotnet_version = "net48"
+
+    params = {"Agent": agent_mock.session_id}
+
+    with pytest.raises(ModuleValidationException):
+        module_service._validate_module_params(
+            None, module, agent_mock, params, ignore_admin_check=True
+        )
+
+
+def test_dotnet_version_user_invalid_returns_error(module_service, agent_mock):
+    """DotNetVersion not in CompatibleDotNetVersions is rejected by option validation."""
+    module = _make_csharp_module(module_service, ["Net35", "Net40"])
+    agent_mock.language = "powershell"
+    agent_mock.language_version = "5"
+    agent_mock.high_integrity = True
+    agent_mock.dotnet_version = None
+
+    # "net48" fails strict validation because it's not in SuggestedValues ["Net35", "Net40"]
+    params = {"Agent": agent_mock.session_id, "DotNetVersion": "net48"}
+    options, err = module_service._validate_module_params(
+        None, module, agent_mock, params, ignore_admin_check=True
+    )
+
+    assert options is None
+    assert err is not None
+    assert "DotNetVersion" in err
+
+
+def test_dotnet_version_impossible_downgrade_raises(module_service, agent_mock):
+    """Agent CLR4-only (net35) cannot run CLR4 modules (Net45, Net48)."""
+    module = _make_csharp_module(module_service, ["Net45", "Net48"])
+    agent_mock.language = "powershell"
+    agent_mock.language_version = "5"
+    agent_mock.high_integrity = True
+    agent_mock.dotnet_version = "net35"
+
+    params = {"Agent": agent_mock.session_id}
+
+    with pytest.raises(ModuleValidationException):
+        module_service._validate_module_params(
+            None, module, agent_mock, params, ignore_admin_check=True
+        )
+
+
+def test_generate_script_csharp_wraps_inner_exception_message(
+    module_service, agent_mock
+):
+    # Pins that C# generate-script errors preserve the inner cause: the except
+    # block re-raises `ModuleExecutionException(... {e}) from e` with the inner
+    # message and traceback. Guards against a regression back to a static,
+    # cause-losing message.
+    module = module_service.get_by_id("csharp_persistence_sharpsploit_persistwmi")
+    assert module is not None
+    # Mock the compiler to raise a deterministic error. Use patch.object so the
+    # module-scoped `module_service` fixture's compile_task is restored when the
+    # block exits — otherwise the failure leaks into later tests in this file
+    # (e.g. the BOF execution tests that also call compile_task).
+    with (
+        patch.object(
+            module_service.dotnet_compiler,
+            "compile_task",
+            side_effect=RuntimeError("synthetic mcs failure"),
+        ),
+        pytest.raises(ModuleExecutionException) as exc_info,
+    ):
+        module_service.generate_script_csharp(
+            module, {"DotNetVersion": "net40"}, obfuscation_config=None
+        )
+
+    # Inner cause is preserved via `raise ... from e`.
+    assert exc_info.value.__cause__ is not None
+    assert isinstance(exc_info.value.__cause__, RuntimeError)
+    # User-facing message includes the inner reason, not the static label.
+    assert "synthetic mcs failure" in str(exc_info.value)
+
+
+def test_parse_agent_dotnet_versions_helper():
+    """parse_agent_dotnet_versions correctly parses stored dotnet_version strings."""
+    assert parse_agent_dotnet_versions(None) == frozenset()
+    assert parse_agent_dotnet_versions("") == frozenset()
+    assert parse_agent_dotnet_versions("net48") == frozenset({"net48"})
+    assert parse_agent_dotnet_versions("net35") == frozenset({"net35"})
+    assert parse_agent_dotnet_versions("net48,net35") == frozenset({"net48", "net35"})
+    assert parse_agent_dotnet_versions("Net48,Net35") == frozenset({"net48", "net35"})
+
+
 def _make_custom_generate_module(path: Path) -> EmpireModule:
     mod = EmpireModule(
         id="custom_gen_test", name="custom_gen_test", language=LanguageEnum.python
@@ -1375,3 +2020,157 @@ def test_load_custom_generate_class_wraps_import_error(module_service, tmp_path)
     with pytest.raises(ModuleValidationException, match="failed to load") as excinfo:
         module_service._load_custom_generate_class(mod)
     assert isinstance(excinfo.value.__cause__, RuntimeError)
+
+
+def test_execute_module_bof_startwebclient(module_service, agent_mock):
+    """StartWebClient BOF: arg-less lateral_movement module triggers WebClient service."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+    }
+    module_id = "bof_management_startwebclient"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof_domaininfo(module_service, agent_mock):
+    """Domaininfo BOF: arg-less situational_awareness module enumerates domain membership."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+    }
+    module_id = "bof_situational_awareness_domaininfo"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof_smbinfo(module_service, agent_mock):
+    """Smbinfo BOF: single-arg situational_awareness module queries SMB host info."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "Computername": ".",
+    }
+    module_id = "bof_situational_awareness_smbinfo"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof_lapsdump(module_service, agent_mock):
+    """Lapsdump BOF: credentials module reads LAPS passwords from AD via LDAP."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "Computername": "*",
+    }
+    module_id = "bof_credentials_lapsdump"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof_findmodule(module_service, agent_mock):
+    """FindModule BOF: enumerates processes with a given DLL loaded."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "ModuleName": "amsi.dll",
+    }
+    module_id = "bof_situational_awareness_findmodule"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof_findprochandle(module_service, agent_mock):
+    """FindProcHandle BOF: finds which processes hold a handle to a named object."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "HandleName": "lsass.exe",
+    }
+    module_id = "bof_situational_awareness_findprochandle"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+def test_execute_module_bof_reconad(module_service, agent_mock):
+    """ReconAD BOF: six-arg ADSI AD enumeration; verifies ZZZiiZ format_string packing."""
+    agent_mock.language = "csharp"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "Objects": "users",
+        "Filter": "*",
+        "Attributes": "",
+        "MaxResults": "100",
+        "UseGC": "0",
+        "Server": "",
+    }
+    module_id = "bof_situational_awareness_reconad"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert res.command == "TASK_CSHARP_CMD_WAIT"
+
+
+@pytest.mark.parametrize(
+    ("module_id", "extra_params"),
+    [
+        # psx: two modes — standard listing and extended listing
+        ("bof_situational_awareness_psx", {"Mode": "standard"}),
+        ("bof_situational_awareness_psx", {"Mode": "extended"}),
+        # psm: module accepts an optional target PID
+        ("bof_situational_awareness_psm", {"Pid": "1234"}),
+        # no-arg modules — only need Agent key
+        ("bof_situational_awareness_psk", {}),
+        ("bof_situational_awareness_psw", {}),
+        ("bof_situational_awareness_psc", {}),
+        ("bof_situational_awareness_winver", {}),
+        ("bof_credentials_wdtoggle", {}),
+    ],
+)
+def test_new_outflank_modules_generate_no_error(
+    module_service, agent_mock, module_id, extra_params
+):
+    """Verify custom_generate path works end-to-end for all new Outflank C2TC modules.
+
+    All 7 modules are x64-only (bof.x86='') with custom_generate: true and NO
+    Architecture option exposed to the caller.  This test confirms that executing
+    each module via the custom_generate path does not raise an exception and
+    returns a valid task command — regression guard for the IsADirectoryError
+    crash (adversarial review Critical Finding #1) that would occur if the x86
+    path were ever incorrectly invoked.
+    """
+    agent_mock.language = "csharp"
+    params = {"Agent": agent_mock.session_id, **extra_params}
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None, f"execute_module returned error for {module_id}: {err}"
+    assert res.command == "TASK_CSHARP_CMD_WAIT", (
+        f"Unexpected task command for {module_id}: {res.command}"
+    )

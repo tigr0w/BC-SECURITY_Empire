@@ -9,9 +9,27 @@ description: C# module that uses Seatbelt to perform situational awareness check
   settings. It can also be used to check for various vulnerabilities and suggest
   potential exploits for Privilege Escalation in Windows environments.
 software: ''
-tactics: [TA0007]
-techniques: [T1087.001, T1087.002, T1217, T1526, T1615, T1654, T1083, T1057, T1518.001,
-  T1082, T1007]
+tactics: [TA0006, TA0007]
+techniques:
+  - T1007
+  - T1012
+  - T1016
+  - T1033
+  - T1049
+  - T1057
+  - T1069.001
+  - T1082
+  - T1083
+  - T1087.001
+  - T1087.002
+  - T1135
+  - T1217
+  - T1518
+  - T1518.001
+  - T1526
+  - T1555
+  - T1615
+  - T1654
 background: true
 output_extension:
 needs_admin: false

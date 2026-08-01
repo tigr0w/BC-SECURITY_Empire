@@ -22,7 +22,7 @@ description: |
   information. However, it requires administrative privileges and
   creates visible file and registry artifacts.
 software: ''
-tactics: [TA0004]
+tactics: [TA0003, TA0004]
 techniques: [T1547.005]
 background: true
 output_extension:

@@ -1,0 +1,39 @@
+name: startwebclient
+authors:
+  - name: Cornelis de Plaa
+    handle: '@Cneelis'
+    link: https://github.com/outflanknl/C2-Tool-Collection
+description: |
+  Beacon Object File (BOF) that starts the WebClient service on the local system by
+  registering an ETW event for the MS-Windows-WebClntLookupServiceTrigger provider.
+  Requires no service restart or direct SCM manipulation. Useful for enabling
+  WebDAV-based NTLM coercion attacks (PetitPotam, PrinterBug) on systems where
+  the WebClient service is stopped. Triggers a one-time event write and unregisters
+  immediately.
+software: ''
+tactics: [TA0006]
+techniques: [T1187]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: false
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/outflanknl/C2-Tool-Collection
+options:
+  - name: Architecture
+    description: Architecture of the beacon_funcs.o to generate with (x64 or x86).
+    required: true
+    value: x64
+    strict: true
+    suggested_values:
+      - x64
+      - x86
+bof:
+  x86: bof/lateral_movement/startwebclient/startwebclient.x86.o
+  x64: bof/lateral_movement/startwebclient/startwebclient.x64.o
+  entry_point: ''
+  format_string: ''
+script_path: ''
+script_end: ''

@@ -1,6 +1,10 @@
 import copy
+import json
+import os
+import sys
 from pathlib import Path
 
+import platformdirs
 import pytest
 import yaml
 
@@ -53,8 +57,12 @@ def test_config_resolves_path():
     server_config_dict["directories"]["downloads"] = "empire/test"
     empire_config = EmpireConfig(server_config_dict)
     assert isinstance(empire_config.directories.downloads, Path)
-    assert str(empire_config.directories.downloads).endswith(
-        ".local/share/empire-test/empire/test"
+    # A relative `downloads` resolves under DATA_DIR (platform-specific base).
+    # config_manager.DATA_DIR is the per-worker dir under pytest-xdist and the
+    # shared base otherwise, so this equality holds in both shapes.
+    assert (
+        empire_config.directories.downloads
+        == config_manager.DATA_DIR / "empire" / "test"
     )
     assert empire_config.directories.downloads.is_absolute()
 
@@ -130,6 +138,16 @@ def test_env_overrides_database_use_legacy(monkeypatch):
     server_config_dict = load_test_config()
     # YAML says mysql in test_server_config.yaml; legacy var overrides to sqlite
     monkeypatch.setenv("DATABASE_USE", "sqlite")
+    config = EmpireConfig(server_config_dict)
+    assert config.database.use.lower() == "sqlite"
+
+
+def test_env_database_use_nested_wins_over_legacy(monkeypatch):
+    server_config_dict = load_test_config()
+    # When both are set, the nested EMPIRE_DATABASE__USE must take precedence
+    # over the legacy DATABASE_USE — see map_legacy_database_use_env.
+    monkeypatch.setenv("DATABASE_USE", "mysql")
+    monkeypatch.setenv("EMPIRE_DATABASE__USE", "sqlite")
     config = EmpireConfig(server_config_dict)
     assert config.database.use.lower() == "sqlite"
 
@@ -264,3 +282,118 @@ def test_user_config_deep_merges_nested_dicts(tmp_path):
     assert config.database.mysql.username == "default_user"
     assert config.database.mysql.url == "localhost:3306"
     assert config.api.port == 1337  # noqa: PLR2004
+
+
+def test_base_dirs_derive_from_platformdirs():
+    # pytest.ini sets TEST_MODE=true, so the app name is "empire-test".
+    # Under pytest-xdist config_manager gives each worker its own DATA_DIR (a
+    # worker-<gw> subdir of the shared base); CONFIG_DIR/CACHE_DIR stay shared.
+    data_base = Path(platformdirs.user_data_dir("empire-test", appauthor=False))
+    worker = os.environ.get("PYTEST_XDIST_WORKER", "")
+    expected_data_dir = data_base / f"worker-{worker}" if worker else data_base
+    assert expected_data_dir == config_manager.DATA_DIR
+    assert (
+        Path(platformdirs.user_config_dir("empire-test", appauthor=False))
+        == config_manager.CONFIG_DIR
+    )
+    assert (
+        Path(platformdirs.user_cache_dir("empire-test", appauthor=False))
+        == config_manager.CACHE_DIR
+    )
+
+
+def test_reset_test_dirs_preserves_caches_when_config_and_data_collide(
+    tmp_path, monkeypatch
+):
+    """Root conftest must not destroy DATA_DIR while reseeding CONFIG_DIR.
+
+    Pins the collision case on every platform: CI is Linux, where the two dirs
+    are distinct, so it would never catch a regression here.
+    """
+    # Deferred: the root conftest is only importable as a bare `conftest`
+    # because pytest puts rootdir on sys.path. Keeping it out of module scope
+    # means importing this file outside a pytest run still works.
+    import conftest as root_conftest  # noqa: PLC0415
+
+    collided = tmp_path / "Application Support" / "empire-test"
+    collided.mkdir(parents=True)
+    monkeypatch.setattr(root_conftest, "_TEST_CONFIG_DIR", collided)
+    monkeypatch.setattr(root_conftest, "_TEST_DATA_DIR", collided)
+    monkeypatch.setattr(root_conftest, "_TEST_CACHE_DIR", tmp_path / "Caches")
+
+    cached_compiler = collided / "empire-compiler" / "EmpireCompiler"
+    cached_compiler.parent.mkdir(parents=True)
+    cached_compiler.write_text("expensive to re-download")
+    (collided / "config.yaml").write_text("stale config")
+    (collided / "config.user.yaml").write_text("stale user config")
+
+    # The mutable per-run dirs live under the (possibly per-xdist-worker) data
+    # dir, so ask conftest where rather than assuming the base.
+    worker_data_dir = root_conftest._worker_data_dir()
+    stale_download = worker_data_dir / "downloads" / "leftover.txt"
+    stale_download.parent.mkdir(parents=True)
+    stale_download.write_text("per-run state")
+
+    root_conftest._reset_test_dirs()
+
+    assert cached_compiler.read_text() == "expensive to re-download"
+    assert not (collided / "config.yaml").exists(), "config must still be reseeded"
+    assert not (collided / "config.user.yaml").exists(), "user config too"
+    assert not stale_download.exists(), "per-run state must still be scrubbed"
+
+
+def test_cache_defaults_to_platform_cache_dir():
+    # With no `cache` key in any config source, the field falls through to its
+    # CACHE_DIR default (XDG cache home), NOT under DATA_DIR.
+    cfg_dict = load_test_config()
+    cfg_dict.setdefault("directories", {}).pop("cache", None)
+    cfg = EmpireConfig(cfg_dict)
+    assert cfg.directories.cache == config_manager.CACHE_DIR
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="XDG path semantics are Linux-only")
+def test_production_dirs_are_xdg_no_op_when_unset(monkeypatch):
+    # Locks the production path contract: app name "empire" + appauthor=False
+    # must yield the legacy Linux locations (~/.config/empire,
+    # ~/.local/share/empire) when $XDG_*_HOME is unset — the migration's core
+    # no-op guarantee. The suite runs under "empire-test" (covered above), so
+    # this documents the production paths and catches an appauthor change or a
+    # platformdirs behavior shift. It asserts the platformdirs result for
+    # "empire" directly, so it does NOT catch a rename of the _APP_NAME literal.
+    for var in ("XDG_DATA_HOME", "XDG_CONFIG_HOME", "XDG_CACHE_HOME"):
+        monkeypatch.delenv(var, raising=False)
+    home = Path.home()
+    assert (
+        Path(platformdirs.user_data_dir("empire", appauthor=False))
+        == home / ".local/share/empire"
+    )
+    assert (
+        Path(platformdirs.user_config_dir("empire", appauthor=False))
+        == home / ".config/empire"
+    )
+    assert (
+        Path(platformdirs.user_cache_dir("empire", appauthor=False))
+        == home / ".cache/empire"
+    )
+
+
+def test_cors_origins_default():
+    server_config_dict = load_test_config()
+    config = EmpireConfig(server_config_dict)
+    assert config.api.cors_origins == ["*"]
+
+
+def test_yaml_config_cors_origins():
+    expected_origins = ["http://localhost:8080", "http://my-starkiller.example.com"]
+    server_config_dict = load_test_config()
+    server_config_dict["api"]["cors_origins"] = expected_origins
+    config = EmpireConfig(server_config_dict)
+    assert config.api.cors_origins == expected_origins
+
+
+def test_env_overrides_cors_origins(monkeypatch):
+    expected_origins = ["http://starkiller.example.com", "http://localhost:8080"]
+    server_config_dict = load_test_config()
+    monkeypatch.setenv("EMPIRE_API__CORS_ORIGINS", json.dumps(expected_origins))
+    config = EmpireConfig(server_config_dict)
+    assert config.api.cors_origins == expected_origins

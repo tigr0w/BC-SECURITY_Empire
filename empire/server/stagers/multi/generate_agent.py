@@ -1,6 +1,4 @@
-import logging
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -31,11 +29,6 @@ class Stager:
                 "Required": True,
                 "Value": "",
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,
@@ -59,9 +52,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -81,9 +72,7 @@ class Stager:
             "Staged": {
                 "Description": "Allow agent to be staged",
                 "Required": True,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
             },
         }
 
@@ -99,13 +88,12 @@ class Stager:
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
         listener_name = self.options["Listener"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
 
-        obfuscate_script = obfuscate.lower() == "true"
-        staged = self.options["Staged"]["Value"].lower() == "true"
+        obfuscate_script = obfuscate
+        staged = self.options["Staged"]["Value"]
 
         if not staged:
             launcher = self.mainMenu.stagergenv2.generate_stageless(self.options)
@@ -118,16 +106,11 @@ class Stager:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries=stager_retries,
                 bypasses=bypasses,
             )
 
-        if launcher == "":
-            log.error("[!] Error in launcher generation.")
-            return ""
         if not launcher or launcher.lower() == "failed":
-            log.error("[!] Error in launcher command generation.")
-            return ""
+            raise StagerGenerationException("Error in launcher command generation.")
 
         if obfuscate_script:
             if language == "powershell":

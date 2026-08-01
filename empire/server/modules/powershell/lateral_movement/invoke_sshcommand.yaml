@@ -23,7 +23,7 @@ software: ''
 tactics: [TA0008]
 techniques:
   - T1021.004
-  - T1105
+  - T1570
 background: true
 output_extension:
 needs_admin: false

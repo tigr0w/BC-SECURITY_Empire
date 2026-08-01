@@ -18,7 +18,7 @@ description: |
   credentials. Useful for post-exploitation credential harvesting
   when the user's password is known or obtained through other means.
 software: ''
-tactics: [TA0006]
+tactics: [TA0006, TA0009]
 techniques:
   - T1005
   - T1555.001

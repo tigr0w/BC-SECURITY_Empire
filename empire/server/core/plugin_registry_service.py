@@ -12,6 +12,7 @@ from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import PluginValidationException
 from empire.server.core.module_models import EmpireAuthor
+from empire.server.utils.git_util import GitOperationException
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -60,27 +61,23 @@ class PluginRegistryService:
 
     def load_plugin_registries(self, db):
         registries = empire_config.plugin_marketplace.registries
-        to_add = []
         for r in registries:
-            if db.scalar(
-                select(models.PluginRegistry).where(
-                    models.PluginRegistry.name == r.name
-                )
-            ):
-                continue
-
-            log.info(f"Loading plugin registry: {r.name}")
-
-            synced_path = sync_plugin_registry(r)
-            if synced_path and Path(str(synced_path)).exists():
-                registry_yaml = Path(str(synced_path)).read_text()
-            else:
-                log.error(f"Failed to load plugin registry {r.name}")
-                continue
-
-            registry_data = yaml.safe_load(registry_yaml)
             try:
+                synced_path = sync_plugin_registry(r)
+                registry_file = Path(synced_path) if synced_path else None
+                if not (registry_file and registry_file.exists()):
+                    log.error(f"Failed to load plugin registry {r.name}")
+                    continue
+                registry_data = yaml.safe_load(
+                    registry_file.read_text(encoding="utf-8")
+                )
                 registry = PluginRegistry.model_validate(registry_data)
+            except (GitOperationException, OSError, UnicodeError, yaml.YAMLError):
+                log.exception(
+                    f"Plugin registry {r.name}: sync/parse failed; "
+                    "keeping the last-good row if one exists"
+                )
+                continue
             except ValidationError as e:
                 log.exception(
                     f"Plugin registry {r.name} has invalid schema: {e.errors()}"
@@ -93,37 +90,71 @@ class PluginRegistryService:
                 )
                 continue
 
-            to_add.append(
-                models.PluginRegistry(
-                    name=r.name,
-                    location=str(r.location),
-                    url=str(r.url),
-                    data=registry_data,
+            existing = db.scalar(
+                select(models.PluginRegistry).where(
+                    models.PluginRegistry.name == r.name
                 )
             )
 
-        db.add_all(to_add)
+            # `location`/`url` are optional in the config (a git-only registry
+            # has neither), so they must stay NULL rather than the string
+            # "None" that str() would produce.
+            location = str(r.location) if r.location else None
+            url = str(r.url) if r.url else None
+
+            if existing:
+                if existing.data != registry_data:
+                    existing.data = registry_data
+                    log.info(f"Updated plugin registry {r.name} from synced ref")
+                # Reconciled unconditionally: a config edit that only moves the
+                # registry's location/url leaves `data` byte-identical.
+                existing.location = location
+                existing.url = url
+            else:
+                db.add(
+                    models.PluginRegistry(
+                        name=r.name,
+                        location=location,
+                        url=url,
+                        data=registry_data,
+                    )
+                )
+                log.info(f"Loaded plugin registry: {r.name}")
+
         db.flush()
 
     def get_marketplace(self, db):
-        registries = db.scalars(select(models.PluginRegistry)).all()
+        # The config is the source of truth for which registries are live.
+        # Reconcile only upserts, so a registry renamed or dropped from the
+        # config leaves its row behind; serving it would list its plugins a
+        # second time and let `install_plugin` resolve the refs of whatever
+        # major line the row was last synced against.
+        #
+        # Filtered here rather than pruned in reconcile: the delete set would be
+        # "every row not in the current view of config", and a reconcile running
+        # under a narrowed or empty `registries` list would wipe the table.
+        configured = [r.name for r in empire_config.plugin_marketplace.registries]
+        registries = db.scalars(
+            select(models.PluginRegistry).where(
+                models.PluginRegistry.name.in_(configured)
+            )
+        ).all()
         installed_plugins = self.plugin_service.get_all(db)
         installed_plugins = {p.db_plugin.name: p.db_plugin for p in installed_plugins}
         merged = {}
         for registry in registries:
-            registry_data = registry.data
-            for plugin in registry_data["plugins"]:
-                plugin_name = plugin["name"]
-                plugin["registry"] = registry.name
-                if plugin_name not in merged:
-                    merged[plugin_name] = {}
-                merged[plugin_name][registry.name] = plugin
+            for plugin in registry.data["plugins"]:
+                # Copied, not stamped in place: annotating `plugin` would edit
+                # the loaded row's own state, so anything else reading `data`
+                # off this session sees a key the registry never had.
+                entry = {**plugin, "registry": registry.name}
+                merged.setdefault(plugin["name"], {})[registry.name] = entry
 
         return {
             "records": [
                 {
                     "name": plugin_name,
-                    "registries": registries,
+                    "registries": plugin_registries,
                     "installed": installed_plugins.get(plugin_name) is not None,
                     "installed_version": (
                         installed_plugins.get(plugin_name).installed_version
@@ -131,13 +162,12 @@ class PluginRegistryService:
                         else None
                     ),
                 }
-                for plugin_name, registries in merged.items()
+                for plugin_name, plugin_registries in merged.items()
             ]
         }
 
     def install_plugin(self, db, name, version, registry):
-        version = self._validate_install(db, name, registry, version)
-        registry_data = self._get_plugin_registry_entry(db, name, registry)
+        registry_entry, version = self._validate_install(db, name, registry, version)
 
         if version.get("git_url"):
             self.plugin_service.install_plugin_from_git(
@@ -146,7 +176,7 @@ class PluginRegistryService:
                 version.get("subdirectory"),
                 version.get("ref"),
                 version.get("name"),
-                registry_data,
+                registry_entry,
             )
 
         else:
@@ -155,15 +185,8 @@ class PluginRegistryService:
                 version["tar_url"],
                 version.get("subdirectory"),
                 version.get("name"),
-                registry_data,
+                registry_entry,
             )
-
-    def _get_plugin_registry_entry(self, db, name, registry):
-        plugin_registry = self.get_marketplace(db)
-        plugin_reference = next(
-            (p for p in plugin_registry["records"] if p["name"] == name), None
-        )
-        return plugin_reference["registries"].get(registry)
 
     def _validate_install(self, db, name, registry, version):
         marketplace = self.get_marketplace(db)
@@ -186,4 +209,4 @@ class PluginRegistryService:
         if not version:
             raise PluginValidationException("Version not found in plugin")
 
-        return version
+        return plugin, version

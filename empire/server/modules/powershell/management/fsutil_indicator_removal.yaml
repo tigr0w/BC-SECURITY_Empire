@@ -11,7 +11,7 @@ description: |
   the USN journal removes forensic evidence of file operations.
 software: ''
 tactics: [TA0005]
-techniques: [T1070]
+techniques: [T1070, T1070.004]
 background: true
 output_extension:
 needs_admin: true

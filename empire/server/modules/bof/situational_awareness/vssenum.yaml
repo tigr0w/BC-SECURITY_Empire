@@ -1,0 +1,48 @@
+name: vssenum
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: Enumerates Volume Shadow Copies exposed on an SMB share of the specified
+  host by issuing the FSCTL_SRV_ENUMERATE_SNAPSHOTS control code against the share
+  root. Useful for identifying restorable shadow copies that may contain offline
+  copies of sensitive files (e.g. the SAM/SYSTEM registry hives or NTDS.dit) for
+  later credential extraction. Reading shadow-copy contents typically requires Local
+  Admin or SYSTEM on the target.
+software: ''
+tactics: [TA0007, TA0006]
+techniques: [T1082, T1003.002]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/trustedsec/CS-Situational-Awareness-BOF
+options:
+  - name: Architecture
+    description: Architecture of the beacon_funcs.o to generate with (x64 or x86).
+    required: true
+    value: x64
+    strict: true
+    suggested_values:
+      - x64
+      - x86
+  - name: Hostname
+    description: Host whose share to enumerate snapshots on (e.g. localhost or a
+      remote computer name).
+    required: true
+    value: 'localhost'
+  - name: ShareName
+    description: Share on the host to enumerate snapshots for. The BOF queries the
+      share root via \\Hostname\ShareName (e.g. C$).
+    required: true
+    value: 'C$'
+bof:
+  x86: bof/situational_awareness/vssenum/vssenum.x86.o
+  x64: bof/situational_awareness/vssenum/vssenum.x64.o
+  entry_point: ''
+  format_string: ZZ
+script_path: ''
+script_end: ''

@@ -14,6 +14,17 @@ install_parser.add_argument(
     help="Automatically say yes to all prompts during installation",
 )
 
+update_parser = subparsers.add_parser(
+    "update",
+    help="Pull the latest Empire source (if git), Starkiller, Empire-Compiler, and plugin registries",
+)
+update_parser.add_argument(
+    "-y",
+    action="store_true",
+    dest="yes",
+    help="Auto-confirm prompts when a config ref has changed or a cache migration is needed",
+)
+
 # Server Args
 general_group = server_parser.add_argument_group("General Options")
 general_group.add_argument(

@@ -32,7 +32,7 @@ class Module:
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
+        launcher_obfuscate = params["Obfuscate"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         status_msg = ""
@@ -40,7 +40,7 @@ class Module:
 
         # for cleanup, remove any script from the specified storage location
         #   and remove the specified trigger
-        if cleanup.lower() == "true":
+        if cleanup:
             if ads_path != "":
                 if ".txt" not in ads_path:
                     raise ModuleValidationException(
@@ -84,7 +84,7 @@ class Module:
                 file_data = ext_path.read_text()
 
                 # unicode-base64 encode the script for -enc launching
-                enc_script = helpers.enc_powershell(file_data)
+                enc_script = helpers.enc_powershell(file_data).decode("UTF-8")
                 status_msg += "using external file " + ext_file
 
             else:

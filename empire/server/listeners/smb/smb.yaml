@@ -1,0 +1,24 @@
+id: smb
+display_name: 'smb_pivot'
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: Internal redirector listener using SMB.
+comments: []
+software: ''
+techniques: []
+tactics: []
+options:
+  - name: Name
+    description: Name for the listener.
+    required: true
+    value: smb
+  - name: Agent
+    description: Agent to run SMB server on.
+    required: true
+    value: ''
+  - name: PipeName
+    description: Name of the pipe.
+    required: true
+    value: empire_pipe

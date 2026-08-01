@@ -12,7 +12,7 @@ description: |
   PowerShell cmdlet or certutil.exe. Administrative privileges are
   required to modify the machine certificate store.
 software: ''
-tactics: [TA0005]
+tactics: [TA0112]
 techniques: [T1553.004]
 background: false
 output_extension:

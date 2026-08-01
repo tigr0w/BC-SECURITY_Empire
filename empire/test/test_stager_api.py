@@ -18,12 +18,10 @@ def get_base_stager():
         "options": {
             "Listener": "new-listener-1",
             "Language": "powershell",
-            "StagerRetries": "0",
             "OutFile": "",
             "Base64": "True",
             "Obfuscate": "False",
             "ObfuscateCommand": "Token\\All\\1",
-            "SafeChecks": "True",
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
@@ -39,13 +37,11 @@ def get_base_stager_dll():
         "options": {
             "Listener": "new-listener-1",
             "Language": "powershell",
-            "StagerRetries": "0",
             "Arch": "x86",
             "OutFile": "my-windows-dll.dll",
             "Base64": "True",
             "Obfuscate": "False",
             "ObfuscateCommand": "Token\\All\\1",
-            "SafeChecks": "True",
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
@@ -61,12 +57,10 @@ def get_base_stager_malleable():
         "options": {
             "Listener": "malleable_listener_1",
             "Language": "powershell",
-            "StagerRetries": "0",
             "OutFile": "",
             "Base64": "True",
             "Obfuscate": "False",
             "ObfuscateCommand": "Token\\All\\1",
-            "SafeChecks": "True",
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",
@@ -103,7 +97,6 @@ def get_windows_macro_stager():
             "Obfuscate": "False",
             "ObfuscateCommand": "Token\\All\\1",
             "Bypasses": "mattifestation etw",
-            "SafeChecks": "True",
         },
     }
 
@@ -116,7 +109,6 @@ def get_pyinstaller_stager():
             "Listener": "new-listener-1",
             "Language": "python",
             "OutFile": "empire",
-            "SafeChecks": "True",
             "UserAgent": "default",
         },
     }
@@ -130,7 +122,6 @@ def get_base_csharp_exe_stager():
             "Listener": "new-listener-1",
             "Language": "csharp",
             "DotNetVersion": "net40",
-            "StagerRetries": "0",
             "OutFile": "Sharpire.exe",
             "Obfuscate": "False",
             "ObfuscateCommand": "Token\\All\\1",
@@ -149,6 +140,46 @@ def get_windows_c_stager():
         "template": "windows_c_launcher",
         "options": {"Listener": "new-listener-1", "OutFile": "test_stager.exe"},
     }
+
+
+def test_get_stager_template_listener_default(
+    client, admin_auth_header, listener, listener_malleable
+):
+    """Listener option is pre-filled and suggested_values contains all active listeners."""
+    response = client.get(
+        "/api/v2/stager-templates/multi_launcher",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    listener_opt = response.json()["options"]["Listener"]
+    # The option is pre-filled with the default (lowest-id) listener. Both
+    # listener fixtures are session-scoped autouse, and under pytest-xdist the
+    # order they instantiate across files isn't fixed, so don't assume *which*
+    # listener is the default — only that it's pre-filled with a valid one.
+    assert listener_opt["value"] in listener_opt["suggested_values"]
+    assert listener["name"] in listener_opt["suggested_values"]
+    assert listener_malleable["name"] in listener_opt["suggested_values"]
+
+
+def test_get_stager_templates_listener_default(
+    client, admin_auth_header, listener, listener_malleable
+):
+    """Listener option is pre-filled on the list endpoint too."""
+    response = client.get("/api/v2/stager-templates/", headers=admin_auth_header)
+    assert response.status_code == status.HTTP_200_OK
+
+    template = next(
+        (t for t in response.json()["records"] if t["id"] == "multi_launcher"), None
+    )
+    assert template is not None
+    listener_opt = template["options"]["Listener"]
+    # The option is pre-filled with the default (lowest-id) listener. Both
+    # listener fixtures are session-scoped autouse, and under pytest-xdist the
+    # order they instantiate across files isn't fixed, so don't assume *which*
+    # listener is the default — only that it's pre-filled with a valid one.
+    assert listener_opt["value"] in listener_opt["suggested_values"]
+    assert listener["name"] in listener_opt["suggested_values"]
+    assert listener_malleable["name"] in listener_opt["suggested_values"]
 
 
 def test_get_stager_templates(client, admin_auth_header):
@@ -170,6 +201,52 @@ def test_get_stager_template(client, admin_auth_header):
     assert response.json()["name"] == "Launcher"
     assert response.json()["id"] == "multi_launcher"
     assert isinstance(response.json()["options"], dict)
+
+
+def test_stager_template_bool_value_type(client, admin_auth_header):
+    response = client.get(
+        "/api/v2/stager-templates/multi_launcher",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    options = response.json()["options"]
+    for bool_opt in ("Base64", "Obfuscate"):
+        assert options[bool_opt]["value_type"] == "BOOLEAN", (
+            f"{bool_opt} should advertise BOOLEAN, got {options[bool_opt]['value_type']}"
+        )
+
+
+def test_stager_template_bypass_language_map(client, admin_auth_header):
+    response = client.get(
+        "/api/v2/stager-templates/multi_launcher",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    bypasses = response.json()["options"]["Bypasses"]
+    assert bypasses["bypass_language_map"] == {
+        "powershell": "powershell",
+        "python": "python",
+        "ironpython": "powershell",
+        "csharp": "powershell",
+        "go": "powershell",
+    }
+
+    response = client.get(
+        "/api/v2/stager-templates/windows_launcher_bat",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    bat_bypasses = response.json()["options"]["Bypasses"]
+    assert bat_bypasses["bypass_language_map"] == {
+        "powershell": "powershell",
+        "csharp": "powershell",
+        "ironpython": "powershell",
+        "go": "powershell",
+    }
+
+    # Listener options never carry a bypass language map.
+    listener_field = response.json()["options"]["Listener"]
+    assert listener_field["bypass_language_map"] is None
 
 
 def test_create_stager_validation_fails_required_field(client, admin_auth_header):
@@ -248,6 +325,50 @@ def test_create_malleable_stager_one_liner(client, admin_auth_header):
     assert (
         response.json().get("downloads", [])[0]["link"].startswith("/api/v2/downloads")
     )
+
+    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
+
+
+def test_create_malleable_csharp_launcher_no_longer_blocked(client, admin_auth_header):
+    """Regression for the allow-list gate that blocked C# / IronPython /
+    Go stagers against the malleable HTTP listener even though Sharpire
+    and Gopire support it. The routing helper now dispatches to the
+    listener's stager endpoint instead of returning "" with an error.
+    Smoke: multi_launcher + csharp + malleable_listener_1 must produce
+    a non-empty stager download.
+    """
+    stager = get_base_stager_malleable()
+    stager["name"] = "MalleableCsharpSmoke"
+    stager["options"]["Language"] = "csharp"
+
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=stager
+    )
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    downloads = response.json().get("downloads", [])
+    assert downloads, "csharp launcher against malleable must produce a download link"
+
+    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
+
+
+def test_create_malleable_dll_csharp_no_longer_blocked(client, admin_auth_header):
+    """Same regression as the multi_launcher test above, but for one of the
+    11 wrapper stagers (windows_dll) that also had the gate. Spot-checks one
+    wrapper; the other 10 share the textually-identical patch (allow-list
+    block deleted, `generate_exe_oneliner_routed` substituted) so coverage
+    here implies coverage there.
+    """
+    stager = get_base_stager_dll()
+    stager["name"] = "MalleableDllSmoke"
+    stager["options"]["Listener"] = "malleable_listener_1"
+    stager["options"]["Language"] = "csharp"
+
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=stager
+    )
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    downloads = response.json().get("downloads", [])
+    assert downloads, "dll wrapper for csharp+malleable must produce a download link"
 
     client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
@@ -403,7 +524,10 @@ def test_download_stager_one_liner(client, admin_auth_header):
         headers=admin_auth_header,
     )
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] == "text/plain"
+    assert response.headers.get("content-type").split(";")[0] in [
+        "text/plain",
+        "application/octet-stream",
+    ]
     assert response.text.startswith("powershell -noP -sta")
 
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
@@ -606,7 +730,10 @@ def test_pyinstaller_stager_creation(client, admin_auth_header):
 
     # Check if the file is downloaded successfully
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] == "text/plain"
+    assert response.headers.get("content-type").split(";")[0] in [
+        "text/plain",
+        "application/octet-stream",
+    ]
     assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty
@@ -724,7 +851,10 @@ def test_macro_stager_generation(
 
     # Check if the file is downloaded successfully
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] == "text/plain"
+    assert response.headers.get("content-type").split(";")[0] in [
+        "text/plain",
+        "application/octet-stream",
+    ]
     assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty

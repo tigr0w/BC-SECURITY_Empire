@@ -1,13 +1,13 @@
 Logging
 ----
 
-The logging for the server is logged to the file `~/.local/share/empire/logs/empire_server.log` and to the console.
+The logging for the server is logged to the file `<data-dir>/logs/empire_server.log` (`~/.local/share/empire/logs/empire_server.log` by default; see [data & config locations](../quickstart/server.md#data--config-locations)) and to the console.
 By default, the logging level is set to `INFO`.
 
 
 ## Listener Logging
 Listeners have their own logging configuration. All logs `debug` and above are written to
-the file `~/.local/share/empire/logs/listener_<listener_name>.log`, and all logs `warning` and obove will go to the console.
+the file `<data-dir>/logs/listener_<listener_name>.log` (Linux default `~/.local/share/empire/logs/listener_<listener_name>.log`), and all logs `warning` and above will go to the console.
 
 If there is a log message that you also want sent to the server log and console,
 also log it to the module logger with `log.info()`.

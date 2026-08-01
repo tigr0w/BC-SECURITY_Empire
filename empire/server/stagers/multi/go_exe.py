@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from empire.server.core.exceptions import StagerGenerationException
+
 
 class Stager:
     def __init__(self, mainMenu):
@@ -21,11 +23,6 @@ class Stager:
                 "Description": "Listener to use.",
                 "Required": True,
                 "Value": "",
-            },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
             },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
@@ -53,6 +50,7 @@ class Stager:
     def generate(self):
         directory = self.mainMenu.stagergenv2.generate_go_stageless(self.options)
 
-        if directory:
-            return Path(directory).read_bytes()
-        return None
+        if not directory:
+            raise StagerGenerationException("Go build directory not found.")
+
+        return Path(directory).read_bytes()

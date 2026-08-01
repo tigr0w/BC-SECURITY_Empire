@@ -29,7 +29,7 @@ description: |
   potential points of compromise within the DNS infrastructure.
 software: ''
 tactics: [TA0007]
-techniques: [T1016]
+techniques: [T1018]
 background: true
 output_extension:
 needs_admin: false

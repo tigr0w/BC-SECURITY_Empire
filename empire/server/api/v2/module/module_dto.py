@@ -1,25 +1,41 @@
 from pydantic import BaseModel
 
-from empire.server.api.v2.shared_dto import Author, CustomOptionSchema, to_value_type
+from empire.server.api.v2.shared_dto import Author, CustomOptionSchema
 from empire.server.core.module_models import EmpireModule, LanguageEnum
+from empire.server.core.option_types import to_value_type
+from empire.server.utils.option_util import LISTENER_OPTION_NAMES
 
 
-def domain_to_dto_module(module: EmpireModule, uid: str):
+def domain_to_dto_module(
+    module: EmpireModule,
+    uid: str,
+    default_listener: str | None = None,
+    listener_names: list[str] | None = None,
+):
     options = {x.name: x for x in module.options}
 
-    options = {
-        x[0]: {
-            "description": x[1].description,
-            "required": x[1].required,
-            "value": x[1].value,
-            "strict": x[1].strict,
-            "suggested_values": x[1].suggested_values,
-            "value_type": to_value_type(x[1].value, x[1].type),
-            "depends_on": x[1].depends_on if x[1].depends_on is not None else [],
-            "internal": x[1].internal if x[1].internal is not None else False,
+    def _option_entry(name, opt):
+        is_listener = name.lower() in LISTENER_OPTION_NAMES
+        value = opt.value
+        if is_listener and value == "" and default_listener:
+            value = default_listener
+        suggested = (
+            listener_names
+            if is_listener and listener_names is not None
+            else opt.suggested_values
+        )
+        return {
+            "description": opt.description,
+            "required": opt.required,
+            "value": value,
+            "strict": opt.strict,
+            "suggested_values": suggested,
+            "value_type": to_value_type(value, opt.type),
+            "depends_on": opt.depends_on if opt.depends_on is not None else [],
+            "internal": opt.internal if opt.internal is not None else False,
         }
-        for x in options.items()
-    }
+
+    options = {name: _option_entry(name, opt) for name, opt in options.items()}
 
     return Module(
         id=uid,

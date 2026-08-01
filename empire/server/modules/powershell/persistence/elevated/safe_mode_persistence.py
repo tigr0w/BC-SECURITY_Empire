@@ -19,14 +19,14 @@ class Module:
         safe_boot_type = params["SafeBootType"]
         force_reboot = params["ForceReboot"]
         cleanup = params["Cleanup"]
-        obf = params["Obfuscate"].lower() == "true"
+        obf = params["Obfuscate"]
         obf_cmd = params["ObfuscateCommand"]
         bypasses = params["Bypasses"]
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
 
-        if cleanup.lower() == "true":
+        if cleanup:
             script = "$scriptFile = $ExecutionContext.InvokeCommand.ExpandString('"
             script += script_path + "');\n"
             script += (
@@ -209,7 +209,7 @@ class Module:
             "Write-Output '[*]   Boot type: Safe Mode with " + safe_boot_type + "';\n"
         )
 
-        if force_reboot.lower() == "true":
+        if force_reboot:
             script += "Write-Output '[!] WARNING: System will reboot in 30 seconds.';\n"
             script += "shutdown /r /t 30"
         else:

@@ -9,9 +9,9 @@ description: |
   key will be entered exactly as provided so ensure they are in the correct format
   their data type.
 software: ''
-tactics: [TA0005]
+tactics: [TA0003, TA0112]
 techniques: [T1112]
-background: false
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true

@@ -10,8 +10,8 @@ description: |
   Universal Unhooking research. Optionally accepts a comma-separated list of modules
   to skip (e.g., the stomped module from a C2 profile).
 software: ''
-tactics: [TA0005]
-techniques: [T1562.001]
+tactics: [TA0112]
+techniques: [T1685]
 background: false
 output_extension:
 needs_admin: false

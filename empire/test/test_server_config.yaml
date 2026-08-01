@@ -12,6 +12,13 @@ database:
     username: empire_user
     password: empire_password
     database_name: test_empire
+    # Small per-worker pool so pytest-xdist doesn't exhaust MySQL's connection
+    # ceiling (default max_connections=151): N workers each open up to
+    # pool_size+max_overflow connections. 5+5=10/worker stays safe well past the
+    # worker counts any CI runner (or a many-core dev box) will spawn. Tests that
+    # exercise pool-exhaustion behavior build their own pool_size=1 engines.
+    pool_size: 5
+    max_overflow: 5
   sqlite:
     location: test_empire.db
   defaults:
@@ -43,10 +50,13 @@ database:
       - etw
 empire_compiler:
   repo: BC-SECURITY/Empire-Compiler
-  ref: v1.0.0-a.1
+  ref: v2.0.0
   confuser_proj: empire/server/data/confuser.crproj
 starkiller:
-  enabled: true
+  # Disabled in tests: no test serves the Starkiller SPA, so cloning/building it
+  # at boot is pure overhead. _warm_external_caches and app.initialize skip it
+  # when disabled.
+  enabled: false
   repo: https://github.com/BC-SECURITY/Starkiller.git
   # Can be a branch, tag, or commit hash
   ref: v2.8.2

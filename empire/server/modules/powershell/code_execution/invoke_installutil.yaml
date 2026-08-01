@@ -13,7 +13,7 @@ description: |
   InstallUtil, which is a trusted Microsoft signed binary.
 software: ''
 tactics: [TA0005]
-techniques: [T1218.004]
+techniques: [T1027.004, T1218.004]
 background: true
 output_extension:
 needs_admin: false

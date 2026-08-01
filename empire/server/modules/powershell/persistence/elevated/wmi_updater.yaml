@@ -29,7 +29,7 @@ description: |
   privileges and creates WMI artifacts that can be detected by advanced security
   monitoring tools.
 software: ''
-tactics: [TA0003]
+tactics: [TA0002, TA0003, TA0004]
 techniques:
   - T1047
   - T1546.003
@@ -75,11 +75,7 @@ options:
   - name: Cleanup
     description: Remove the persistence mechanism and clean up artifacts.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: WebFile
     description: URL location of the launcher.bat file to fetch over the network.
     required: true

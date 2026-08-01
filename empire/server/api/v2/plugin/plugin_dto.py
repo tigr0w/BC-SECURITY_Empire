@@ -7,8 +7,8 @@ from empire.server.api.v2.shared_dto import (
     Author,
     CustomOptionSchema,
     coerced_dict,
-    to_value_type,
 )
+from empire.server.core.option_types import to_value_type
 
 if typing.TYPE_CHECKING:
     from empire.server.core.plugin_service import PluginHolder

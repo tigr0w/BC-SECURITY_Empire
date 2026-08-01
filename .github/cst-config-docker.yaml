@@ -35,7 +35,7 @@ commandTests:
   - name: "ps-empire version"
     command: "./ps-empire"
     args: ["-f", "server", "--version"]
-    expectedOutput: ["6.* BC Security Fork"]
+    expectedOutput: ["7.* BC Security Fork"]
   - name: "go which"
     command: "which"
     args: ["go"]
@@ -63,7 +63,7 @@ fileExistenceTests:
     path: '/root/.local/share/empire/empire-compiler/'
     shouldExist: true
   - name: 'plugin-registries'
-    path: '/root/.local/share/empire/plugin-registries/BC-SECURITY/main/registry.yaml'
+    path: '/root/.local/share/empire/plugin-registries/BC-SECURITY/7.x/registry.yaml'
     shouldExist: true
   - name: 'openssl mingw prefix'
     path: '/opt/openssl-mingw64/'

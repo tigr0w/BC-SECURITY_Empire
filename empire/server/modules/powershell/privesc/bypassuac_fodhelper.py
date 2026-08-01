@@ -19,7 +19,7 @@ class Module:
         command_param = params.get("Command", "")
         listener_name = params.get("Listener", "")
         language = params.get("Language", "powershell")
-        obf = params.get("Obfuscate", "False").lower() == "true"
+        obf = params.get("Obfuscate", False)
         obf_cmd = params.get("ObfuscateCommand", "")
         bypasses = params.get("Bypasses", "")
         user_agent = params.get("UserAgent", "default")

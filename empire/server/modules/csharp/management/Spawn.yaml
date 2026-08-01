@@ -65,11 +65,7 @@ options:
   - name: Obfuscate
     description: Obfuscate the launcher powershell code (PowerShell only).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
     depends_on:
       - name: Language
         values: ['powershell']

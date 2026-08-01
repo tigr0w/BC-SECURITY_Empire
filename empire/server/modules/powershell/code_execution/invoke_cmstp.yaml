@@ -13,7 +13,7 @@ description: |
   cmstp.exe processes the profile with the /au flag.
 software: ''
 tactics: [TA0005, TA0004]
-techniques: [T1218.003]
+techniques: [T1218.003, T1548.002]
 background: true
 output_extension:
 needs_admin: false

@@ -19,7 +19,7 @@ description: |
   settings.json as settings.json.empire.bak for manual recovery.
 software: ''
 tactics: [TA0003, TA0004]
-techniques: [T1547.015]
+techniques: [T1546]
 background: false
 output_extension:
 needs_admin: false
@@ -54,11 +54,7 @@ options:
     description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
       for obfuscation types.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
     depends_on:
       - name: Language
         values: ['powershell']

@@ -102,11 +102,19 @@ class GoCompiler:
 
         return rendered_content
 
-    def compile_stager(self, template_vars, task_name, goos="windows", goarch="amd64"):
-        # Persistent Go build cache lives under DATA_DIR/.cache/go-build by
-        # default (see DirectoriesConfig.cache). Anchored to a configured user-data
-        # path rather than the repo or Path.home() so it survives across server
-        # restarts and is the same path regardless of which user runs the server.
+    def compile_stager(
+        self,
+        template_vars,
+        task_name,
+        goos="windows",
+        goarch="amd64",
+        build_tags=None,
+    ):
+        # Persistent Go build cache lives under the configured cache dir
+        # (DirectoriesConfig.cache, default ~/.cache/empire/go-build on Linux via
+        # platformdirs). Anchored to a configured path rather than the repo or
+        # Path.home() so it survives across server restarts and is the same path
+        # regardless of which user runs the server.
         go_cache = str(empire_config.directories.cache / "go-build")
         Path(go_cache).mkdir(parents=True, exist_ok=True)
         env = {
@@ -130,12 +138,17 @@ class GoCompiler:
             )
 
             build_output = build_dir / random_task_name
+
+            build_args = [self._go_binary, "build"]
+            if build_tags:
+                build_args.extend(["-tags", ",".join(build_tags)])
+
             # Merge operator env first so explicit function args (GOOS/GOARCH) win.
             # Reversed order would let `GOOS=linux` in the operator's shell
             # silently override a function-arg `goos="windows"` cross-compile.
             try:
                 result = subprocess.run(
-                    [self._go_binary, "build", "-o", str(build_output), "."],
+                    [*build_args, "-o", str(build_output), "."],
                     env={**os.environ, **env},
                     capture_output=True,
                     text=True,

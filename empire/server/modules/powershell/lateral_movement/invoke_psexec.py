@@ -26,7 +26,7 @@ class Module:
         proxy_creds = params["ProxyCreds"]
         command = params["Command"]
         result_file = params["ResultFile"]
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
+        launcher_obfuscate = params["Obfuscate"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         script_end = ""
@@ -47,14 +47,7 @@ class Module:
             # generate the PowerShell one-liner with all of the proper options set
 
             if agent_language in ["csharp", "ironpython"]:
-                if main_menu.listenersv2.get_active_listener_by_name(
-                    listener_name
-                ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
-                    raise ModuleValidationException(
-                        "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
-                    )
-
-                launcher = main_menu.stagergenv2.generate_exe_oneliner(
+                launcher = main_menu.stagergenv2.generate_exe_oneliner_routed(
                     language=agent_language,
                     obfuscate=launcher_obfuscate,
                     obfuscation_command=launcher_obfuscate_command,
@@ -62,14 +55,7 @@ class Module:
                     listener_name=listener_name,
                 )
             elif agent_language == "go":
-                if main_menu.listenersv2.get_active_listener_by_name(
-                    listener_name
-                ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
-                    raise ModuleValidationException(
-                        "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
-                    )
-
-                launcher = main_menu.stagergenv2.generate_go_exe_oneliner(
+                launcher = main_menu.stagergenv2.generate_go_exe_oneliner_routed(
                     language=agent_language,
                     listener_name=listener_name,
                     encode=True,

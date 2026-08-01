@@ -4,6 +4,8 @@ from empire.server.common.helpers import (
     strip_powershell_comments,
     strip_python_comments,
 )
+from empire.server.core.db.base import SessionLocal
+from empire.server.core.exceptions import StagerGenerationException
 from empire.server.utils.data_util import ps_convert_to_oneliner
 
 
@@ -47,11 +49,6 @@ class Stager:
                 "Required": True,
                 "Value": "",
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,
@@ -75,9 +72,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -97,9 +92,7 @@ class Stager:
             "Staged": {
                 "Description": "Allow agent to be staged",
                 "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": True,
             },
         }
 
@@ -112,19 +105,27 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         listener_name = self.options["Listener"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         dot_net_version = self.options["DotNetVersion"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
 
-        obfuscate_script = False
-        if obfuscate.lower() == "true":
-            obfuscate_script = True
+        obfuscate_script = obfuscate
 
-        staged = self.options["Staged"]["Value"].lower() == "true"
+        # The per-stager Obfuscate option is gated to powershell via DependsOn,
+        # so for csharp/ironpython fall back to the global ObfuscationConfig
+        # (keyed on "csharp", same as the listener stage-serving path).
+        if language.lower() in ("csharp", "ironpython"):
+            with SessionLocal.begin() as db:
+                obfuscation_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
+                    db, "csharp"
+                )
+                obfuscate_script = bool(
+                    obfuscation_config and obfuscation_config.enabled
+                )
+
+        staged = self.options["Staged"]["Value"]
 
         if not staged and language != "csharp":
             launcher = self.mainMenu.stagergenv2.generate_stageless(self.options)
@@ -143,14 +144,11 @@ class Stager:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries=stager_retries,
                 bypasses=bypasses,
             )
 
-        if launcher == "":
-            return "[!] Error in launcher generation."
         if not launcher or launcher.lower() == "failed":
-            return "[!] Error in launcher command generation."
+            raise StagerGenerationException("Error in launcher command generation.")
 
         if language.lower() == "powershell":
             directory = self.mainMenu.stagergenv2.generate_powershell_exe(
@@ -167,4 +165,4 @@ class Stager:
             )
             return Path(directory).read_bytes()
 
-        return "[!] Invalid launcher language."
+        raise StagerGenerationException("Invalid launcher language.")

@@ -21,7 +21,7 @@ description: |
   technical attacks. The module supports custom error messages, titles, and icon types
   to match different pretext scenarios.
 software:
-tactics: [TA0006]
+tactics: [TA0006, TA0009]
 techniques: [T1056.002]
 background: false
 output_extension:

@@ -4,6 +4,7 @@ from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
+from empire.server.utils.option_util import coerce_legacy_value
 
 
 class Module:
@@ -67,8 +68,8 @@ Invoke-ResolverBackdoor"""
 
         # set the listener value for the launcher
         stager = main_menu.stagertemplatesv2.new_instance("multi_launcher")
-        stager.options["Listener"] = listener_name
-        stager.options["Base64"] = "False"
+        stager.options["Listener"]["Value"] = listener_name
+        stager.options["Base64"]["Value"] = False
 
         # and generate the code
         stager_code = stager.generate()
@@ -77,7 +78,8 @@ Invoke-ResolverBackdoor"""
             raise ModuleValidationException("Error creating stager")
         script = script.replace("REPLACE_LAUNCHER", stager_code)
 
-        for option, values in params.items():
+        for option, raw_value in params.items():
+            values = coerce_legacy_value(raw_value)
             if (
                 (
                     option.lower() != "agent"

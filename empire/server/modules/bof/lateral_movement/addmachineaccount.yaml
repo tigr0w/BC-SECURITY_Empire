@@ -1,0 +1,47 @@
+name: addmachineaccount
+authors:
+  - name: Cornelis de Plaa
+    handle: '@Cneelis'
+    link: https://github.com/outflanknl/C2-Tool-Collection
+  - name: Stan Hegt
+    handle: '@StanHacked'
+    link: https://github.com/outflanknl/C2-Tool-Collection
+description: |
+  Abuses the default Active Directory ms-DS-MachineAccountQuota setting (10 by default) to add a rogue computer account to the domain using ADSI from the current user context, requiring no elevated privileges. Supply a Computername and an optional Password; when no password is given the BOF generates a random one and prints the resulting credentials. The newly created machine account can then be leveraged to stage follow-on attacks such as Resource-Based Constrained Delegation (RBCD) or Shadow Credentials chains.
+software: ''
+tactics: [TA0008]
+techniques: [T1136.002]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: false
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/outflanknl/C2-Tool-Collection
+options:
+  - name: Architecture
+    description: Architecture of the beacon_funcs.o to generate with (x64 or x86).
+    required: true
+    value: x64
+    strict: true
+    suggested_values:
+      - x64
+      - x86
+  - name: Computername
+    description: Name of the machine account to create in Active Directory. Does
+      not need to end with a $ character.
+    required: true
+    value: 'EVILPC'
+  - name: Password
+    description: Password for the new machine account. Leave blank to have the BOF
+      generate a random password and print it on success.
+    required: false
+    value: 'password'
+bof:
+  x86: bof/lateral_movement/addmachineaccount/addmachineaccount.x86.o
+  x64: bof/lateral_movement/addmachineaccount/addmachineaccount.x64.o
+  entry_point: 'go'
+  format_string: 'ZZ'
+script_path: ''
+script_end: ''

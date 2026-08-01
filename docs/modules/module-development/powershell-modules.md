@@ -48,7 +48,7 @@ advanced:
   custom_generate: true
 ```
 
-The python file should share the same name as the yaml file. For example `Invoke-Assembly.yaml` and `Invoke-Assembly.py` The generate function is a static function that gets passed 5 parameters:
+The python file should share the same name as the yaml file. For example `invoke_shellcode.yaml` and `invoke_shellcode.py` The generate function is a static function that gets passed 5 parameters:
 
 * main\_menu: The main\_menu object that gives the module access to listeners, stagers, and just about everything else it might need
 * module: The module, loaded from the yaml. In case we need to check properties like `opsec_safe`, `background`, etc.
@@ -75,8 +75,8 @@ class Module(object):
 Examples of modules that use this custom generate function:
 
 * [bypassuac\_eventvwr](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/privesc/bypassuac_eventvwr.py)
-* [invoke\_assembly](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/code_execution/invoke_assembly.py)
-* [seatbelt](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/situational_awareness/host/seatbelt.py)
+* [invoke\_shellcode](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/code_execution/invoke_shellcode.py)
+* [screenshot](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/situational_awareness/host/screenshot.py)
 
 #### Error Handling
 
@@ -89,11 +89,9 @@ raise ModuleValidationException("Error Message")
 raise ModuleExecutionException("Error Message")
 ```
 
-**Deprecated**
-
-Previously, it was recommended that the generate function return a tuple of the script and the error. `handle_error_message` was provided as a helper function to handle this tuple.
-
-This is no longer recommended, but is still supported. Please migrate away from the tuple return type to raising exceptions. The tuple return type will be removed in a future major release.
+{% hint style="warning" %}
+In Empire 7.0, the deprecated `handle_error_message` helper and tuple return type for module `generate()` functions were removed. Modules must raise `ModuleValidationException` or `ModuleExecutionException` for error handling.
+{% endhint %}
 
 #### Functions
 
@@ -136,7 +134,7 @@ def generate(
     )
 
     if err:
-        return handle_error_message(err)
+        raise ModuleValidationException(err)
 
     # do stuff
     ...
@@ -144,7 +142,7 @@ def generate(
 
 `@auto_finalize` is a decorator that will automatically call `finalize_module` on the returned script from the decorated function.
 
-To use this decorator, the function must not utilize the deprecated tuple return type or the `handle_error_message` function. First migrate the function to raise exceptions before using this decorator.
+To use this decorator, the function must raise exceptions for error handling rather than returning error values.
 
 ```python
 @staticmethod

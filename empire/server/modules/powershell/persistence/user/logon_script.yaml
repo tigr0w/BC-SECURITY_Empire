@@ -11,7 +11,7 @@ description: |
   as a batch script, then registers it via the registry key. This
   is a well-known persistence mechanism that survives reboots.
 software: ''
-tactics: [TA0003]
+tactics: [TA0003, TA0004]
 techniques: [T1037.001]
 background: true
 output_extension:
@@ -43,11 +43,7 @@ options:
   - name: Obfuscate
     description: Obfuscate the launcher powershell code.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
     depends_on:
       - name: Language
         values: ['powershell']
@@ -81,10 +77,6 @@ options:
   - name: Cleanup
     description: Remove the persistence mechanism and clean up artifacts.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 advanced:
   custom_generate: true

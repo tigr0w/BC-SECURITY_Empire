@@ -23,7 +23,7 @@ description: |
   domain policy updates. The skeleton key remains active until the domain
   controller is restarted or the LSASS process is recycled.
 software: S0194
-tactics: [TA0004, TA0006]
+tactics: [TA0003, TA0006, TA0112]
 techniques: [T1556.001]
 background: true
 output_extension:

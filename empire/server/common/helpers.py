@@ -17,8 +17,6 @@ Includes:
     get_dependent_functions() - extracts function dependenies from a PowerShell script
     find_all_dependent_functions() - takes a PowerShell script and a set of functions, and returns all dependencies
     generate_dynamic_powershell_script() - takes a PowerShell script and set of functions and returns a minimized script
-    parse_credentials() - enumerate module output, looking for any parseable credential sections
-    parse_mimikatz() - parses the output of Invoke-Mimikatz
     get_config() - pulls config information from the database output of normal menu execution
     get_listener_options() - gets listener options outside of normal menu execution
     get_datetime() - returns the current date time in a standard format
@@ -40,7 +38,6 @@ import binascii
 import functools
 import ipaddress
 import logging
-import random
 import re
 import secrets
 import socket
@@ -60,7 +57,7 @@ log = logging.getLogger(__name__)
 #
 ################################################################
 
-globentropy = random.randint(1, datetime.today().day)  # noqa: S311 - obfuscation seed, not security-sensitive
+globentropy = secrets.randbelow(datetime.today().day) + 1
 globDebug = False
 
 
@@ -343,19 +340,28 @@ def find_all_dependent_functions(
 
 _FUNCTION_PATTERN = re.compile(r"\n(?:function|filter).*?{.*?\n}\n", re.DOTALL)
 _BLOCK_COMMENT_PATTERN = re.compile("<#.*?#>", re.DOTALL)
+# PowerView keeps backward-compatible names as ``Set-Alias`` lines
+# (e.g. ``Set-Alias Get-Proxy Get-WMIRegProxy``). These aren't function
+# definitions, so the requested-name resolver below maps them onto the
+# real target before the dependency walk.
+_ALIAS_PATTERN = re.compile(r"^Set-Alias\s+(\S+)\s+(\S+)", re.MULTILINE)
 
 
 @functools.lru_cache(maxsize=128)
 def _build_function_map(
     script: str,
-) -> tuple[str, dict[str, str], "re.Pattern[str]"]:
+) -> tuple[str, dict[str, str], "re.Pattern[str]", dict[str, str], dict[str, str]]:
     """Strip block comments and parse the script into a name->code map.
 
-    Returns ``(cleaned_script, name_to_code, deps_pattern)`` where
-    ``deps_pattern`` is a single precompiled regex of all known
-    function names — used by ``get_dependent_functions`` to avoid the
-    N-per-call recompile/research that dominated profiling (each call
-    on PowerView ran ~600 regex searches per dep-walk step).
+    Returns ``(cleaned_script, name_to_code, deps_pattern, canonical,
+    alias_map)`` where ``deps_pattern`` is a single precompiled regex of
+    all known function names — used by ``get_dependent_functions`` to
+    avoid the N-per-call recompile/research that dominated profiling
+    (each call on PowerView ran ~600 regex searches per dep-walk step);
+    ``canonical`` maps each lower-cased definition name onto its real
+    key (for case-insensitive resolution); and ``alias_map`` maps each
+    lower-cased ``Set-Alias`` name onto the real function it points at
+    (e.g. ``get-proxy`` -> ``Get-WMIRegProxy``).
 
     Cached by ``functools.lru_cache(maxsize=128)`` keyed on the script
     string itself — most callers (notably the PowerView modules) pass
@@ -368,7 +374,12 @@ def _build_function_map(
     cleaned = _BLOCK_COMMENT_PATTERN.sub("", script)
     functions = {}
     for func_match in _FUNCTION_PATTERN.findall(cleaned):
-        name = func_match[:40].split()[1]
+        # ``split(None, 2)`` -> ['function', name, rest]; capped at two
+        # splits so it stops at the name boundary without scanning the
+        # whole body. The old ``[:40]`` slice truncated names longer
+        # than 30 chars (the leading "\nfunction " eats 10), storing
+        # them under a clipped key that could never be resolved.
+        name = func_match.split(None, 2)[1]
         functions[name] = func_match
 
     if functions:
@@ -382,7 +393,49 @@ def _build_function_map(
     else:
         deps_pattern = re.compile(r"$^")  # never matches
 
-    return cleaned, functions, deps_pattern
+    # ``canonical`` maps every lower-cased definition name onto its real
+    # key — used both to validate alias targets and to resolve a
+    # case-mismatched requested name (see ``_resolve_function_name``).
+    # Map backward-compat alias names onto their real target function;
+    # only keep aliases whose target is an actual definition so the
+    # dependency walk always lands on a real name_to_code key.
+    canonical = {name.lower(): name for name in functions}
+    alias_map = {}
+    for alias, target in _ALIAS_PATTERN.findall(cleaned):
+        real = canonical.get(target.lower())
+        if real:
+            alias_map[alias.lower()] = real
+
+    return cleaned, functions, deps_pattern, canonical, alias_map
+
+
+def _resolve_function_name(
+    name: str,
+    functions: dict[str, str],
+    canonical: dict[str, str],
+    alias_map: dict[str, str],
+) -> tuple[str | None, bool]:
+    """Map a requested function name onto a real definition key.
+
+    Modules name the function to extract via the first token of their
+    ``script_end``. That token may not match a ``function`` definition
+    verbatim: it can differ only in case (the dep-walk dict is
+    case-sensitive) or be a PowerView ``Set-Alias`` backward-compat name.
+
+    Returns ``(real_key, via_alias)`` — ``real_key`` is the resolved
+    ``name_to_code`` key (or ``None`` if nothing matches), and
+    ``via_alias`` is True only when resolution went through ``alias_map``
+    (a real function/case match takes precedence). The caller uses
+    ``via_alias`` to decide whether to preserve the ``Set-Alias`` line.
+    """
+    if name in functions:
+        return name, False
+    lower = name.lower()
+    real = canonical.get(lower)
+    if real:
+        return real, False
+    alias_target = alias_map.get(lower)
+    return alias_target, alias_target is not None
 
 
 @functools.lru_cache(maxsize=512)
@@ -403,15 +456,31 @@ def _generate_dynamic_powershell_script_cached(
         "struct",
     ]
 
-    script, functions, deps_pattern = _build_function_map(script)
+    script, functions, deps_pattern, canonical, alias_map = _build_function_map(script)
 
     # recursively enumerate all possible function dependencies and
     #   start building the new result script
     function_dependencies = []
+    alias_lines = []
 
     for functionName in function_names:
+        resolved, via_alias = _resolve_function_name(
+            functionName, functions, canonical, alias_map
+        )
+        if resolved is None:
+            log.warning(
+                "Requested function %s was not found in the script; skipping.",
+                functionName,
+            )
+            continue
+
+        if via_alias:
+            # Preserve the alias so a script_end that invokes the
+            # backward-compat name still resolves at agent runtime.
+            alias_lines.append(f"Set-Alias {functionName} {resolved}")
+
         function_dependencies += find_all_dependent_functions(
-            functions, functionName, deps_pattern
+            functions, resolved, deps_pattern
         )
         function_dependencies = unique(function_dependencies)
 
@@ -425,6 +494,11 @@ def _generate_dynamic_powershell_script_cached(
     # if any psreflect methods are needed, add in the overhead at the end
     if any(el in set(psreflect_functions) for el in function_dependencies):
         new_script += get_powerview_psreflect_overhead(script)
+
+    # Emit any preserved aliases after their target definitions so the
+    # alias resolves to an already-defined function at runtime.
+    for alias_line in alias_lines:
+        new_script += alias_line + "\n"
 
     return strip_powershell_comments(new_script) + "\n"
 
@@ -455,190 +529,6 @@ def generate_dynamic_powershell_script(script, function_names):
     if not isinstance(function_names, list):
         function_names = [function_names]
     return _generate_dynamic_powershell_script_cached(script, tuple(function_names))
-
-
-###############################################################
-#
-# Parsers
-#
-###############################################################
-
-
-def parse_credentials(data):
-    """
-    Enumerate module output, looking for any parseable credential sections.
-    """
-    if isinstance(data, str):
-        data = data.encode("UTF-8")
-    parts = data.split(b"\n")
-
-    # tag for Invoke-Mimikatz output
-    if parts[0].startswith(b"Hostname:"):
-        return parse_mimikatz(data)
-
-    # powershell/collection/prompt output
-    if parts[0].startswith(b"[+] Prompted credentials:"):
-        parts = parts[0].split(b"->")
-        if len(parts) == 2:  # noqa: PLR2004
-            username = parts[1].split(b":", 1)[0].strip()
-            password = parts[1].split(b":", 1)[1].strip()
-
-            if "\\" in username:
-                domain = username.split("\\")[0].strip()
-                username = username.split("\\")[1].strip()
-            else:
-                domain = ""
-
-            return [("plaintext", domain, username, password, "", "")]
-
-        log.error("Error in parsing prompted credential output.")
-        return None
-
-    # python/collection/prompt (Mac OS)
-    if b"text returned:" in parts[0]:
-        parts2 = parts[0].split(b"text returned:")
-        if len(parts2) >= 2:  # noqa: PLR2004
-            password = parts2[-1]
-            return [("plaintext", "", "", password, "", "")]
-        return None
-
-    return None
-
-
-def parse_mimikatz(data):  # noqa: PLR0912 PLR0915
-    """
-    Parse the output from Invoke-Mimikatz to return credential sets.
-    """
-
-    # cred format:
-    #   credType, domain, username, password, hostname, sid
-    creds = []
-
-    # regexes for "sekurlsa::logonpasswords" Mimikatz output
-    regexes = [
-        "(?s)(?<=msv :).*?(?=tspkg :)",
-        "(?s)(?<=tspkg :).*?(?=wdigest :)",
-        "(?s)(?<=wdigest :).*?(?=kerberos :)",
-        "(?s)(?<=kerberos :).*?(?=ssp :)",
-        "(?s)(?<=ssp :).*?(?=credman :)",
-        "(?s)(?<=credman :).*?(?=Authentication Id :)",
-        "(?s)(?<=credman :).*?(?=mimikatz)",
-    ]
-
-    hostDomain = ""
-    domainSid = ""
-    hostName = ""
-    if isinstance(data, str):
-        data = data.encode("UTF-8")
-    lines = data.split(b"\n")
-    for line in lines[0:2]:
-        if line.startswith(b"Hostname:"):
-            try:
-                domain = line.split(b":")[1].strip()
-                temp = domain.split(b"/")[0].strip()
-                domainSid = domain.split(b"/")[1].strip()
-
-                hostName = temp.split(b".")[0]
-                hostDomain = b".".join(temp.split(".")[1:])
-            except Exception:  # noqa: S110 - malformed Mimikatz line; skip and continue parsing
-                pass
-
-    for regex in regexes:
-        p = re.compile(regex)
-        for match in p.findall(data.decode("UTF-8")):
-            lines2 = match.split("\n")
-            username, domain, password = "", "", ""
-
-            for line in lines2:
-                try:
-                    if "Username" in line:
-                        username = line.split(":", 1)[1].strip()
-                    elif "Domain" in line:
-                        domain = line.split(":", 1)[1].strip()
-                    elif "NTLM" in line or "Password" in line:
-                        password = line.split(":", 1)[1].strip()
-                except Exception:  # noqa: S110 - malformed Mimikatz line; skip and continue parsing
-                    pass
-
-            if password not in ("", "(null)"):
-                sid = ""
-
-                # substitute the FQDN in if it matches
-                if hostDomain.startswith(domain.lower()):
-                    domain = hostDomain
-                    sid = domainSid
-
-                credType = "hash" if validate_ntlm(password) else "plaintext"
-
-                # ignore machine account plaintexts
-                if not (credType == "plaintext" and username.endswith("$")):
-                    creds.append((credType, domain, username, password, hostName, sid))
-
-    if not creds and len(lines) >= 13:  # noqa: PLR2004
-        # check if we have lsadump output to check for krbtgt
-        #   happens on domain controller hashdumps
-        for x in range(8, 13):
-            if lines[x].startswith(b"Domain :"):
-                domain, sid, krbtgtHash = b"", b"", b""
-
-                try:
-                    domainParts = lines[x].split(b":")[1]
-                    domain = domainParts.split(b"/")[0].strip()
-                    sid = domainParts.split(b"/")[1].strip()
-
-                    # substitute the FQDN in if it matches
-                    if hostDomain.startswith(domain.decode("UTF-8").lower()):
-                        domain = hostDomain
-                        sid = domainSid
-
-                    for x in range(0, len(lines)):  # noqa: PLW2901
-                        if lines[x].startswith(b"User : krbtgt"):
-                            krbtgtHash = lines[x + 2].split(b":")[1].strip()
-                            break
-
-                    if krbtgtHash != b"":
-                        creds.append(
-                            (
-                                "hash",
-                                domain.decode("UTF-8"),
-                                "krbtgt",
-                                krbtgtHash.decode("UTF-8"),
-                                hostName.decode("UTF-8"),
-                                sid.decode("UTF-8"),
-                            )
-                        )
-                except Exception:  # noqa: S110 - malformed Mimikatz line; skip and continue parsing
-                    pass
-
-    # check if we get lsadump::dcsync output
-    if not creds and b"** SAM ACCOUNT **" in lines:
-        domain, user, userHash, dcName, sid = "", "", "", "", ""
-        for line in lines:
-            if line.strip().endswith(b"will be the domain"):
-                domain = line.split(b"'")[1]
-            elif line.strip().endswith(b"will be the DC server"):
-                dcName = line.split(b"'")[1].split(b".")[0]
-            elif line.strip().startswith(b"SAM Username"):
-                user = line.split(b":")[1].strip()
-            elif line.strip().startswith(b"Object Security ID"):
-                parts = line.split(b":")[1].strip().split(b"-")
-                sid = b"-".join(parts[0:-1])
-            elif line.strip().startswith(b"Hash NTLM:"):
-                userHash = line.split(b":")[1].strip()
-
-        if domain != "" and userHash != "":
-            creds.append(
-                (
-                    "hash",
-                    domain.decode("UTF-8"),
-                    user.decode("UTF-8"),
-                    userHash.decode("UTF-8"),
-                    dcName.decode("UTF-8"),
-                    sid.decode("UTF-8"),
-                )
-            )
-
-    return uniquify_tuples(creds)
 
 
 ###############################################################

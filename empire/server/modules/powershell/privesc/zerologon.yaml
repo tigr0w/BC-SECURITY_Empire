@@ -35,10 +35,6 @@ options:
     value: ''
   - name: Reset
     description: Reset target computers password to the default NTLM hash
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 script_path: privesc/Invoke-ZeroLogon.ps1
 script_end: Invoke-ZeroLogon {{ PARAMS }}

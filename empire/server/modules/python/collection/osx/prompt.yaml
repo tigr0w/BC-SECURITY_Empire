@@ -40,18 +40,10 @@ options:
   - name: ListApps
     description: List applications suitable for launching.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: SandboxMode
     description: Launch a sandbox safe prompt
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 advanced:
   custom_generate: true

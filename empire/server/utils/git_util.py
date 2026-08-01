@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 from empire.server.common.helpers import random_string
-from empire.server.utils.file_util import run_as_user
+from empire.server.utils.file_util import ensure_user_ownership, run_as_user
 
 
 class GitOperationException(Exception):
@@ -48,6 +48,7 @@ def clone_git_repo(
 
         if directory:
             shutil.copytree(tmp_dir, directory)
+            ensure_user_ownership(directory)
             return directory
 
         # Caller owns tmp_dir; skip the cleanup in finally.

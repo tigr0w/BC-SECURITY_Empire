@@ -19,7 +19,7 @@ description: Performs comprehensive network range discovery by extracting hostna
   movement opportunities within specific subnet ranges.
 software: S0194
 tactics: [TA0007]
-techniques: [T1069.002, T1016]
+techniques: [T1016]
 background: true
 output_extension:
 needs_admin: false
@@ -36,11 +36,7 @@ options:
   - name: IPs
     description: List the resolved individual IPs
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: Domain
     description: The domain to use for the query, defaults to the current domain.
     required: false

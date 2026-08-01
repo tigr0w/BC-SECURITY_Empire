@@ -21,7 +21,7 @@ description: |
   tools and payloads can be deployed to target systems as needed
   during security assessments and penetration testing operations.
 software: ''
-tactics: [TA0010]
+tactics: [TA0011]
 techniques:
   - T1105
 background: true

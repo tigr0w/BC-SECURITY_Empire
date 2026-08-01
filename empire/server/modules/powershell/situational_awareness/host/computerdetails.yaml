@@ -12,7 +12,7 @@ description: |
   OS version, domain membership, network interfaces, running services, and user accounts.
 software: ''
 tactics: [TA0007]
-techniques: [T1082]
+techniques: [T1082, T1654]
 background: true
 output_extension:
 needs_admin: true
@@ -33,43 +33,23 @@ options:
   - name: '4648'
     description: Only return 4648 logon information (RDP to another machine).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: '4624'
     description: Only return 4624 logon information (logons to this machine).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: AppLocker
     description: Only return AppLocker logs.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: PSScripts
     description: Only return PowerShell scripts run from operational log.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: SavedRDP
     description: Only return saved RDP connections.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
       "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").

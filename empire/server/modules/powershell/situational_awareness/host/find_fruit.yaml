@@ -58,19 +58,11 @@ options:
   - name: UseSSL
     description: Force SSL useage.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: ShowAll
     description: Show all results (default is to only show 200s).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: Threads
     description: The maximum concurrent threads to execute.
     required: false
@@ -78,11 +70,7 @@ options:
   - name: FoundOnly
     description: Show only found sites
     required: false
-    value: 'True'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: true
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
       "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").

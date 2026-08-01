@@ -1,14 +1,10 @@
-import logging
-
 try:
     import donut
 except ModuleNotFoundError:
     donut = None
 
+from empire.server.core.exceptions import StagerGenerationException
 from empire.server.utils.donut_util import donut_create
-from empire.server.utils.module_util import handle_error_message
-
-log = logging.getLogger(__name__)
 
 
 class Stager:
@@ -58,11 +54,6 @@ class Stager:
                 "SuggestedValues": ["x64", "x86", "both"],
                 "Strict": True,
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,
@@ -86,9 +77,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -117,7 +106,6 @@ class Stager:
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
         listener_name = self.options["Listener"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         dot_net_version = self.options["DotNetVersion"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
@@ -125,12 +113,9 @@ class Stager:
         arch = self.options["Architecture"]["Value"]
 
         if not self.mainMenu.listenersv2.get_active_listener_by_name(listener_name):
-            # not a valid listener, return nothing for the script
-            return "[!] Invalid listener: " + listener_name
+            raise StagerGenerationException(f"Invalid listener: {listener_name}")
 
-        obfuscate_script = False
-        if obfuscate.lower() == "true":
-            obfuscate_script = True
+        obfuscate_script = obfuscate
 
         # generate the PowerShell one-liner with all of the proper options set
         launcher = self.mainMenu.stagergenv2.generate_launcher(
@@ -142,20 +127,17 @@ class Stager:
             user_agent=user_agent,
             proxy=proxy,
             proxy_creds=proxy_creds,
-            stager_retries=stager_retries,
             bypasses=bypasses,
         )
-        if launcher == "":
-            return "[!] Error in launcher generation."
         if not launcher or launcher.lower() == "failed":
-            return "[!] Error in launcher command generation."
+            raise StagerGenerationException("Error in launcher command generation.")
 
         if language.lower() == "powershell":
             shellcode, err = self.mainMenu.stagergenv2.generate_powershell_shellcode(
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
             if err:
-                return handle_error_message(err)
+                raise StagerGenerationException(err)
 
             return shellcode
 
@@ -168,7 +150,7 @@ class Stager:
                 arch_type = 3
 
             if not donut:
-                return handle_error_message(
+                raise StagerGenerationException(
                     "module donut-shellcode not installed. It is only supported on x86."
                 )
 
@@ -179,8 +161,8 @@ class Stager:
                 launcher, arch=arch, dot_net_version=dot_net_version
             )
             if err:
-                return handle_error_message(err)
+                raise StagerGenerationException(err)
 
             return shellcode
 
-        return "[!] Invalid launcher language."
+        raise StagerGenerationException("Invalid launcher language.")

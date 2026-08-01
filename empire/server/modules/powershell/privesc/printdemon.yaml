@@ -15,8 +15,8 @@ description: |
   restart. The technique leverages Windows print spooler architecture to achieve
   both privilege escalation and persistent access to the target system.
 software: ''
-tactics: [TA0004]
-techniques: [T1068]
+tactics: [TA0003, TA0004]
+techniques: [T1068, T1547.001, T1547.012]
 background: false
 output_extension: ''
 needs_admin: false

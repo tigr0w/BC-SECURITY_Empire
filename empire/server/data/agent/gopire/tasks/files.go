@@ -13,18 +13,35 @@ import (
 	"strings"
 )
 
+// FileUpload writes uploaded file data to disk.
+// Supports chunked format "index|total|path|data" or legacy format "path|data".
 func FileUpload(data string) (string, error) {
-	parts := strings.Split(data, "|")
-	if len(parts) != 2 {
+	parts := strings.SplitN(data, "|", 4)
+
+	var chunkIndex, totalChunks int
+	var filePath, base64Part string
+
+	if len(parts) == 4 && isDigit(parts[0]) {
+		if _, err := fmt.Sscanf(parts[0], "%d", &chunkIndex); err != nil {
+			return "", fmt.Errorf("invalid chunk index: %v", err)
+		}
+		if _, err := fmt.Sscanf(parts[1], "%d", &totalChunks); err != nil {
+			return "", fmt.Errorf("invalid total chunks: %v", err)
+		}
+		filePath = parts[2]
+		base64Part = parts[3]
+	} else if len(parts) >= 2 {
+		chunkIndex = 0
+		totalChunks = 1
+		filePath = parts[0]
+		base64Part = parts[1]
+	} else {
 		return "", fmt.Errorf("invalid data format for file upload")
 	}
 
-	filePath := parts[0]
-	base64Part := parts[1]
-
 	dir := filepath.Dir(filePath)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err := os.MkdirAll(dir, 0755) // Create the directory if it doesn't exist
+		err := os.MkdirAll(dir, 0755)
 		if err != nil {
 			return "", fmt.Errorf("failed to create directory: %v", err)
 		}
@@ -40,7 +57,13 @@ func FileUpload(data string) (string, error) {
 		return "", fmt.Errorf("failed to decode base64 content: %v", err)
 	}
 
-	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	var flags int
+	if chunkIndex == 0 {
+		flags = os.O_CREATE | os.O_WRONLY | os.O_TRUNC
+	} else {
+		flags = os.O_APPEND | os.O_CREATE | os.O_WRONLY
+	}
+	file, err := os.OpenFile(filePath, flags, 0644)
 	if err != nil {
 		return "", fmt.Errorf("failed to open file: %v", err)
 	}
@@ -50,7 +73,7 @@ func FileUpload(data string) (string, error) {
 		return "", fmt.Errorf("failed to write data to file: %v", err)
 	}
 
-	return fmt.Sprintf("Upload of %s successful", filePath), nil
+	return fmt.Sprintf("[*] Upload of %s successful (chunk %d/%d)", filePath, chunkIndex+1, totalChunks), nil
 }
 
 func GetFileList(filePath string) ([]string, error) {
@@ -139,4 +162,16 @@ func CompressData(data []byte) ([]byte, error) {
 	builtData := append(crcHeader, compressedBuffer.Bytes()...)
 
 	return builtData, nil
+}
+
+func isDigit(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }

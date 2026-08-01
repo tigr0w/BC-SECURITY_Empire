@@ -1,3 +1,5 @@
+import ssl
+
 import pytest
 
 from empire.server.utils.listener_util import (
@@ -66,8 +68,19 @@ class TestEnsureRawBytes:
 
 
 class TestGenerateRandomCipher:
-    def test_contains_known_cipher(self):
+    def test_contains_both_fips_ciphers(self):
+        fips_ciphers = {
+            "ECDHE-RSA-AES256-GCM-SHA384",
+            "ECDHE-RSA-AES128-GCM-SHA256",
+        }
         result = generate_random_cipher()
-        parts = result.split(":")
-        assert len(parts) == 2  # noqa: PLR2004
-        assert parts[1] == "ECDHE-RSA-AES256-SHA"
+        parts = set(result.split(":"))
+        assert parts == fips_ciphers
+
+    def test_order_is_randomized(self):
+        results = {generate_random_cipher() for _ in range(50)}
+        assert len(results) > 1  # order varies
+
+    def test_cipher_usable_by_openssl(self):
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.set_ciphers(generate_random_cipher())

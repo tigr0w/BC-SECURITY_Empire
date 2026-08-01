@@ -66,9 +66,11 @@ def read_bypasses(
     db: CurrentSession,
     bypass_service: BypassServiceDep,
     default: bool | None = None,
+    language: str | None = None,
 ):
     bypasses = [
-        domain_to_dto_bypass(x) for x in bypass_service.get_all(db, default=default)
+        domain_to_dto_bypass(x)
+        for x in bypass_service.get_all(db, default=default, language=language)
     ]
     return {"records": bypasses}
 

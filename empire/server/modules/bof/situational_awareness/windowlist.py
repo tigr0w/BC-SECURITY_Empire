@@ -14,7 +14,7 @@ class Module:
     ):
         params_dict = {
             "Architecture": params["Architecture"],
-            "All": "1" if params.get("all") == "true" else "0",
+            "All": "1" if params.get("All") else "0",
         }
 
         return main_menu.modulesv2.generate_script_bof(

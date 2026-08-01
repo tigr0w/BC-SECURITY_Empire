@@ -1,7 +1,9 @@
 import base64
 import json
 import logging
+import math
 import threading
+import time
 import typing
 from collections import defaultdict
 from datetime import datetime
@@ -21,11 +23,38 @@ from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
+from empire.server.core.hooks_internal import (
+    CSHARP_PROCESSES_MODULE,
+    PYTHON_PROCESSES_MODULE,
+)
+from empire.server.core.tag_service import tag_name_filter
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
+
+_WINDOWS_NATIVE_LANGUAGES: typing.Final = frozenset(
+    {"powershell", "ironpython", "csharp"}
+)
+
+
+def _resolve_processes_module(agent: "models.Agent") -> str | None:
+    """Pick the process-enumeration module for an agent, or None if unsupported.
+
+    Windows agents (PowerShell/IronPython/C#, plus Go on a Windows host) use the
+    C# SharpSploit ProcessList module so every Windows agent type shares one code
+    path. Python agents use the native Python module. Everything else -- notably a
+    Go agent on a non-Windows host -- has no supported module.
+    """
+    language = (agent.language or "").lower()
+    if language in _WINDOWS_NATIVE_LANGUAGES:
+        return CSHARP_PROCESSES_MODULE
+    if language == "go" and "windows" in (agent.os_details or "").lower():
+        return CSHARP_PROCESSES_MODULE
+    if language == "python":
+        return PYTHON_PROCESSES_MODULE
+    return None
 
 
 class AgentTaskService:
@@ -40,6 +69,15 @@ class AgentTaskService:
 
         # { agent_id: [TemporaryTask] }
         self.temporary_tasks = defaultdict(list)
+
+        # In-memory only -- not persisted to DB. Server restart silently abandons
+        # in-progress chunked uploads (partial files remain on agent).
+        # { session_id: { "upload_id": int, "file_location": str, "chunk_size": int,
+        #                  "total_chunks": int, "next_index": int, "dest_path": str,
+        #                  "started_at": float, "user_id": int | None } }
+        self._pending_uploads: dict[str, dict] = {}
+        self._pending_uploads_lock = threading.Lock()
+        self._next_upload_id = 0
 
         self.last_task_lock = threading.Lock()
 
@@ -74,13 +112,7 @@ class AgentTaskService:
             stmt = stmt.where(or_(*user_filters))
 
         if tags:
-            tags_split = [tag.split(":", 1) for tag in tags]
-            stmt = stmt.join(models.AgentTask.tags).where(
-                and_(
-                    models.Tag.name.in_([tag[0] for tag in tags_split]),
-                    models.Tag.value.in_([tag[1] for tag in tags_split]),
-                )
-            )
+            stmt = stmt.where(tag_name_filter(models.AgentTask.tags, tags))
 
         query_options = [
             joinedload(models.AgentTask.user),
@@ -153,12 +185,18 @@ class AgentTaskService:
         db: Session,
         agent: models.Agent,
         command: str,
-        literal: bool = False,
         user: models.User | None = None,
     ):
-        if literal and not command.startswith("shell"):
-            command = f"shell {command}"
         return self.add_task(db, agent, "TASK_SHELL", command, user=user)
+
+    def create_task_chdir(
+        self,
+        db: Session,
+        agent: models.Agent,
+        path: str,
+        user: models.User | None = None,
+    ):
+        return self.add_task(db, agent, "TASK_CHDIR", path, user=user)
 
     def create_task_upload(
         self,
@@ -170,6 +208,216 @@ class AgentTaskService:
     ):
         data = f"{directory}|{file_data}"
         return self.add_task(db, agent, "TASK_UPLOAD", data, user=user)
+
+    def create_task_upload_chunked(  # noqa: PLR0913
+        self,
+        db: Session,
+        agent: models.Agent,
+        file_location: str,
+        file_size: int,
+        path: str,
+        user: models.User | None = None,
+        chunk_size: int = 524288,
+    ):
+        """Create a chunked upload. Sends the first chunk immediately and
+        queues remaining chunks to be dispatched one-at-a-time as the agent
+        acknowledges each successful write."""
+        total_chunks = math.ceil(file_size / chunk_size)
+
+        try:
+            with Path(file_location).open("rb") as f:
+                chunk_0 = f.read(chunk_size)
+        except OSError as e:
+            log.exception(
+                "Failed to read first chunk from %s for agent %s",
+                file_location,
+                agent.session_id,
+            )
+            return None, f"Failed to read upload file: {e}"
+        chunk_0_b64 = base64.b64encode(chunk_0).decode("utf-8")
+        data = f"0|{total_chunks}|{path}|{chunk_0_b64}"
+        result = self.add_task(db, agent, "TASK_UPLOAD", data, user=user)
+
+        if result[1] is not None:
+            return result
+
+        if total_chunks > 1:
+            with self._pending_uploads_lock:
+                if agent.session_id in self._pending_uploads:
+                    existing = self._pending_uploads[agent.session_id]
+                    log.warning(
+                        "Overwriting existing chunked upload for agent %s (%d chunks remaining)",
+                        agent.session_id,
+                        existing["total_chunks"] - existing["next_index"],
+                    )
+                self._next_upload_id += 1
+                self._pending_uploads[agent.session_id] = {
+                    "upload_id": self._next_upload_id,
+                    "file_location": file_location,
+                    "chunk_size": chunk_size,
+                    "total_chunks": total_chunks,
+                    "next_index": 1,
+                    "dest_path": path,
+                    "started_at": time.time(),
+                    "user_id": user.id if user else None,
+                }
+            log.info(
+                "Chunked upload for %s: %d chunks (%d bytes, %d bytes/chunk)",
+                path,
+                total_chunks,
+                file_size,
+                chunk_size,
+            )
+
+        return result
+
+    def cleanup_stale_uploads(self):
+        """Remove any pending uploads that started over 30 minutes ago."""
+        stale_timeout = 1800
+        now = time.time()
+        with self._pending_uploads_lock:
+            stale = [
+                sid
+                for sid, p in self._pending_uploads.items()
+                if now - p["started_at"] > stale_timeout
+            ]
+            for sid in stale:
+                remaining = (
+                    self._pending_uploads[sid]["total_chunks"]
+                    - self._pending_uploads[sid]["next_index"]
+                )
+                log.warning(
+                    "Cleaned up stale upload for agent %s, %d chunks abandoned",
+                    sid,
+                    remaining,
+                )
+                del self._pending_uploads[sid]
+
+    def queue_next_upload_chunk(  # noqa: PLR0911
+        self,
+        db: Session,
+        session_id: str,
+    ):
+        """Pop the next chunk for session_id and create a TASK_UPLOAD task.
+        Discards all remaining chunks if the upload has been pending for over
+        30 minutes or if the agent no longer exists."""
+        self.cleanup_stale_uploads()
+
+        with self._pending_uploads_lock:
+            pending = self._pending_uploads.get(session_id)
+            if not pending:
+                log.debug(
+                    "No pending upload for agent %s (server restart or already completed)",
+                    session_id,
+                )
+                return
+
+            upload_id = pending["upload_id"]
+            index = pending["next_index"]
+            total = pending["total_chunks"]
+            if index >= total:
+                del self._pending_uploads[session_id]
+                return
+
+            pending["next_index"] = index + 1
+            is_last_chunk = (index + 1) >= total
+            if is_last_chunk:
+                del self._pending_uploads[session_id]
+
+        offset = index * pending["chunk_size"]
+        try:
+            with Path(pending["file_location"]).open("rb") as f:
+                f.seek(offset)
+                raw_bytes = f.read(pending["chunk_size"])
+        except OSError:
+            log.exception(
+                "Failed to read chunk %d/%d from %s for agent %s",
+                index + 1,
+                total,
+                pending["file_location"],
+                session_id,
+            )
+            self._cancel_upload_if_current(session_id, upload_id)
+            return
+
+        if not raw_bytes:
+            log.error(
+                "Empty chunk %d/%d read from %s for agent %s, file may have been truncated",
+                index + 1,
+                total,
+                pending["file_location"],
+                session_id,
+            )
+            self._cancel_upload_if_current(session_id, upload_id)
+            return
+
+        chunk_b64 = base64.b64encode(raw_bytes).decode("utf-8")
+        data = f"{index}|{total}|{pending['dest_path']}|{chunk_b64}"
+
+        agent = db.scalars(
+            select(models.Agent).where(models.Agent.session_id == session_id)
+        ).first()
+        if not agent:
+            log.warning(
+                "Agent %s not found, discarding remaining upload chunks", session_id
+            )
+            self._cancel_upload_if_current(session_id, upload_id)
+            return
+
+        user = None
+        if pending["user_id"]:
+            user = db.scalars(
+                select(models.User).where(models.User.id == pending["user_id"])
+            ).first()
+
+        try:
+            result = self.add_task(db, agent, "TASK_UPLOAD", data, user=user)
+        except Exception:
+            log.exception(
+                "Unexpected error queuing upload chunk %d/%d for agent %s",
+                index + 1,
+                total,
+                session_id,
+            )
+            self._cancel_upload_if_current(session_id, upload_id)
+            return
+
+        if result[1] is not None:
+            log.error(
+                "Failed to queue upload chunk %d/%d for agent %s: %s",
+                index + 1,
+                total,
+                session_id,
+                result[1],
+            )
+            self._cancel_upload_if_current(session_id, upload_id)
+            return
+
+        log.info("Queued upload chunk %d/%d for agent %s", index + 1, total, session_id)
+
+        if is_last_chunk:
+            log.info(
+                "Chunked upload to agent %s complete (%d chunks)", session_id, total
+            )
+
+    def cancel_pending_uploads(self, session_id: str):
+        with self._pending_uploads_lock:
+            pending = self._pending_uploads.pop(session_id, None)
+        if pending:
+            log.warning(
+                "Cancelled chunked upload for agent %s, discarded %d remaining chunks",
+                session_id,
+                pending["total_chunks"] - pending["next_index"],
+            )
+
+    def _cancel_upload_if_current(self, session_id: str, upload_id: int):
+        """Cancel the pending upload only if it still matches upload_id.
+        Prevents error paths from accidentally cancelling a newer upload
+        that was started for the same agent after the lock was released."""
+        with self._pending_uploads_lock:
+            current = self._pending_uploads.get(session_id)
+            if current is not None and current["upload_id"] == upload_id:
+                del self._pending_uploads[session_id]
 
     def create_task_download(
         self,
@@ -242,30 +490,6 @@ class AgentTaskService:
     ):
         resp, err = self.add_task(db, agent, "TASK_SMB_SERVER", pipe_name, user=user)
         return resp, err
-
-    def create_task_update_comms(
-        self,
-        db: Session,
-        agent: models.Agent,
-        new_listener_id: int,
-        user: models.User | None = None,
-    ):
-        listener = self.listener_service.get_by_id(db, new_listener_id)
-
-        if not listener:
-            return None, f"Listener not found for id {new_listener_id}"
-        if listener.module in ["meterpreter", "http_mapi"]:
-            return (
-                None,
-                f"Listener template {listener.module} not eligible for updating comms",
-            )
-
-        new_comms = self.listener_service.get_active_listeners()[
-            listener.id
-        ].generate_comms(listener.options, agent.language)
-
-        self.add_task(db, agent, "TASK_UPDATE_LISTENERNAME", listener.name, user=user)
-        return self.add_task(db, agent, "TASK_SWITCH_LISTENER", new_comms, user=user)
 
     def create_task_update_sleep(
         self,
@@ -366,6 +590,25 @@ class AgentTaskService:
             user=user,
             files=resp.files,
         )
+
+    def create_task_processes(
+        self,
+        db: Session,
+        agent: models.Agent,
+        user: models.User | None = None,
+    ):
+        """Task an agent to enumerate host processes for Starkiller's Processes tab.
+
+        Resolves the module from the agent's language/OS and runs it through the
+        normal module path so `module_name` is set and `ps_hook` fires. Returns
+        (None, error) for agents with no supported module.
+        """
+        module_id = _resolve_processes_module(agent)
+        if module_id is None:
+            return None, f"Process listing is not supported for {agent.language} agents"
+
+        module_req = ModulePostRequest(module_id=module_id, options={})
+        return self.create_task_module(db, agent, module_req, user)
 
     def create_task_directory_list(
         self,

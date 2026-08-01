@@ -23,8 +23,8 @@ description: |
   toolkit and represents a sophisticated method of service-based
   privilege escalation that can provide persistent access.
 software: S0194
-tactics: [TA0004]
-techniques: [T1543.003, T1068]
+tactics: [TA0002, TA0003, TA0004, TA0005]
+techniques: [T1543.003, T1574.011]
 background: true
 output_extension:
 needs_admin: false
@@ -46,20 +46,6 @@ options:
     description: Listener to use.
     required: true
     value: ''
-  - name: UserAgent
-    description: User-agent string to use for the staging request (default, none,
-      or other).
-    required: false
-    value: default
-  - name: Proxy
-    description: Proxy to use for request (default, none, or other).
-    required: false
-    value: default
-  - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request
-      (default, none, or other).
-    required: false
-    value: default
 script_path: privesc/PowerUp.ps1
 advanced:
   custom_generate: true

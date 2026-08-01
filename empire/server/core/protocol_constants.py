@@ -9,7 +9,8 @@ STAGE0_PYTHON_GO_MAX_BYTES = 2500
 STAGING_KEY_LENGTH = 32
 
 # Sysinfo checkin / response
-SYSINFO_MIN_PARTS = 12  # guard floor in STAGE2 / TASK_SYSINFO
+# 7.0 added a dotnet_version field, bumping the floor from 12 to 13.
+SYSINFO_MIN_PARTS = 13  # guard floor in STAGE2 / TASK_SYSINFO
 
 # Routing packet
 ROUTING_PACKET_MIN_BYTES = 20

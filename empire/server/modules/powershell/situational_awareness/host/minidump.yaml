@@ -12,8 +12,8 @@ description: |
   and process analysis. Requires elevated privileges for dumping system processes
   or processes from other users.
 software: ''
-tactics: [TA0006, TA0007]
-techniques: [T1003, T1555.003]
+tactics: [TA0006]
+techniques: [T1003, T1003.001, T1555.003]
 background: true
 output_extension:
 needs_admin: false

@@ -34,22 +34,16 @@ from empire.server.core.user_service import UserService
 if TYPE_CHECKING:
     from socket import SocketIO
 
-VERSION = "6.7.1 BC Security Fork"
+VERSION = "7.0.0 BC Security Fork"
 
 log = logging.getLogger(__name__)
 
 
 class MainMenu:
-    def __init__(self, args=None):
+    def __init__(self):
         log.info("Empire starting up...")
 
         self.install_path = Path(os.path.realpath(__file__)).parent.parent
-        # TODO(empire-7): Remove installPath. Kept for backwards compatibility
-        # with listeners, stagers, modules, and third-party plugins that still
-        # reference self.mainMenu.installPath as a str.
-        self.installPath = str(self.install_path)
-
-        self.args = args
 
         self.socketio: SocketIO | None = None
 

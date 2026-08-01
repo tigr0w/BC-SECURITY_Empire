@@ -11,8 +11,8 @@ description: |
   hosts, and configurable authentication types. Provides real-time console output
   and can serve custom HTTP responses or proxy traffic.
 software: ''
-tactics: [TA0006, TA0009]
-techniques: [T1040, T1557.001, T1557.003, T1119]
+tactics: [TA0006, TA0007, TA0009]
+techniques: [T1040, T1119, T1187, T1557.001, T1557.003]
 background: true
 output_extension:
 needs_admin: false
@@ -93,11 +93,7 @@ options:
   - name: Inspect
     description: 'Inspect LLMNR, mDNS, and NBNS traffic only (no spoofing).'
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: IP
     description: 'Local IP address for listening and packet sniffing. Used for spoofing
       if SpooferIP is not set.'

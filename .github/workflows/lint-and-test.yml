@@ -71,18 +71,55 @@ jobs:
           poetry env use ${{ matrix.python-version }}
           poetry install
           sudo apt-get update
-          sudo apt-get install -y mono-runtime mingw-w64 perl
+          # Only x86_64-w64-mingw32-gcc is invoked by the C stager tests
+          # (empire/server/stagers/windows/c_launcher.py:114). Installing
+          # gcc-mingw-w64-x86-64 instead of the mingw-w64 meta-package
+          # avoids pulling in the i686 toolchain (~150MB → ~80MB
+          # download).
+          sudo apt-get install -y mono-runtime gcc-mingw-w64-x86-64 perl
+      - name: Cache external test deps (empire-compiler + starkiller + go cache)
+        # The test app boot downloads a ~540MB empire-compiler + clones Starkiller
+        # into DATA_DIR (~/.local/share/empire-test), and go stager builds populate
+        # a GOCACHE under CACHE_DIR (~/.cache/empire-test/go-build). These are keyed
+        # on the pinned refs in test_server_config (+ the gopire source for the go
+        # cache), so a ref bump busts the cache. Combined with conftest no longer
+        # wiping these dirs, a cache hit skips the download/clone entirely and warms
+        # cold go builds.
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/empire-test/empire-compiler
+            ~/.local/share/empire-test/starkiller
+            ~/.cache/empire-test
+          key: empire-test-deps-v1-${{ runner.os }}-${{ hashFiles('empire/test/test_server_config.yaml',
+            'empire/server/data/agent/gopire/**') }}
+          restore-keys: |
+            empire-test-deps-v1-${{ runner.os }}-
       - name: Run test suite - mysql
         # Authenticate the Empire Compiler download against the GitHub API so it
         # isn't throttled by the unauthenticated 60 req/hr shared-runner limit.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # On release branches / the run-all-versions label, run the full suite
+          # including release_only tests (the heavy SharpHound/Rubeus C# compiles).
+          # On normal PRs those two are deselected to keep the wall low; every
+          # other C# module still compiles, and the pair runs before a release.
+          RELEASE_RUN: ${{ startsWith(github.head_ref, 'release/') || contains(github.event.pull_request.labels.*.name,
+            'run-all-versions') }}
         run: |
           set -o pipefail
+          # Parallelized via pytest-xdist. --dist=loadfile keeps every test in a
+          # file on one worker, preserving each file's per-DB-state ordering (each
+          # worker runs whole files against its own per-worker DB). test_performance
+          # is excluded here — those tests drive their own concurrency and conflict
+          # with xdist workers; they run in a separate parallel job (test_performance).
+          # release_only (SharpHound/Rubeus compiles) is deselected except on release.
+          MARKEXPR="not release_only"
+          if [ "$RELEASE_RUN" = "true" ]; then MARKEXPR=""; fi
           if [ "${{ matrix.python-version }}" = "3.14" ]; then
-            DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 --cov=empire/server --junitxml=pytest.xml --cov-report=term-missing:skip-covered . | tee pytest-coverage.txt
+            DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 -n auto --dist=loadfile --ignore=empire/test/test_performance -m "$MARKEXPR" --cov=empire/server --junitxml=pytest.xml --cov-report=term-missing:skip-covered . | tee pytest-coverage.txt
           else
-            DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 .
+            DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 -n auto --dist=loadfile --ignore=empire/test/test_performance -m "$MARKEXPR" .
           fi
       - name: Run test suite - sqlite
         if: ${{ startsWith(github.head_ref, 'release/') || contains(github.event.pull_request.labels.*.name,
@@ -90,13 +127,76 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          DATABASE_USE=sqlite poetry run pytest . -v --runslow --durations=10 -m "not mysql"
+          DATABASE_USE=sqlite poetry run pytest . -v --runslow --durations=10 -n auto --dist=loadfile --ignore=empire/test/test_performance -m "not mysql"
       - name: Pytest coverage comment
         if: ${{ matrix.python-version == '3.14' }}
         uses: MishaKav/pytest-coverage-comment@v1.10.0
         with:
           pytest-coverage-path: ./pytest-coverage.txt
           junitxml-path: ./pytest.xml
+  # Performance tests run in their own job (in parallel with `test`) so their
+  # self-driven pool/concurrency stays off the main suite's critical path and out
+  # of xdist's way. They run serially within this job.
+  test_performance:
+    needs:
+      - lint
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    name: Performance Tests
+    steps:
+      - uses: actions/checkout@v7
+        if: ${{ endsWith(github.repository, 'Empire') }}
+        with:
+          submodules: 'recursive'
+      - uses: actions/checkout@v7
+        if: ${{ endsWith(github.repository, 'Empire-Sponsors') }}
+        with:
+          submodules: 'recursive'
+          token: ${{ secrets.RELEASE_TOKEN }}
+      - name: Initialize mandatory git config
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email noreply@github.com
+      - name: Install Poetry
+        run: |
+          curl -sL https://install.python-poetry.org | python - -y
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+          cache: 'poetry'
+      - name: Set up MySQL
+        run: |
+          sudo systemctl start mysql
+          mysql -u root -proot -e "CREATE USER IF NOT EXISTS 'empire_user'@'localhost' IDENTIFIED BY 'empire_password';" || true
+          mysql -u root -proot -e "GRANT ALL PRIVILEGES ON *.* TO 'empire_user'@'localhost' WITH GRANT OPTION;" || true
+          mysql -u root -proot -e "FLUSH PRIVILEGES;" || true
+      - name: Install dependencies
+        run: |
+          poetry env use 3.14
+          poetry install
+          sudo apt-get update
+          sudo apt-get install -y mono-runtime gcc-mingw-w64-x86-64 perl
+      - name: Cache external test deps (empire-compiler + starkiller)
+        # Distinct key from the `test` job so the two parallel jobs don't race to
+        # save the same cache. The perf suite doesn't build go stagers, so no go
+        # cache here.
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/empire-test/empire-compiler
+            ~/.local/share/empire-test/starkiller
+          key: empire-perf-deps-${{ runner.os }}-${{ hashFiles('empire/test/test_server_config.yaml')
+            }}
+          restore-keys: |
+            empire-perf-deps-${{ runner.os }}-
+      - name: Run performance test suite - mysql
+        # Authenticate the Empire Compiler download against the GitHub API so it
+        # isn't throttled by the unauthenticated 60 req/hr shared-runner limit.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 empire/test/test_performance
   test_image:
     # To save CI time, only run these tests on the release PRs
     if: ${{ startsWith(github.head_ref, 'release/') || contains( github.event.pull_request.labels.*.name,

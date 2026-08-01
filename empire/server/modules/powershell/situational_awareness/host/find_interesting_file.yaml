@@ -38,19 +38,11 @@ options:
   - name: OfficeDocs
     description: Return only office documents.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: FreshEXES
     description: Find .EXEs accessed in the last week.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: LastAccessTime
     description: Only return files with a LastAccessTime greater than this date value.
     required: false
@@ -62,19 +54,11 @@ options:
   - name: ExcludeHidden
     description: Exclude hidden files and folders from the search results.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: CheckWriteAccess
     description: Only returns files the current user has write access to.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
       "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").

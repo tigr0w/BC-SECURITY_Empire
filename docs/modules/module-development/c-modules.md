@@ -16,7 +16,7 @@ description: Module description
 software: ''
 tactics: [TA0002, TA0005]
 techniques: [T1620]
-background: false
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true
@@ -63,11 +63,16 @@ csharp:
       EmbeddedResources: []
   ReferenceAssemblies: []
   EmbeddedResources: []
+  MergeReferences: false
 ```
 
 Every section except for the 'csharp' section are the same as the other module languages.
 
 The csharp section is what was derived from the Covenant yamls. The `csharp` section contains the actual C# code and compilation settings, including whether to allow unsafe code, which .NET Framework versions are compatible, and references to external libraries and resources.
+
+`MergeReferences` tells the Empire Compiler to merge referenced dependency assemblies into a single output assembly via ILRepack (`--merge-references`), rather than shipping them as separate reference assemblies. This is needed by modules with heavier dependency trees, such as SharpHound.
+
+C# modules typically set `background: true` since the compile-and-execute round trip is long enough that running it in the foreground would block the agent from picking up other taskings.
 
 ## Advanced Generation
 

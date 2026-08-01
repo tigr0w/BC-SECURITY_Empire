@@ -18,9 +18,8 @@ description: |
   persistence through application hijacking and maintaining
   access when vulnerable applications are launched.
 software: ''
-tactics: [TA0003, TA0004, TA0005]
-techniques:
-  - T1574.004
+tactics: [TA0002, TA0005]
+techniques: [T1574, T1574.004]
 background: false
 output_extension: ''
 needs_admin: true
@@ -47,15 +46,6 @@ options:
     suggested_values:
       - x86
       - x64
-  - name: SafeChecks
-    description: Checks for LittleSnitch or a SandBox, exit the staging process if
-      true. Defaults to True.
-    required: true
-    value: 'True'
-    strict: true
-    suggested_values:
-      - True
-      - False
   - name: UserAgent
     description: User-agent string to use for the staging request (default, none,
       or other).

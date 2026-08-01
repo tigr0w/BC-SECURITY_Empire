@@ -15,8 +15,8 @@ description: |
   of code with SYSTEM-level privileges, enabling access to protected system resources,
   registry keys, and other administrative functions.
 software: S0194
-tactics: [TA0004]
-techniques: [T1134.001]
+tactics: [TA0003, TA0004, TA0005]
+techniques: [T1134.001, T1543.003]
 background: false
 output_extension:
 needs_admin: true
@@ -53,19 +53,11 @@ options:
   - name: RevToSelf
     description: Reverts the current thread privileges.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: WhoAmI
     description: Display the credentials for the current PowerShell thread.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
       "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").

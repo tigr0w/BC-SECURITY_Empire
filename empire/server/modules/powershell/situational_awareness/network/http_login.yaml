@@ -26,7 +26,7 @@ description: |
   tool for web application security assessments and penetration
   testing scenarios where credential harvesting is a priority.
 software: ''
-tactics: [TA0006, TA0007]
+tactics: [TA0006]
 techniques: [T1110.001, T1110.004]
 background: true
 output_extension:
@@ -68,11 +68,7 @@ options:
   - name: UseSSL
     description: Force SSL useage.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: Threads
     description: The maximum concurrent threads to execute.
     required: false
@@ -80,11 +76,7 @@ options:
   - name: NoPing
     description: Disable ping check.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
       "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").

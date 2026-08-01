@@ -24,7 +24,6 @@ from empire.server.api.v2.shared_dto import (
     OrderDirection,
 )
 from empire.server.api.v2.tag import tag_api
-from empire.server.api.v2.tag.tag_dto import TagStr
 from empire.server.core.db import models
 from empire.server.core.download_service import DownloadService
 
@@ -98,7 +97,7 @@ def read_downloads(
     order_by: DownloadOrderOptions = DownloadOrderOptions.updated_at,
     query: str | None = None,
     sources: list[DownloadSourceFilter] | None = Query(None),
-    tags: list[TagStr] | None = Query(None),
+    tags: list[str] | None = Query(None),
     *,
     download_service: DownloadServiceDep,
 ):

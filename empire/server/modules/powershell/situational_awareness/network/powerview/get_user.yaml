@@ -49,55 +49,31 @@ options:
   - name: SPN
     description: Only return user objects with non-null service principal names
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: AdminCount
     description: Return users with '(adminCount=1)' (meaning are/were privileged).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: AllowDelegation
     description: Return user accounts that are not marked as 'sensitive and not allowed
       for delegation'
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: TrustedToAuth
     description: Return computer objects that are trusted to authenticate for other
       principals.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: PreauthNotRequired
     description: Return user accounts with "Do not require Kerberos preauthentication"
       set.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: DisallowDelegation
     description: Return user accounts that are marked as 'sensitive and not allowed
       for delegation'
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: Domain
     description: The domain to use for the query, defaults to the current domain.
     required: false
@@ -145,19 +121,11 @@ options:
     description: Specifies that the search should also return deleted/tombstoned
       objects.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: FindOne
     description: Only return one result object.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
       "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").

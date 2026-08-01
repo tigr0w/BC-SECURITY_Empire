@@ -1,4 +1,4 @@
-from empire.server.common import helpers
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -37,13 +37,6 @@ class Stager:
                 "Required": True,
                 "Value": "macho.out",
             },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,
@@ -60,7 +53,6 @@ class Stager:
         language = self.options["Language"]["Value"]
         listener_name = self.options["Listener"]["Value"]
         user_agent = self.options["UserAgent"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
 
         # generate the launcher code
         # turn base64 encoding off
@@ -70,11 +62,9 @@ class Stager:
             language=language,
             encode=encode,
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
 
-        if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         return self.mainMenu.stagergenv2.generate_macho(launcher)

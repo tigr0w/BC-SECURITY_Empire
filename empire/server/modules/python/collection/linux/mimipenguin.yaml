@@ -13,10 +13,8 @@ description: |
   Useful for credential harvesting, password recovery, and
   post-exploitation reconnaissance on Linux systems.
 software: S0179
-tactics: [TA0009, TA0006]
-techniques:
-  - T1003
-  - T1005
+tactics: [TA0006, TA0009]
+techniques: [T1003, T1003.007, T1005]
 background: false
 output_extension: ''
 needs_admin: true

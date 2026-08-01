@@ -11,8 +11,8 @@ description: |
   HISTFILE variable to prevent writing history to disk. Also sets
   the HISTIGNORE variable to ignore all commands.
 software: ''
-tactics: [TA0005]
-techniques: [T1562.003]
+tactics: [TA0112]
+techniques: [T1690]
 background: false
 output_extension: ''
 needs_admin: false

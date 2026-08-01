@@ -59,15 +59,14 @@ options:
   - name: Background
     description: Run as a background job (non-blocking). Can be killed via the jobs/kill_job endpoint.
     required: false
-    value: 'true'
-    type: bool
-    suggested_values:
-      - 'true'
-      - 'false'
-    strict: true
+    value: true
 ```
 
 If the `Background` option is not defined on the module, the module-level `background` field is used as-is.
+
+Native YAML scalars are preferred for option values. Empire infers `type` from the raw value for booleans (`true`/`false`), integers (`8080`), and floats (`3.14`) — so a module author typically does not need to declare `type` for those. Explicit `type: file` and explicit `type: string` (e.g. when a string happens to look like a boolean) are still supported and take precedence over inference.
+
+**`required` does not apply to boolean options.** `required` is a presence check — it only rejects an empty or missing value. A boolean carries a value (`true` or `false`) and its YAML default backfills any unset param, so for a normally-toggled option the check never fires. Set `required: false` on boolean options. Avoid `required: true`: it buys nothing for a toggle — the only way to trip it is a client explicitly sending an empty string, which a toggle UI never does — and can be misread by form UIs as "the toggle must be enabled."
 
 ### OutputFunction
 PowerShell-specific. Controls how module output is formatted. Substituted into the script via the `{{ OUTPUT_FUNCTION }}` placeholder. Defaults to `Out-String`. See [PowerShell Modules](powershell-modules.md) for details.

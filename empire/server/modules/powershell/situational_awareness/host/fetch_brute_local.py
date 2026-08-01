@@ -16,7 +16,9 @@ class Module:
         script: str = "",
     ):
         Passlist = params["Passlist"]
-        Verbose = params["Verbose"]
+        # Verbose is a bool option but this module appends it as a literal value
+        # (e.g. `-vbse False`); stringify to preserve the legacy output.
+        Verbose = str(params["Verbose"])
         ServerType = params["ServerType"]
         Loginacc = params["Loginacc"]
         Loginpass = params["Loginpass"]

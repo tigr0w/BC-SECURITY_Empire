@@ -12,7 +12,7 @@ description: Returns a list of SQL Server instances discovered by querying a dom
   domain controller can be provided. UDP scanning of management servers is optional.
 software: ''
 tactics: [TA0007]
-techniques: [T1046]
+techniques: [T1046, T1087.002]
 background: true
 output_extension:
 needs_admin: false
@@ -41,11 +41,7 @@ options:
   - name: CheckMgmt
     description: Performs UDP scan of servers managing SQL Server clusters.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: UDPTimeOut
     description: Timeout in seconds for UDP scans of management servers. Longer timeout
       = more accurate.

@@ -1,0 +1,17 @@
+name: SafeChecksPython
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: |
+  Detects Little Snitch on macOS hosts and exits the staging process if found,
+  avoiding launcher execution under known monitoring.
+language: python
+min_language_version: '3'
+script: |
+  import re, subprocess;
+  cmd = "ps -ef | grep Little\ Snitch | grep -v grep"
+  ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  out, err = ps.communicate();
+  if re.search("Little Snitch", out.decode('UTF-8')):
+     sys.exit();

@@ -1,3 +1,4 @@
+import pytest
 from starlette import status
 
 
@@ -77,6 +78,19 @@ def test_get_listener_template(client, admin_auth_header):
     assert isinstance(response.json()["options"], dict)
 
 
+@pytest.mark.parametrize("template", ["http", "http_malleable"])
+def test_listener_template_bool_value_type(client, admin_auth_header, template):
+    response = client.get(
+        f"/api/v2/listener-templates/{template}",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    options = response.json()["options"]
+    assert options["JA3_Evasion"]["value_type"] == "BOOLEAN", (
+        f"{template}: JA3_Evasion should advertise BOOLEAN, got {options['JA3_Evasion']['value_type']}"
+    )
+
+
 def test_create_listener_validation_fails_required_field(client, admin_auth_header):
     base_listener = get_base_listener()
     base_listener["name"] = "temp123"
@@ -107,8 +121,7 @@ def test_create_listener_custom_validation_fails(client, admin_auth_header):
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
-        response.json()["detail"]
-        == "[!] Malleable profile not found: nonexistent.profile"
+        response.json()["detail"] == "Malleable profile not found: nonexistent.profile"
     )
 
 
@@ -449,8 +462,7 @@ def test_update_listener_reverts_if_custom_validation_fails(
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert (
-        response.json()["detail"]
-        == "[!] Malleable profile not found: nonexistent.profile"
+        response.json()["detail"] == "Malleable profile not found: nonexistent.profile"
     )
 
     response = client.get(
@@ -590,5 +602,5 @@ def test_update_listener_autorun_invalid(client, admin_auth_header, listener):
         json={"records": autorun_tasks},
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert "detail" in response.json()

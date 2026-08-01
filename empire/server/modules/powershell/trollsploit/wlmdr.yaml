@@ -15,7 +15,7 @@ description: Displays a custom balloon notification in the Windows taskbar, simu
   consideration for the target audience.
 software: ''
 tactics: [TA0040]
-techniques: [T1491]
+techniques: [T1491, T1491.001]
 background: true
 output_extension:
 needs_admin: false

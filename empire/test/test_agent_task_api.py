@@ -14,7 +14,6 @@ from empire.server.core.module_models import (
     EmpireModuleAdvanced,
     LanguageEnum,
 )
-from empire.server.utils.module_util import handle_error_message
 from empire.test.conftest import make_agent
 
 
@@ -59,6 +58,28 @@ def agent_archived(session_local, models, main):
 def agent_low_integrity(session_local, models, main):
     return _get_or_create_agent(
         session_local, models, main, name="WEAK2", high_integrity=False
+    )
+
+
+@pytest.fixture(scope="module")
+def agent_python(session_local, models, main):
+    # Needed to exercise the python `_generate_script_python` path — the
+    # default `agent` fixture runs powershell, and the agent/module language
+    # compatibility check rejects cross-language tasks.
+    return _get_or_create_agent(
+        session_local, models, main, name="pyagent", language="python"
+    )
+
+
+@pytest.fixture(scope="module")
+def agent_go_linux(session_local, models, main):
+    return _get_or_create_agent(
+        session_local,
+        models,
+        main,
+        name="golinux",
+        language="go",
+        os_details="Linux 5.15.0-kali",
     )
 
 
@@ -115,13 +136,6 @@ def raise_exception_wrapper(exception):
     return raise_exception
 
 
-def return_handle_error_message_wrapper(message):
-    def return_handle_error_message(*args, **kwargs):
-        return handle_error_message(message)
-
-    return return_handle_error_message
-
-
 @pytest.fixture(scope="module")
 def _module_with_validation_exception(main):
     module_name = "this_module_has_a_validation_exception"
@@ -163,8 +177,8 @@ def _module_with_execution_exception(main):
 
 
 @pytest.fixture(scope="module")
-def _module_with_legacy_handle_error_message(main):
-    module_name = "this_module_uses_legacy_handle_error_message"
+def _module_with_unexpected_exception(main):
+    module_name = "this_module_raises_unexpected"
     main.modulesv2.modules[module_name] = EmpireModule(
         id=module_name,
         name=module_name,
@@ -172,9 +186,7 @@ def _module_with_legacy_handle_error_message(main):
         advanced=EmpireModuleAdvanced(
             custom_generate=True,
             generate_class=SimpleNamespace(
-                generate=return_handle_error_message_wrapper(
-                    module_name + ": this is the error"
-                )
+                generate=raise_exception_wrapper(RuntimeError("boom"))
             ),
         ),
     )
@@ -202,6 +214,39 @@ def test_create_task_shell(client, admin_auth_header, agent):
     )
     assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["input"] == 'echo "HELLO WORLD"'
+    assert response.json()["id"] > 0
+
+
+def test_create_task_shell_literal_is_noop(client, admin_auth_header, agent):
+    """`literal=True` is accepted but must not alter the dispatched command (deprecated since 7.0)."""
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/shell",
+        headers=admin_auth_header,
+        json={"command": "whoami", "literal": True},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json()["input"] == "whoami"
+
+
+def test_create_task_chdir_agent_not_found(client, admin_auth_header):
+    response = client.post(
+        "/api/v2/agents/abc/tasks/chdir",
+        headers=admin_auth_header,
+        json={"path": "/tmp"},
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Agent not found for id abc"
+
+
+def test_create_task_chdir(client, admin_auth_header, agent):
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/chdir",
+        headers=admin_auth_header,
+        json={"path": "/tmp"},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json()["input"] == "/tmp"
+    assert response.json()["task_name"] == "TASK_CHDIR"
     assert response.json()["id"] > 0
 
 
@@ -261,6 +306,121 @@ def test_create_task_module(client, admin_auth_header, agent):
     }
 
 
+def test_create_task_module_accepts_native_bool(client, admin_auth_header, agent):
+    # Pins the contract this PR ships: a client may POST native JSON booleans for
+    # module boolean options — `coerced_dict` normalizes them to strings at the
+    # API boundary. Regression targets: `coerced_dict` coercion, `safe_cast(value,
+    # bool)`, and the `value.lower()` call in `_generate_script_powershell`
+    # (crashes on a raw bool). `module_options` echoes the string-coerced payload.
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "powershell_credentials_invoke_internal_monologue",
+            "options": {
+                "Challenge": "1122334455667788",
+                "Downgrade": False,
+                "Impersonate": False,
+                "Restore": True,
+                "Verbose": True,
+            },
+        },
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    assert response.json()["input"].startswith("function Invoke-InternalMonologue")
+    assert response.json()["module_options"] == {
+        "Agent": agent,
+        "Challenge": "1122334455667788",
+        "Downgrade": "False",
+        "Impersonate": "False",
+        "Restore": "True",
+        "Verbose": "True",
+    }
+
+
+def test_create_task_module_accepts_native_bool_python(
+    client, admin_auth_header, agent_python
+):
+    # Locks in the boundary normalization for `_generate_script_python`: a
+    # native bool option must not reach `script.replace(...)` (TypeError on a
+    # non-str arg). Covers the non-custom Python generate path.
+    response = client.post(
+        f"/api/v2/agents/{agent_python}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "python_credentials_linux_proc_credential_dump",
+            "options": {"SearchEnviron": True},
+        },
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    # `input` is truncated to 100 chars for display; the full rendered script
+    # is in `full_input`.
+    rendered = response.json()["full_input"]
+    assert "search_environ = 'True'" in rendered
+    assert "{{ SearchEnviron }}" not in rendered
+
+
+def test_create_task_module_accepts_native_int(client, admin_auth_header, agent):
+    # Posting a native int (Threads) locks in the int path end-to-end: the DTO
+    # coerces it to "20", safe_cast re-types it to int, and the non-custom
+    # powershell render stringifies it back for the `-{{ KEY }}={{ VALUE }}`
+    # substitution.
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "powershell_credentials_sharpsecdump",
+            "options": {
+                "Target": "127.0.0.1",
+                "Threads": 20,
+            },
+        },
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    # The `-{{ KEY }}={{ VALUE }}` format_string + the `Threads` option's
+    # `name_in_code: threads` produces `-threads=20` in the rendered script.
+    rendered = response.json()["full_input"]
+    assert "-threads=20" in rendered
+    # `module_options` on the response echoes the string-coerced client payload.
+    assert response.json()["module_options"]["Threads"] == "20"
+
+
+def test_create_task_module_accepts_native_bool_custom_generate(
+    client, admin_auth_header, agent
+):
+    # Covers both migrated patterns in one custom_generate dispatch: find_fruit
+    # reads ShowAll natively (`if not show_all:`) while UseSSL/FoundOnly flow
+    # through the shared `params.items()` loop, whose `values.lower() == "true"`
+    # switch detection now runs on point-of-use-stringified primitives. Three
+    # bool options total (UseSSL, ShowAll, FoundOnly).
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/module",
+        headers=admin_auth_header,
+        json={
+            "module_id": "powershell_situational_awareness_host_find_fruit",
+            "options": {
+                "Rhosts": "192.168.1.0/24",
+                "UseSSL": True,
+                "ShowAll": False,
+                "FoundOnly": True,
+            },
+        },
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, response.json()
+    # `find_fruit.py`'s generate() appends ` -UseSSL` and ` -FoundOnly` switches
+    # for true-valued bool options and omits false-valued ones. The flag
+    # switches land in the script_end appended past the 100-char `input`
+    # truncation, so check `full_input`.
+    rendered = response.json()["full_input"]
+    assert "-UseSSL" in rendered
+    assert "-FoundOnly" in rendered
+    assert "-ShowAll" not in rendered
+
+
 @pytest.mark.slow
 def test_create_task_module_bof(client, admin_auth_header, agent, bof_download):
     response = client.post(
@@ -284,7 +444,7 @@ def test_create_task_module_bof(client, admin_auth_header, agent, bof_download):
     assert response.json()["size"] > 0
     tags = response.json()["tags"]
     assert len(tags) > 0
-    assert tags[0]["label"] == "task:input"
+    assert tags[0]["name"] == "task:input"
 
 
 @pytest.mark.slow
@@ -312,7 +472,7 @@ def test_create_task_module_csharp(client, admin_auth_header, agent):
     assert response.json()["size"] > 0
     tags = response.json()["tags"]
     assert len(tags) > 0
-    assert tags[0]["label"] == "task:input"
+    assert tags[0]["name"] == "task:input"
 
 
 def test_create_task_module_modified_input(client, admin_auth_header, agent):
@@ -496,7 +656,7 @@ def test_create_task_module_ignore_admin_check(
     assert response.json()["id"] > 0
 
 
-@pytest.mark.usefixtures("_module_with_legacy_handle_error_message")
+@pytest.mark.usefixtures("_module_with_validation_exception")
 def test_create_task_module_validation_exception(
     client, admin_auth_header, agent_low_integrity
 ):
@@ -504,17 +664,14 @@ def test_create_task_module_validation_exception(
         f"/api/v2/agents/{agent_low_integrity}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_id": "this_module_uses_legacy_handle_error_message",
+            "module_id": "this_module_has_a_validation_exception",
             "ignore_admin_check": True,
             "options": {},
         },
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert (
-        response.json()["detail"]
-        == "this_module_uses_legacy_handle_error_message: this is the error"
-    )
+    assert response.json()["detail"] == "this_module_has_a_validation_exception"
 
 
 @pytest.mark.usefixtures("_module_with_execution_exception")
@@ -535,22 +692,54 @@ def test_create_task_module_execution_exception(
     assert response.json()["detail"] == "this_module_has_an_execution_exception"
 
 
-@pytest.mark.usefixtures("_module_with_execution_exception")
-def test_create_task_handle_error_message(
+@pytest.mark.usefixtures("_module_with_unexpected_exception")
+def test_create_task_module_unexpected_exception(
     client, admin_auth_header, agent_low_integrity
 ):
     response = client.post(
         f"/api/v2/agents/{agent_low_integrity}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_id": "this_module_has_an_execution_exception",
+            "module_id": "this_module_raises_unexpected",
             "ignore_admin_check": True,
             "options": {},
         },
     )
 
     assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-    assert response.json()["detail"] == "this_module_has_an_execution_exception"
+    assert response.json()["detail"] == "Error generating script."
+
+
+def test_create_task_processes_agent_not_found(client, admin_auth_header):
+    response = client.post(
+        "/api/v2/agents/abc/tasks/processes",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Agent not found for id abc"
+
+
+def test_create_task_processes_python_agent(client, admin_auth_header, agent_python):
+    response = client.post(
+        f"/api/v2/agents/{agent_python}/tasks/processes",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    body = response.json()
+    assert body["id"] > 0
+    assert body["agent_id"] == agent_python
+    assert body["module_name"] == "python_situational_awareness_host_processes"
+
+
+def test_create_task_processes_unsupported_agent(
+    client, admin_auth_header, agent_go_linux
+):
+    response = client.post(
+        f"/api/v2/agents/{agent_go_linux}/tasks/processes",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "not supported" in response.json()["detail"]
 
 
 def test_create_task_upload_file_not_found(client, admin_auth_header, agent):
@@ -711,28 +900,6 @@ def test_create_task_sysinfo(client, admin_auth_header, agent):
     assert response.json()["id"] > 0
 
 
-def test_create_task_update_comms_agent_not_found(client, admin_auth_header, listener):
-    response = client.post(
-        "/api/v2/agents/abc/tasks/update_comms",
-        headers=admin_auth_header,
-        json={"new_listener_id": listener["id"]},
-    )
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json()["detail"] == "Agent not found for id abc"
-
-
-def test_create_task_update_comms(client, admin_auth_header, agent, listener):
-    response = client.post(
-        f"/api/v2/agents/{agent}/tasks/update_comms",
-        headers=admin_auth_header,
-        json={"new_listener_id": listener["id"]},
-    )
-
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["id"] > 0
-
-
 def test_create_task_update_sleep_agent_not_found(client, admin_auth_header, listener):
     response = client.post(
         "/api/v2/agents/abc/tasks/sleep",
@@ -751,7 +918,7 @@ def test_create_task_update_sleep_validates_fields(client, admin_auth_header, ag
         json={"delay": -1, "jitter": 5},
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     delay_err = next(filter(lambda x: "delay" in x["loc"], response.json()["detail"]))
     jitter_err = next(filter(lambda x: "jitter" in x["loc"], response.json()["detail"]))
