@@ -5,9 +5,14 @@ The execute function is called when the plugin is executed via the API. The exec
 
 * command - A dict of the command arguments, already parsed and validated by the core Empire code
 * kwargs - Additional arguments that may be passed in by the core Empire code.
-  * user - The user database object for the user that is executing the plugin
+  * user - The user database object for the user executing the plugin. This is
+    `None` for plugins run by the server via `auto_execute`, so dereference it
+    defensively.
   * db - The database session object
-  * plugin_options - A dict of the original options passed to the plugin execution
+
+There is no `plugin_options` keyword argument. Empire calls
+`plugin.execute(cleaned_options, db=db, user=user)`, so the validated options are
+`command`, the first positional parameter. See [Plugin Tasks](plugin-tasks.md).
 
 ### Error Handling
 

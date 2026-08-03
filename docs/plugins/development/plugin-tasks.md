@@ -10,17 +10,25 @@ Plugins can store tasks. The data model looks pretty close to Agent tasks. This 
 from empire.server.core.db import models
 
 def execute(self, command, **kwargs):
-    user = kwargs.get('user', None)
-    db = kwargs.get('db', None)
-    plugin_options = kwargs.get('plugin_options', None)
+    db = kwargs['db']
+    user = kwargs['user']
 
-    input = 'Example plugin execution.'
+    # `command` is the validated options dict Empire passes positionally.
+    # Build a copy for the task: `plugin_options` is a JSON column, so a `file`
+    # option's Download has to become its id, and copying keeps a later edit to
+    # `command` from rewriting the stored record.
+    plugin_options = {
+        key: value.id if isinstance(value, models.Download) else value
+        for key, value in command.items()
+    }
+
+    task_input = 'Example plugin execution.'
 
     plugin_task = models.PluginTask(
-      plugin_id=self.info["Name"],
-      input=input,
-      input_full=input,
-      user_id=user.id,
+      plugin_id=self.info.id,
+      input=task_input,
+      input_full=task_input,
+      user_id=user.id if user is not None else None,
       status=models.PluginTaskStatus.completed,
       plugin_options=plugin_options,
     )
@@ -28,7 +36,35 @@ def execute(self, command, **kwargs):
     db.add(plugin_task)
 ```
 
-For an example of using plugin tasks and attaching files, see the [basic\_reporting plugin](https://github.com/BC-SECURITY/Empire/blob/main/server/plugins/basic_reporting/basic_reporting.plugin).
+`plugin_id` must be `self.info.id`, not the plugin's display name. `PluginTask.plugin_id`
+is a non-nullable foreign key to `plugins.id`, and that primary key is the plugin's
+[id](README.md#plugin-name-and-id) — the slugified `name`, so a plugin named `My Plugin`
+has the id `my_plugin`. Writing the display name, or a hardcoded constant that drifts from
+`plugin.yaml`, produces rows under an id no plugin owns: MySQL raises a foreign-key error,
+and SQLite does not enforce the constraint at all, so the rows land invisible to the
+plugin's task history. Read the id off `self.info` rather than storing your own copy of it.
+
+`plugin_options` is not a keyword argument. Empire calls
+`plugin.execute(cleaned_options, db=db, user=user)`, so the validated options arrive as
+`command`, the first positional parameter. Reading `plugin_options` out of `kwargs` yields
+`None` and stores a task with no record of the options it ran with. `BasePlugin.execute`
+assigns that kwarg on a local dict and then does nothing with it, so neither your override
+nor a `super().execute(...)` call from it will populate anything — read `command`.
+
+`plugin_options` is a JSON column, so every value you put in it must be JSON-serializable.
+Options declared `Type: file` are the exception you have to handle: Empire resolves them to
+a `models.Download` object, and storing one raises `TypeError: Object of type Download is
+not JSON serializable` when the session flushes — after your plugin's work is done, so it
+surfaces as an opaque 500. Store the download's id, as the sample does. Copy the dict rather
+than assigning `command` directly, too: the column is serialized at flush, so any later
+mutation of `command` would rewrite the record of what the task actually ran with.
+
+`user` can be `None`. Plugins configured with `auto_execute` are run by the server with no
+user attached, so dereference it defensively — `PluginTask.user_id` is nullable. `db` is
+always passed, so index it directly and let a missing key raise rather than deferring the
+failure to an `AttributeError` on `None`.
+
+For an example of using plugin tasks and attaching files, see the [basic\_reporting plugin](https://github.com/BC-SECURITY/Empire/blob/main/empire/server/plugins/basic_reporting/basic_reporting.py).
 
 ## Statuses
 

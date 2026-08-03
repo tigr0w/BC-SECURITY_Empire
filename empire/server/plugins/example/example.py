@@ -5,10 +5,10 @@ from typing import override
 
 from empire.server.core.plugins import BasePlugin
 
-# Relative imports don't work in plugins right now.
-# from . import example_helpers
-# example_helpers.this_is_an_example_function()
-from empire.server.plugins.example import example_helpers
+# Relative, not absolute: a plugin installed from a registry is unpacked outside
+# the Empire tree and loaded as a top-level package, so `empire.server.plugins.*`
+# self-imports resolve only in a checkout. See docs/plugins/development/imports.md.
+from . import example_helpers
 
 example_helpers.this_is_an_example_function()
 
