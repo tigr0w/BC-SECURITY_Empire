@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.0.0] - 2026-08-01
+
 ### Security
 
 -   **BREAKING:** Replaced bcrypt password hashing with PBKDF2-HMAC-SHA256 (600K iterations) for FIPS SP 800-132 compliance. Existing hashes are incompatible — reset passwords or recreate the database.
@@ -144,7 +146,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fixed one plugin raising in `on_stop`/`on_unload` aborting the whole shutdown teardown, leaving every plugin after it running. Each teardown now runs in its own session.
 -   Fixed a plugin raising during load taking down startup and every plugin behind it. Each load now runs in its own savepoint, a malformed `plugin.yaml` is skipped instead of aborting the boot, and a plugin that fails after `on_load` is unloaded rather than left with its hooks and listener templates registered.
--   Fixed `plugin.enabled` being set only *after* `on_start`/`on_stop` returned, so a `while self.enabled` worker raced the flag — exiting at boot, or never stopping on disable or shutdown. It is now set before the hook on every path.
+-   Fixed `plugin.enabled` being set only _after_ `on_start`/`on_stop` returned, so a `while self.enabled` worker raced the flag — exiting at boot, or never stopping on disable or shutdown. It is now set before the hook on every path.
 -   Fixed `hooks.unregister_hook(name)` / `unregister_filter(name)` raising `KeyError` when called without an event, unless the name was registered under every event. An unregistered name is still tolerated, but now warns.
 -   Fixed registry-supplied authors never reaching a plugin installed from the marketplace: `_merge_plugin_config` indexed a single registry entry as if it were a whole registry document, so the lookup always missed.
 -   Fixed `custom_generate` PowerShell modules emitting `-Option False` for an unset boolean `[switch]`, producing a malformed command (`find_fruit`, `WireTap`, `runas`, `inveigh_relay`, `deaduser`, `get_subnet_ranges`, and the `powershell_template.py` they derive from). A set switch now emits a bare flag and an unset one emits nothing. Closes #1518.
@@ -1605,7 +1607,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.0...HEAD
+
+[7.0.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.1...v7.0.0
 
 [6.7.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.0...v6.7.1
 

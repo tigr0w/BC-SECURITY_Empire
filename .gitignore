@@ -65,3 +65,6 @@ config.user.yaml
 
 # Superpowers brainstorming/planning artifacts — local working docs, not code
 docs/superpowers/
+
+# Superpowers subagent-driven-development workspace
+.superpowers/
