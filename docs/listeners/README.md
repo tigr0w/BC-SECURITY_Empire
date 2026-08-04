@@ -15,7 +15,7 @@ Empire offers several listener types designed for different network conditions a
 
 * **HTTP/HTTPS**: A standard HTTP listener for internet-facing operations supports both standard HTTP and encrypted HTTPS.
 * **HTTP Malleable**: A customizable HTTP listener that allows beacons to match specific threat profiles.
-* **SMB**: A peer-to-peer listener that works over SMB pipes (**currently only supports IronPython**).
-* **HTTP Hop**: A listener that adds an intermediate hop or redirection server using PHP.
-* **Port Forward**: Enables chaining agents through port forwarding. Runs as a backgrounded userspace TCP relay job on the agent. Supported across PowerShell, C# (Sharpire), Go (Gopire), IronPython, and Linux/macOS Python agents. **Windows agents must be elevated** — the listener pre-authorizes the inbound firewall rule via `netsh advfirewall` so the relay can bind silently (rule is removed automatically on shutdown). Linux/macOS Python agents only need root for binding ports below 1024.
-* **HTTP Foreign**: Allows one server to generate stagers and agents for another Empire server.
+* [**SMB**](smb.md): A peer-to-peer listener that works over SMB pipes (**currently only supports IronPython**).
+* [**HTTP Hop**](http-hop.md): A listener that adds an intermediate hop or redirection server using PHP.
+* [**Port Forward**](port-forward-pivot.md): Enables chaining agents through port forwarding. Runs as a backgrounded userspace TCP relay job on the agent. Supported across PowerShell, C# (Sharpire), Go (Gopire), IronPython, and Linux/macOS Python agents. **Windows agents must be elevated** — the listener pre-authorizes the inbound firewall rule via `netsh advfirewall` so the relay can bind silently (rule is removed automatically on shutdown). Linux/macOS Python agents only need root for binding ports below 1024.
+* [**HTTP Foreign**](http-foreign.md): Allows one server to generate stagers and agents for another Empire server.

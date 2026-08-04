@@ -36,8 +36,16 @@
   * [OneDrive](listeners/onedrive.md)
   * [HTTP](listeners/http.md)
   * [Malleable C2](listeners/malleable-c2.md)
+  * [SMB](listeners/smb.md)
+  * [HTTP Hop](listeners/http-hop.md)
+  * [HTTP Foreign](listeners/http-foreign.md)
+  * [Port Forward Pivot](listeners/port-forward-pivot.md)
 * [Stagers](stagers/README.md)
   * [multi\_generate\_agent](stagers/multi_generate_agent.md)
+  * [C# Stagers](stagers/csharp.md)
+  * [Office Macro](stagers/office-macro.md)
+  * [Reflective DLL](stagers/dll.md)
+  * [Shellcode](stagers/shellcode.md)
 * [Plugins](plugins/README.md)
   * [Development](plugins/development/README.md)
     * [Imports](plugins/development/imports.md)
@@ -81,6 +89,7 @@
           kind: openapi
           spec: bc-security-api
     ```
+* [Database](database/README.md)
 * [Settings](settings/README.md)
   * [Logging](settings/logging.md)
   * [Bypasses](settings/bypasses.md)
