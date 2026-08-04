@@ -126,13 +126,28 @@ For details on stager output formats and downloads, see the [Stagers documentati
 
 When an agent checks in, you will get a notification both on the server and in Starkiller.
 
-![](../.gitbook/assets/server_check_in.png) ![](../.gitbook/assets/starkiller_checkin.png)
+On the server you will see the staging exchange and the check-in:
+
+```
+[INFO]: http-primary: Sending PYTHON stager (stage 1) to 192.0.2.88
+[INFO]: Agent R9TF6NCV from 192.0.2.88 posted public key
+[INFO]: Agent R9TF6NCV from 192.0.2.88 posted valid Python PUB key
+[INFO]: New agent R9TF6NCV checked in
+[INFO]: Initial agent R9TF6NCV from 192.0.2.88 now active
+[INFO]: http-primary: Sending agent (stage 2) to R9TF6NCV at 192.0.2.88
+```
+
+In Starkiller the same check-in arrives as a notification:
+
+![](../.gitbook/assets/starkiller_checkin.png)
 
 Once you have received a check-in notification, you can go to the agents tab and see all checked-in agents. If an agent turns red, it means the agent has failed to check in and the server cannot currently communicate with it. These are referred to as stale agents
 
 ![](../.gitbook/assets/agents_tab.png)
 
 From here you can click on any agent where you will be presented with a number of tabs including the interact tab for running modules, tasks, and view. The view tab will provide you with information that has been collected about the host, along with other key information like delay and jitter intervals.
+
+![](../.gitbook/assets/agent_interact.png)
 
 For each registered agent, a `downloads/AGENT_NAME/` folder is created. An `agent.log` is created here with timestamped commands/results for agent communication. Downloads/module outputs are broken out into relevant folders here as well.
 

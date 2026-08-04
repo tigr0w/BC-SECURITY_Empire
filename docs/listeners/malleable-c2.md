@@ -12,20 +12,16 @@ As of 7.0, the `http-config` block is enforced by the malleable HTTP listener: `
 
 7.0 also adds a `host_stage` directive (`set host_stage "false";`) to disable the listener's stager URI entirely; it defaults to `true` so existing profiles keep serving stagers unchanged. Serialized profiles carry a schema version that the C# (Sharpire) and Go (Gopire) agents validate before parsing, so an agent build expecting a newer/older schema will refuse a mismatched profile instead of misparsing it.
 
-![Listener transform functionality from transformation.py](https://i1.wp.com/www.bc-security.org/wp-content/uploads/2020/09/Screenshot_2020-09-06_21-14-54.png?resize=586%2C324\&ssl=1)
-
-As of 6.0 malleable profiles can be easily managed from the malleable profiles tab under **listeners**. Here you can manually enter a profile by clicking on create and pasting in the profile configuration. You can also directly edit profiles by clicking on loaded profile and making changes then hitting **submit**
+As of 6.0 malleable profiles can be easily managed from the **Malleable Profiles** entry in the sidebar. Here you can manually enter a profile by clicking on create and pasting in the profile configuration. You can also directly edit profiles by clicking on loaded profile and making changes then hitting **submit**
 
 ![](../.gitbook/assets/malleable_profiles.png)
 
-Launching a Malleable C2 Listener can be simply done by selecting http\_malleable from the dropdown options when selecting a listener. The info page should look familiar since it uses similar settings as the standard HTTP listener, just with the addition **Profiles** dropdown. Profiles are managed from the malleable tab under listeners:
+Launching a Malleable C2 Listener can be simply done by selecting http\_malleable from the dropdown options when selecting a listener. The info page should look familiar since it uses similar settings as the standard HTTP listener, just with the addition **Profiles** dropdown:
 
 ![](../.gitbook/assets/malleable_listener.png)
 
 One of the areas that still needs some improvement is when the listener tries to ingest serialized profiles. Occasionally Empire will successfully start the listener, but the agent will fail to properly stage when using a launcher. We are always trying to improve Empire functionality, so please [submit any issues](https://github.com/BC-SECURITY/Empire/issues) to our Github, since we heavily rely on users to help us identify areas for improvement.
 
 We have also set up a [repository](https://github.com/BC-SECURITY/Malleable-C2-Profiles) for working profiles, which we will continue to update as new threat profiles are generated. This is also an opportunity for everyone to submit and share their profiles (assuming they work with Empire).
-
-![Code excerpt from http\_malleable.py](https://i1.wp.com/www.bc-security.org/wp-content/uploads/2020/09/Screenshot_2020-09-06_21-15-26.png?resize=944%2C523\&ssl=1)
 
 Similar to Cobalt Strike, Empire can only load a single profile per instance (for now). You can always spin up another instance of Empire if you want to run multiple Malleable Listeners at once. Otherwise, other listener types will still work while you have an active Malleable C2 Listener.
