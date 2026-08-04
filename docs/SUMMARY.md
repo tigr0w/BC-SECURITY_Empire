@@ -9,6 +9,8 @@
   * [Resetting](quickstart/resetting.md)
 * [Starkiller](starkiller/README.md)
   * [Introduction](starkiller/introduction.md)
+  * [Dashboard](starkiller/dashboard.md)
+  * [Agents](starkiller/agents.md)
   * [Agent Tasks](starkiller/agent-tasks.md)
   * [Credentials](starkiller/credentials.md)
   * [Downloads](starkiller/downloads.md)
