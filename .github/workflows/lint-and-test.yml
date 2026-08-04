@@ -85,7 +85,7 @@ jobs:
         # cache), so a ref bump busts the cache. Combined with conftest no longer
         # wiping these dirs, a cache hit skips the download/clone entirely and warms
         # cold go builds.
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.local/share/empire-test/empire-compiler
@@ -181,7 +181,7 @@ jobs:
         # Distinct key from the `test` job so the two parallel jobs don't race to
         # save the same cache. The perf suite doesn't build go stagers, so no go
         # cache here.
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.local/share/empire-test/empire-compiler
