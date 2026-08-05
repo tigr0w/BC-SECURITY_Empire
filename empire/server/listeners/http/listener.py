@@ -958,6 +958,19 @@ class Listener:
                                     "" if not obf_config else obf_config.command
                                 ),
                             )
+
+                    # generate_stager() returns None on failure: this listener's
+                    # own generate_stager on an unsupported language, or — via the
+                    # Hop-Name → hopListener branch above — a pivot whose parent
+                    # listener can't supply staging keys. Serving None makes Flask
+                    # emit a bare 500; return the default 404 instead, matching the
+                    # shellcode branch above.
+                    if stage is None:
+                        log.error(
+                            f"{listenerName}: stager generation returned None for "
+                            f"{clientIP}; serving default response"
+                        )
+                        return make_response(self.default_response(), 404)
                     return make_response(stage, 200)
 
                 if results.startswith(b"ERROR:"):

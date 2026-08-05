@@ -34,10 +34,18 @@ def listener(monkeypatch, main_menu_mock):
     )
 
     pivot = build_test_listener("port_forward_pivot", main_menu_mock)
-    pivot.options.update(build_test_listener("http", main_menu_mock).options)
+    # A real http listener is the pivot's parent: post_init() gives it the
+    # ed25519 staging cert keys the stage-1 stager must embed, and its options
+    # (Host/Cookie/StagingKey/…) are what start() copies onto the pivot.
+    parent = build_test_listener("http", main_menu_mock)
+    pivot.options.update(parent.options)
     pivot.options["Host"] = {"Value": "http://localhost"}
     pivot.options["Port"] = {"Value": "80"}
     pivot.host_address = "http://localhost/"
+    pivot.parent_listener_name = "parent_listener"
+    main_menu_mock.listenersv2.get_active_listener_by_name.side_effect = lambda name: (
+        parent if name == "parent_listener" else None
+    )
 
     main_menu_mock.listeners.activeListeners = {
         "fake_listener": {"options": pivot.options}
@@ -81,6 +89,24 @@ def test_generate_launcher_unknown_language_returns_none(listener):
     )
 
 
+def test_generate_launcher_powershell_iex_plaintext_stage(listener):
+    """Regression: the pivot launcher used the OLD RC4 staging model to decode
+    stage 0 (`-join[Char[]](& $R $data ($IV+$K))|IEX`), but the http listener
+    returns the stage as PLAINTEXT and `$R` (the RC4 function) is never defined
+    in the launcher. So the stage-0 GET succeeded, then the launcher crashed
+    trying to decrypt plaintext with an undefined function — the stager never
+    ran and staging silently stalled after stage 1. The launcher must IEX the
+    plaintext stage exactly like the http listener does."""
+    launcher = listener.generate_launcher(
+        listener_name="fake_listener", language="powershell", encode=False
+    )
+
+    assert "[Text.Encoding]::UTF8.GetString($data)" in launcher
+    # The stale RC4 decode path must be gone.
+    assert "& $R" not in launcher
+    assert "$iv=$data[0..3]" not in launcher
+
+
 @pytest.mark.parametrize("language", ["csharp", "go"])
 def test_generate_stager_stageless(listener, language):
     assert listener.generate_stager(listener.options, language=language) == ""
@@ -94,6 +120,148 @@ def test_generate_agent_stageless(listener, language):
 @pytest.mark.parametrize("language", ["csharp", "go"])
 def test_generate_comms_stageless(listener, language):
     assert listener.generate_comms(listener.options, language=language) == ""
+
+
+@pytest.mark.parametrize("language", ["powershell", "python"])
+def test_generate_stager_renders_session_cookie_from_options(
+    listener, main_menu_mock, language
+):
+    """Regression: generate_stager referenced self.session_cookie, which the
+    pivot listener never sets (unlike the http listener, which sets it in
+    post_init). The staging cookie must instead come from the passed-in
+    listenerOptions the pivot inherits from its parent http listener."""
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    listener.options["Cookie"] = {"Value": "PIVOTSESSION"}
+
+    stager = listener.generate_stager(listener.options, language=language)
+
+    assert stager is not None
+    assert "PIVOTSESSION" in stager
+
+
+@pytest.mark.parametrize("language", ["powershell", "python"])
+def test_generate_comms_renders_session_cookie_from_options(
+    listener, main_menu_mock, language
+):
+    """Same missing-attribute bug reached generate_comms too."""
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    listener.options["Cookie"] = {"Value": "PIVOTSESSION"}
+
+    comms = listener.generate_comms(listener.options, language=language)
+
+    assert comms is not None
+    assert "PIVOTSESSION" in comms
+
+
+def test_generate_stager_powershell_embeds_parent_cert_keys(listener, main_menu_mock):
+    """Regression: the stage-1 stager must embed the PARENT listener's ed25519
+    cert keys. Without them the template renders '$Script:pk = ' (empty), the
+    agent's server-cert check fails, and it never requests stage 2 — the
+    'stage 1 sent, nothing after' symptom."""
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+
+    stager = listener.generate_stager(listener.options, language="powershell")
+
+    assert stager is not None
+    # http.ps1.j2: `$Script:pk = {{ agent_public_cert_key }}` — a populated
+    # key renders as a PowerShell byte array (0x..,0x..), never empty.
+    assert "$Script:pk = 0x" in stager
+
+
+def test_generate_stager_powershell_is_not_collapsed_to_one_line(
+    listener, main_menu_mock
+):
+    """Regression: the pivot ran listener_util.remove_lines_comments() on the
+    stage-1 stager, which concatenates the remaining lines WITHOUT a separator —
+    collapsing the whole multi-line PowerShell+embedded-C# script onto a single
+    line the agent can't execute. Stage 1 gets served, but the agent dies before
+    requesting stage 2. The http listener serves this template as-is; so must the
+    pivot."""
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+
+    stager = listener.generate_stager(listener.options, language="powershell")
+
+    assert stager is not None
+    # http.ps1.j2 is a several-hundred-line script (Add-Type C#, functions). A
+    # collapsed stager has essentially no newlines left, so any healthy render
+    # clears this floor with huge margin.
+    min_healthy_newlines = 20
+    assert stager.count("\n") > min_healthy_newlines
+
+
+def test_generate_stager_python_embeds_parent_cert_keys(listener, main_menu_mock):
+    """Same missing-key failure reaches the python stage-1 template, where an
+    empty value produces `self.agent_private_cert_key = ` — a SyntaxError that
+    kills the stage-1 script before it can fetch stage 2."""
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+
+    stager = listener.generate_stager(listener.options, language="python")
+
+    assert stager is not None
+    # All three keys are load-bearing in http.py.j2: agent_private/public sign
+    # the agent cert (line 59) and server_public_cert_key backs the checkvalid()
+    # server-cert check (line 84) whose failure is the exact symptom above. An
+    # empty render of any of them reintroduces the bug, so assert all three.
+    assert "self.agent_private_cert_key = b" in stager
+    assert "self.agent_public_cert_key = b" in stager
+    assert "self.server_public_cert_key = b" in stager
+
+
+def test_generate_stager_returns_none_when_parent_listener_not_active(
+    listener, main_menu_mock, caplog
+):
+    """If the parent listener isn't active we can't source the staging keys.
+    Fail loudly with None rather than emit a broken, un-stageable stager."""
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    listener.parent_listener_name = "gone"
+
+    with caplog.at_level(
+        logging.ERROR, logger="empire.server.listeners.port_forward_pivot.listener"
+    ):
+        result = listener.generate_stager(listener.options, language="powershell")
+
+    assert result is None
+    assert any("is not active" in r.message for r in caplog.records)
+
+
+def test_generate_stager_returns_none_when_active_parent_lacks_staging_keys(
+    listener, main_menu_mock, caplog
+):
+    """Time-of-check/time-of-use guard: start() rejects keyless parents, but the
+    parent could be swapped or torn down between start() and stage time. If the
+    resolved parent is active yet lacks the cert-key attributes, generate_stager
+    must return None (→ a clean 404) rather than raise an opaque AttributeError."""
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    # Active (truthy) parent instance that exposes none of the key attributes.
+    main_menu_mock.listenersv2.get_active_listener_by_name.side_effect = lambda name: (
+        Mock(spec=[]) if name == "parent_listener" else None
+    )
+
+    with caplog.at_level(
+        logging.ERROR, logger="empire.server.listeners.port_forward_pivot.listener"
+    ):
+        result = listener.generate_stager(listener.options, language="powershell")
+
+    assert result is None
+    assert any("does not provide staging keys" in r.message for r in caplog.records)
+
+
+def test_generate_stager_returns_none_when_called_before_start(
+    listener, main_menu_mock, caplog
+):
+    """generate_stager() before start() has no parent to source keys from
+    (parent_listener_name is still None). It must fail loudly with a distinct
+    message rather than resolving get_active_listener_by_name(None)."""
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    listener.parent_listener_name = None
+
+    with caplog.at_level(
+        logging.ERROR, logger="empire.server.listeners.port_forward_pivot.listener"
+    ):
+        result = listener.generate_stager(listener.options, language="powershell")
+
+    assert result is None
+    assert any("called before start()" in r.message for r in caplog.records)
 
 
 def test_generate_stager_unknown_language_returns_none(listener):
@@ -249,6 +417,43 @@ def test_start_dispatches_correct_task_for_language(
     relay_payload = args[3]
     assert "8443" in relay_payload
     assert "10.0.0.5" in relay_payload
+
+
+def test_start_records_parent_listener_name(started_listener, main_menu_mock):
+    """generate_stager() later resolves the parent's staging cert keys by this
+    name, so start() must record the listener the agent is homed on."""
+    pivot, _ = started_listener
+    _set_language(main_menu_mock, "powershell")
+    main_menu_mock.agenttasksv2.add_task.return_value = (
+        MagicMock(id=FAKE_TASK_ID),
+        None,
+    )
+
+    assert pivot.start() is True
+    assert pivot.parent_listener_name == "parent_listener"
+
+
+def test_start_rejects_parent_without_staging_keys(
+    started_listener, main_menu_mock, caplog
+):
+    """A pivot borrows its parent's ed25519 staging keys at stage-1 time. If the
+    agent is homed on a listener that has none (smb, http_foreign, http_hop, or
+    another pivot), start() must reject it up front rather than fail later with
+    an opaque HTTP 500 when the agent tries to stage."""
+    pivot, _ = started_listener
+    _set_language(main_menu_mock, "powershell")
+    keyless_parent = Mock(spec=[])  # truthy, but exposes no cert-key attributes
+    main_menu_mock.listenersv2.get_active_listener_by_name.side_effect = lambda lname: (
+        keyless_parent if lname == "parent_listener" else None
+    )
+
+    with caplog.at_level(
+        logging.ERROR, logger="empire.server.listeners.port_forward_pivot.listener"
+    ):
+        assert pivot.start() is False
+
+    assert any("does not provide staging keys" in r.message for r in caplog.records)
+    main_menu_mock.agenttasksv2.add_task.assert_not_called()
 
 
 def test_start_returns_false_when_add_task_fails(started_listener, main_menu_mock):

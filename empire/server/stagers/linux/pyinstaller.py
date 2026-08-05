@@ -108,6 +108,17 @@ class Stager:
             encode=False,
         )
 
+        # generate_*() return None on failure (e.g. a port_forward_pivot whose
+        # parent listener is inactive or can't supply staging keys). Fail cleanly
+        # rather than an opaque AttributeError from .splitlines() below.
+        if agent_code is None or comms_code is None or stager_code is None:
+            raise StagerGenerationException(
+                f"Listener '{listener_name}' produced no agent/comms/stager code "
+                "for pyinstaller stageless generation; if it is a "
+                "port_forward_pivot, its parent listener may be inactive or unable "
+                "to supply staging keys."
+            )
+
         imports_list = []
         for code in [agent_code, comms_code, stager_code]:
             for line in code.splitlines():

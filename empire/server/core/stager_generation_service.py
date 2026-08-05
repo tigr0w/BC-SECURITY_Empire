@@ -19,7 +19,10 @@ from sqlalchemy import select
 from empire.server.common import helpers, packets
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
-from empire.server.core.exceptions import ModuleValidationException
+from empire.server.core.exceptions import (
+    ModuleValidationException,
+    StagerGenerationException,
+)
 from empire.server.utils import data_util
 from empire.server.utils.donut_util import donut_create
 
@@ -51,6 +54,35 @@ def _resolve_arch(arch: str) -> int:
     if arch not in _ARCH_MAP:
         raise ValueError(f"Unsupported arch: {arch}")
     return _ARCH_MAP[arch]
+
+
+def _require_stageless_parts(
+    active_listener, language, agent_code, comms_code, stager_code
+):
+    """Raise StagerGenerationException if any stageless building block is None.
+
+    generate_stager()/generate_comms()/generate_agent() return None on failure
+    (e.g. a port_forward_pivot whose parent listener is inactive or cannot supply
+    staging keys). Callers then do `.replace()`/`.join()` on the result, so a None
+    would surface as an opaque AttributeError/TypeError → HTTP 500. Failing here
+    with StagerGenerationException lets stager_service convert it to a clean 400.
+    """
+    missing = [
+        name
+        for name, value in (
+            ("agent", agent_code),
+            ("comms", comms_code),
+            ("stager", stager_code),
+        )
+        if value is None
+    ]
+    if missing:
+        listener_name = active_listener.options["Name"]["Value"]
+        raise StagerGenerationException(
+            f"Listener '{listener_name}' produced no {language} {'/'.join(missing)} "
+            "code for stageless generation; if it is a port_forward_pivot, its "
+            "parent listener may be inactive or unable to supply staging keys."
+        )
 
 
 class StagerGenerationService:
@@ -1019,15 +1051,22 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             active_listener.options, language=language
         )
 
-        stager_code = (
-            active_listener.generate_stager(
-                active_listener.options, language=language, encrypt=False, encode=False
-            )
-            .replace("exec(agent_code, globals())", "")
-            .replace(
-                "stage = Stage()",
-                f"stage = Stage()\nserver='{active_listener.host_address}'",
-            )
+        stager_code = active_listener.generate_stager(
+            active_listener.options, language=language, encrypt=False, encode=False
+        )
+
+        # generate_stager()/generate_comms() return None on failure (e.g. a
+        # port_forward_pivot whose parent listener is inactive or can't supply
+        # staging keys). Fail with a clean StagerGenerationException — which
+        # stager_service converts to a 400 — rather than an opaque AttributeError
+        # from the .replace()/join() below.
+        _require_stageless_parts(
+            active_listener, language, agent_code, comms_code, stager_code
+        )
+
+        stager_code = stager_code.replace("exec(agent_code, globals())", "").replace(
+            "stage = Stage()",
+            f"stage = Stage()\nserver='{active_listener.host_address}'",
         )
 
         if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
@@ -1045,13 +1084,19 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             active_listener.options, language=language
         )
 
-        stager_code = (
-            active_listener.generate_stager(
-                active_listener.options, language=language, encrypt=False, encode=False
-            )
-            .replace("IEX ($e.GetString($agentBytes))", "")
-            .replace('Start-Negotiate -s "$ser"', 'Start-Negotiate -s "$Script:server"')
+        stager_code = active_listener.generate_stager(
+            active_listener.options, language=language, encrypt=False, encode=False
         )
+
+        # See generate_python_stageless: fail cleanly on a None building block
+        # rather than an opaque AttributeError from the .replace() below.
+        _require_stageless_parts(
+            active_listener, language, agent_code, comms_code, stager_code
+        )
+
+        stager_code = stager_code.replace(
+            "IEX ($e.GetString($agentBytes))", ""
+        ).replace('Start-Negotiate -s "$ser"', 'Start-Negotiate -s "$Script:server"')
 
         if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
             full_agent = "\n".join([agent_code, stager_code, comms_code])

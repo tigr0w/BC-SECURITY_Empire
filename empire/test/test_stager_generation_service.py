@@ -15,6 +15,7 @@ from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import (
     ModuleExecutionException,
     ModuleValidationException,
+    StagerGenerationException,
 )
 from empire.server.core.stager_generation_service import (
     StagerGenerationService,
@@ -90,6 +91,31 @@ def test_generate_launcher_fetcher(stager_generation_service):
 
 def test_generate_launcher(stager_generation_service):
     pass
+
+
+@pytest.mark.parametrize(
+    ("method", "language"),
+    [
+        ("generate_python_stageless", "python"),
+        ("generate_powershell_stageless", "powershell"),
+    ],
+)
+def test_stageless_raises_when_generate_stager_returns_none(method, language):
+    """A listener whose generate_stager() returns None (e.g. a port_forward_pivot
+    with an inactive/keyless parent) must yield a clean StagerGenerationException
+    — which stager_service turns into a 400 — not an opaque AttributeError from
+    the downstream .replace()/join(). The functions don't touch self, so a mock
+    self is fine."""
+    active_listener = MagicMock()
+    active_listener.options = {"Name": {"Value": "pivot1"}}
+    active_listener.host_address = "http://127.0.0.1/"
+    active_listener.info = {"Name": "port_forward_pivot"}
+    active_listener.generate_agent.return_value = "agent"
+    active_listener.generate_comms.return_value = "comms"
+    active_listener.generate_stager.return_value = None
+
+    with pytest.raises(StagerGenerationException, match="stager"):
+        getattr(StagerGenerationService, method)(MagicMock(), active_listener, language)
 
 
 def test_generate_launcher_embeds_safechecks_ps_bypass(stager_generation_service):
