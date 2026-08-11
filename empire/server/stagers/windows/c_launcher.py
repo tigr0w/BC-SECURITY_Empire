@@ -140,6 +140,14 @@ class Stager:
                 raise StagerGenerationException(
                     f"Compilation failed: {e.stderr}"
                 ) from e
+            except FileNotFoundError as e:
+                # A missing toolchain is operator-fixable setup, not a server
+                # fault: generate_stager turns this into a 400 carrying the
+                # remedy, where an uncaught OSError would be a 500.
+                raise StagerGenerationException(
+                    f"{compiler} not found. Install mingw-w64: "
+                    "apt install gcc-mingw-w64-x86-64"
+                ) from e
 
             if exe_file.exists():
                 return exe_file.read_bytes()

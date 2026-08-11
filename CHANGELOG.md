@@ -126,6 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Demoted the malleable "accepting `set <key>` but not acting on it" log from INFO to DEBUG (the allow-list spans 60+ keys and flooded consoles); unknown directives still WARN.
 -   Parallelized the test suite with pytest-xdist and preserved the cached empire-compiler / Starkiller / Go-build dirs across runs instead of re-downloading them each time (developer/CI change).
 -   The two heaviest C# compile tests (SharpHound, Rubeus) now run only on release branches / the `run-all-versions` label instead of every PR; the other C# modules still compile per-PR (developer/CI change).
+-   Download responses now carry an explicit `Content-Type` from an Empire-owned extension map, so a file no longer serves as a different type depending on the operator's distro; anything unmapped serves as `application/octet-stream`.
 
 ### Removed
 
@@ -188,6 +189,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed `_generate_script` firing a spurious `DeprecationWarning` on every successful module execution; it now returns data directly (or raises `Module*Exception`). The tuple-return warning in `execute_module` now fires only for legacy `(None, msg)` custom-generate modules.
 -   Fixed `ShellPostRequest.literal` firing a spurious `DeprecationWarning` on every shell POST; the handler no longer reads the field and `literal` was dropped from `create_task_shell`, though the DTO keeps it `deprecated=` for clients.
 -   Fixed `is_option_required` raising `KeyError` on a `depends_on` entry that omits a `values` list; a valueless dependency now imposes no value constraint, matching `evaluate_dependencies`. No shipped module triggers this, but it crashed validation for any valueless `depends_on`.
+-   Fixed a missing `x86_64-w64-mingw32-gcc` in the Windows C stager returning an opaque 500 instead of a 400 naming the toolchain and its install command.
 
 ## [6.7.1] - 2026-07-25
 

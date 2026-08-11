@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Query
@@ -62,6 +63,38 @@ def get_download(
 DownloadDep = Annotated[models.Download, Depends(get_download)]
 
 
+# Explicit types, so the served Content-Type does not depend on which mime
+# database the host's distro ships. Starlette otherwise guesses via `mimetypes`,
+# whose map varies by host and has no environment override.
+_MEDIA_TYPES = {
+    ".bat": "text/plain",
+    ".cls": "text/plain",
+    ".csv": "text/plain",
+    ".hta": "text/plain",
+    ".ino": "text/plain",
+    ".log": "text/plain",
+    ".ps1": "text/plain",
+    ".py": "text/plain",
+    ".sh": "text/plain",
+    ".txt": "text/plain",
+    ".vbs": "text/plain",
+    ".xml": "text/plain",
+    ".xsl": "text/plain",
+    # Screenshots and avatars render inline in the UI. .svg is deliberately
+    # absent: it is the one image type that carries script.
+    ".bmp": "image/bmp",
+    ".gif": "image/gif",
+    ".jpeg": "image/jpeg",
+    ".jpg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+}
+
+
+def _media_type(filename: str) -> str:
+    return _MEDIA_TYPES.get(Path(filename).suffix.lower(), "application/octet-stream")
+
+
 @router.get("/{uid}/download", response_class=FileResponse)
 def download_download(
     uid: int,
@@ -70,7 +103,9 @@ def download_download(
 ):
     filename = db_download.filename or db_download.location.split("/")[-1]
 
-    return FileResponse(db_download.location, filename=filename)
+    return FileResponse(
+        db_download.location, filename=filename, media_type=_media_type(filename)
+    )
 
 
 tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_download)

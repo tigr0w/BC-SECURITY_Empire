@@ -54,6 +54,11 @@ def pytest_configure(config):
         "release_only: heavy test (the SharpHound/Rubeus C# compiles) run only on "
         "release/label CI, deselected on per-PR runs via -m 'not release_only'",
     )
+    config.addinivalue_line(
+        "markers",
+        "mingw: requires the x86_64-w64-mingw32-gcc cross-compiler; the tests "
+        "self-skip too, so -m 'not mingw' deselects them without running",
+    )
     _reset_test_dirs()
 
 

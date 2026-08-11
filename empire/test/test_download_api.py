@@ -1,7 +1,77 @@
 import urllib.parse
 from pathlib import Path
 
+import pytest
 from starlette import status
+
+from empire.server.api.v2.download.download_api import _media_type
+
+
+@pytest.mark.parametrize(
+    ("filename", "expected"),
+    [
+        ("launcher.txt", "text/plain"),
+        ("launcher.bat", "text/plain"),
+        ("launcher.ps1", "text/plain"),
+        ("launcher.py", "text/plain"),
+        ("launcher.sh", "text/plain"),
+        ("payload.vbs", "text/plain"),
+        ("payload.hta", "text/plain"),
+        ("stylesheet.xsl", "text/plain"),
+        ("teensy.ino", "text/plain"),
+        ("sessions.csv", "text/plain"),
+        ("master.log", "text/plain"),
+        ("screenshot.png", "image/png"),
+        ("screenshot.JPG", "image/jpeg"),
+        ("avatar.jpeg", "image/jpeg"),
+        ("avatar.gif", "image/gif"),
+        # Unmapped extensions fall through to opaque.
+        ("stager.dll", "application/octet-stream"),
+        ("Sharpire.exe", "application/octet-stream"),
+        ("out.zip", "application/octet-stream"),
+        ("capture.pcap", "application/octet-stream"),
+        ("empire", "application/octet-stream"),
+        (".bashrc", "application/octet-stream"),
+        ("avatar.svg", "application/octet-stream"),
+    ],
+)
+def test_media_type_is_host_independent(filename, expected):
+    assert _media_type(filename) == expected
+
+
+@pytest.mark.parametrize(
+    ("filename", "expected"),
+    [
+        # Each case must be one where Empire's map and Starlette's guess
+        # DISAGREE; a case where they agree cannot fail. .py and .svg come from
+        # CPython's built-in table, so they discriminate even on a host with no
+        # mime file at all.
+        ("guard.py", "text/plain"),  # built-in says text/x-python
+        ("guard.svg", "application/octet-stream"),  # built-in says image/svg+xml
+        ("guard.ps1", "text/plain"),  # unmapped, so the guess is octet-stream
+    ],
+)
+def test_download_media_type_comes_from_empire_not_the_host(
+    client, admin_auth_header, filename, expected
+):
+    """Drop the ``media_type=`` kwarg from the ``FileResponse`` and all three
+    cases must fail - that is the regression this guards.
+    """
+    created = client.post(
+        "/api/v2/downloads",
+        headers=admin_auth_header,
+        files={"file": (filename, b"guard")},
+    )
+    assert created.status_code == status.HTTP_201_CREATED
+
+    response = client.get(
+        f"/api/v2/downloads/{created.json()['id']}/download",
+        headers=admin_auth_header,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    # Starlette appends '; charset=utf-8' to text/* types.
+    assert response.headers["content-type"].split(";")[0].strip() == expected
 
 
 def test_get_download_not_found(client, admin_auth_header):

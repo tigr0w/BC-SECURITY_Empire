@@ -424,9 +424,28 @@ def test_plugin_disabled_execution(client, admin_auth_header, main):
         internal_plugin.execution_enabled = True
 
 
+# Passed to every git invocation so these tests carry their own config instead
+# of inheriting the host's: with no identity `git commit` exits 128, a host
+# init.defaultBranch=main breaks the `checkout master` below, commit signing
+# fails when the key is unreachable, and a global core.hooksPath runs that
+# host's hooks against these throwaway repos.
+_GIT_CONFIG_FLAGS = [
+    "-c",
+    "user.name=Empire Test",
+    "-c",
+    "user.email=empire-test@example.invalid",
+    "-c",
+    "init.defaultBranch=master",
+    "-c",
+    "commit.gpgsign=false",
+    "-c",
+    "core.hooksPath=/dev/null",
+]
+
+
 def _git_commands(cwd, commands: list[list[str]]):
     for c in commands:
-        subprocess.run(["git", *c], cwd=cwd, check=True)
+        subprocess.run(["git", *_GIT_CONFIG_FLAGS, *c], cwd=cwd, check=True)
 
 
 @pytest.fixture

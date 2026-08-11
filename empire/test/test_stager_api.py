@@ -1,19 +1,67 @@
 import base64
 import logging
 import re
+import shutil
 from unittest.mock import MagicMock
 
 import pytest
 from starlette import status
 
-from empire.server.core.exceptions import ModuleExecutionException
+from empire.server.core.exceptions import (
+    ModuleExecutionException,
+    StagerGenerationException,
+)
 from empire.server.core.go import GoCompiler
 from empire.server.core.stager_service import StagerService
+from empire.server.stagers.windows import c_launcher
+from empire.server.utils.string_util import get_random_string
+
+MINGW_CC = "x86_64-w64-mingw32-gcc"
+
+requires_mingw = pytest.mark.skipif(
+    shutil.which(MINGW_CC) is None, reason=f"{MINGW_CC} not on PATH"
+)
+
+
+def _unique(name):
+    """``Stager.name`` is ``unique=True``, so a leaked row 400s every later test
+    that reuses its name.
+    """
+    return f"{name}_{get_random_string(8)}"
+
+
+@pytest.fixture
+def created_stagers(client, admin_auth_header):
+    """Ids to delete when the test ends, however it ends. Register right after
+    the ``201`` assertion - before it, a 400 body has no ``id``.
+    """
+    created = []
+    yield created
+
+    # Collect failures rather than asserting per id, so one bad id cannot abort
+    # the loop and leak the rest. TestClient raises on a 500, hence the except.
+    failed = []
+    for stager_id in created:
+        try:
+            response = client.delete(
+                f"/api/v2/stagers/{stager_id}", headers=admin_auth_header
+            )
+        except Exception as e:
+            failed.append(f"{stager_id}: {e!r}")
+        else:
+            # 404 is fine, the test may have deleted it itself.
+            if response.status_code not in (
+                status.HTTP_204_NO_CONTENT,
+                status.HTTP_404_NOT_FOUND,
+            ):
+                failed.append(f"{stager_id}: HTTP {response.status_code}")
+
+    assert not failed, f"stager cleanup failed: {failed}"
 
 
 def get_base_stager():
     return {
-        "name": "MyStager",
+        "name": _unique("MyStager"),
         "template": "multi_launcher",
         "options": {
             "Listener": "new-listener-1",
@@ -32,7 +80,7 @@ def get_base_stager():
 
 def get_base_stager_dll():
     return {
-        "name": "MyStager2",
+        "name": _unique("MyStager2"),
         "template": "windows_dll",
         "options": {
             "Listener": "new-listener-1",
@@ -52,7 +100,7 @@ def get_base_stager_dll():
 
 def get_base_stager_malleable():
     return {
-        "name": "MyStager",
+        "name": _unique("MyStager"),
         "template": "multi_launcher",
         "options": {
             "Listener": "malleable_listener_1",
@@ -71,7 +119,7 @@ def get_base_stager_malleable():
 
 def get_bat_stager():
     return {
-        "name": "bat_stager",
+        "name": _unique("bat_stager"),
         "template": "windows_launcher_bat",
         "options": {
             "Listener": "new-listener-1",
@@ -86,7 +134,7 @@ def get_bat_stager():
 
 def get_windows_macro_stager():
     return {
-        "name": "macro_stager",
+        "name": _unique("macro_stager"),
         "template": "windows_macro",
         "options": {
             "Listener": "new-listener-1",
@@ -103,7 +151,7 @@ def get_windows_macro_stager():
 
 def get_pyinstaller_stager():
     return {
-        "name": "MyStager3",
+        "name": _unique("MyStager3"),
         "template": "linux_pyinstaller",
         "options": {
             "Listener": "new-listener-1",
@@ -116,7 +164,7 @@ def get_pyinstaller_stager():
 
 def get_base_csharp_exe_stager():
     return {
-        "name": "CSharpExeStager",
+        "name": _unique("CSharpExeStager"),
         "template": "windows_csharp_exe",
         "options": {
             "Listener": "new-listener-1",
@@ -136,7 +184,7 @@ def get_base_csharp_exe_stager():
 
 def get_windows_c_stager():
     return {
-        "name": "windows-c-test-stager",
+        "name": _unique("windows-c-test-stager"),
         "template": "windows_c_launcher",
         "options": {"Listener": "new-listener-1", "OutFile": "test_stager.exe"},
     }
@@ -291,7 +339,7 @@ def test_create_stager_template_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "Stager Template qwerty not found"
 
 
-def test_create_stager_one_liner(client, admin_auth_header):
+def test_create_stager_one_liner(client, admin_auth_header, created_stagers):
     base_stager = get_base_stager()
     # test that it ignore extra params
     base_stager["options"]["xyz"] = "xyz"
@@ -300,16 +348,15 @@ def test_create_stager_one_liner(client, admin_auth_header):
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
     )
     assert response.status_code == status.HTTP_201_CREATED
+    created_stagers.append(response.json()["id"])
     assert response.json()["options"].get("xyz") is None
     assert len(response.json().get("downloads", [])) > 0
     assert (
         response.json().get("downloads", [])[0]["link"].startswith("/api/v2/downloads")
     )
 
-    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
-
-def test_create_malleable_stager_one_liner(client, admin_auth_header):
+def test_create_malleable_stager_one_liner(client, admin_auth_header, created_stagers):
     base_stager_malleable = get_base_stager_malleable()
     # test that it ignore extra params
     base_stager_malleable["options"]["xyz"] = "xyz"
@@ -320,16 +367,17 @@ def test_create_malleable_stager_one_liner(client, admin_auth_header):
         json=base_stager_malleable,
     )
     assert response.status_code == status.HTTP_201_CREATED
+    created_stagers.append(response.json()["id"])
     assert response.json()["options"].get("xyz") is None
     assert len(response.json().get("downloads", [])) > 0
     assert (
         response.json().get("downloads", [])[0]["link"].startswith("/api/v2/downloads")
     )
 
-    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
-
-def test_create_malleable_csharp_launcher_no_longer_blocked(client, admin_auth_header):
+def test_create_malleable_csharp_launcher_no_longer_blocked(
+    client, admin_auth_header, created_stagers
+):
     """Regression for the allow-list gate that blocked C# / IronPython /
     Go stagers against the malleable HTTP listener even though Sharpire
     and Gopire support it. The routing helper now dispatches to the
@@ -338,20 +386,21 @@ def test_create_malleable_csharp_launcher_no_longer_blocked(client, admin_auth_h
     a non-empty stager download.
     """
     stager = get_base_stager_malleable()
-    stager["name"] = "MalleableCsharpSmoke"
+    stager["name"] = _unique("MalleableCsharpSmoke")
     stager["options"]["Language"] = "csharp"
 
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=stager
     )
     assert response.status_code == status.HTTP_201_CREATED, response.json()
+    created_stagers.append(response.json()["id"])
     downloads = response.json().get("downloads", [])
     assert downloads, "csharp launcher against malleable must produce a download link"
 
-    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
-
-def test_create_malleable_dll_csharp_no_longer_blocked(client, admin_auth_header):
+def test_create_malleable_dll_csharp_no_longer_blocked(
+    client, admin_auth_header, created_stagers
+):
     """Same regression as the multi_launcher test above, but for one of the
     11 wrapper stagers (windows_dll) that also had the gate. Spot-checks one
     wrapper; the other 10 share the textually-identical patch (allow-list
@@ -359,7 +408,7 @@ def test_create_malleable_dll_csharp_no_longer_blocked(client, admin_auth_header
     here implies coverage there.
     """
     stager = get_base_stager_dll()
-    stager["name"] = "MalleableDllSmoke"
+    stager["name"] = _unique("MalleableDllSmoke")
     stager["options"]["Listener"] = "malleable_listener_1"
     stager["options"]["Language"] = "csharp"
 
@@ -367,39 +416,39 @@ def test_create_malleable_dll_csharp_no_longer_blocked(client, admin_auth_header
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=stager
     )
     assert response.status_code == status.HTTP_201_CREATED, response.json()
+    created_stagers.append(response.json()["id"])
     downloads = response.json().get("downloads", [])
     assert downloads, "dll wrapper for csharp+malleable must produce a download link"
 
-    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
-
-def test_create_obfuscated_stager_one_liner(client, admin_auth_header):
+def test_create_obfuscated_stager_one_liner(client, admin_auth_header, created_stagers):
     base_stager = get_base_stager()
     # test that it ignore extra params
     base_stager["options"]["xyz"] = "xyz"
 
-    base_stager["name"] = "My_Obfuscated_Stager"
+    base_stager["name"] = _unique("My_Obfuscated_Stager")
     base_stager["options"]["Obfuscate"] = "True"
 
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
     )
     assert response.status_code == status.HTTP_201_CREATED
+    created_stagers.append(response.json()["id"])
     assert response.json()["options"].get("xyz") is None
     assert len(response.json().get("downloads", [])) > 0
     assert (
         response.json().get("downloads", [])[0]["link"].startswith("/api/v2/downloads")
     )
 
-    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
-
-def test_create_obfuscated_malleable_stager_one_liner(client, admin_auth_header):
+def test_create_obfuscated_malleable_stager_one_liner(
+    client, admin_auth_header, created_stagers
+):
     base_stager_malleable = get_base_stager_malleable()
     # test that it ignore extra params
     base_stager_malleable["options"]["xyz"] = "xyz"
 
-    base_stager_malleable["name"] = "My_Obfuscated_Stager"
+    base_stager_malleable["name"] = _unique("My_Obfuscated_Stager")
     base_stager_malleable["options"]["Obfuscate"] = "True"
 
     response = client.post(
@@ -408,16 +457,15 @@ def test_create_obfuscated_malleable_stager_one_liner(client, admin_auth_header)
         json=base_stager_malleable,
     )
     assert response.status_code == status.HTTP_201_CREATED
+    created_stagers.append(response.json()["id"])
     assert response.json()["options"].get("xyz") is None
     assert len(response.json().get("downloads", [])) > 0
     assert (
         response.json().get("downloads", [])[0]["link"].startswith("/api/v2/downloads")
     )
 
-    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
-
-def test_create_stager_file(client, admin_auth_header):
+def test_create_stager_file(client, admin_auth_header, created_stagers):
     base_stager_dll = get_base_stager_dll()
     # test that it ignore extra params
     base_stager_dll["options"]["xyz"] = "xyz"
@@ -426,22 +474,22 @@ def test_create_stager_file(client, admin_auth_header):
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager_dll
     )
     assert response.status_code == status.HTTP_201_CREATED
+    created_stagers.append(response.json()["id"])
     assert response.json()["options"].get("xyz") is None
     assert len(response.json().get("downloads", [])) > 0
     assert (
         response.json().get("downloads", [])[0]["link"].startswith("/api/v2/downloads")
     )
 
-    client.delete(f"/api/v2/stagers/{response.json()['id']}", headers=admin_auth_header)
 
-
-def test_create_stager_name_conflict(client, admin_auth_header):
+def test_create_stager_name_conflict(client, admin_auth_header, created_stagers):
     base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
     )
     assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
 
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
@@ -451,8 +499,6 @@ def test_create_stager_name_conflict(client, admin_auth_header):
         response.json()["detail"]
         == f"Stager with name {base_stager['name']} already exists."
     )
-
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
 def test_create_stager_save_false(client, admin_auth_header):
@@ -468,14 +514,14 @@ def test_create_stager_save_false(client, admin_auth_header):
     )
 
 
-def test_get_stager(client, admin_auth_header):
+def test_get_stager(client, admin_auth_header, created_stagers):
     base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
     )
-    stager_id = response.json()["id"]
-
     assert response.status_code == status.HTTP_201_CREATED
+    stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
 
     response = client.get(
         f"/api/v2/stagers/{stager_id}",
@@ -483,8 +529,6 @@ def test_get_stager(client, admin_auth_header):
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["id"] == stager_id
-
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
 def test_get_stager_not_found(client, admin_auth_header):
@@ -505,7 +549,7 @@ def test_update_stager_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "Stager not found for id 9999"
 
 
-def test_download_stager_one_liner(client, admin_auth_header):
+def test_download_stager_one_liner(client, admin_auth_header, created_stagers):
     base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true",
@@ -514,6 +558,7 @@ def test_download_stager_one_liner(client, admin_auth_header):
     )
     assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
 
     response = client.get(
         f"/api/v2/stagers/{stager_id}",
@@ -524,16 +569,11 @@ def test_download_stager_one_liner(client, admin_auth_header):
         headers=admin_auth_header,
     )
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] in [
-        "text/plain",
-        "application/octet-stream",
-    ]
+    assert response.headers.get("content-type").split(";")[0] == "text/plain"
     assert response.text.startswith("powershell -noP -sta")
 
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
-
-def test_download_stager_file(client, admin_auth_header):
+def test_download_stager_file(client, admin_auth_header, created_stagers):
     base_stager_dll = get_base_stager_dll()
     response = client.post(
         "/api/v2/stagers/?save=true",
@@ -542,6 +582,7 @@ def test_download_stager_file(client, admin_auth_header):
     )
     assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
 
     response = client.get(
         f"/api/v2/stagers/{stager_id}",
@@ -552,16 +593,16 @@ def test_download_stager_file(client, admin_auth_header):
         headers=admin_auth_header,
     )
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] in [
-        "application/x-msdownload",
-        "application/x-msdos-program",
-    ]
+    assert (
+        response.headers.get("content-type").split(";")[0] == "application/octet-stream"
+    )
+    assert response.content[:2] == b"MZ", "not a PE binary"
     assert isinstance(response.content, bytes)
 
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
-
-def test_update_stager_allows_edits_and_generates_new_file(client, admin_auth_header):
+def test_update_stager_allows_edits_and_generates_new_file(
+    client, admin_auth_header, created_stagers
+):
     base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true",
@@ -570,6 +611,7 @@ def test_update_stager_allows_edits_and_generates_new_file(client, admin_auth_he
     )
     assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
 
     response = client.get(
         f"/api/v2/stagers/{stager_id}",
@@ -591,10 +633,8 @@ def test_update_stager_allows_edits_and_generates_new_file(client, admin_auth_he
     assert response.json()["options"]["Base64"] == "False"
     assert response.json()["name"] == original_name + "_updated!"
 
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
-
-def test_update_stager_name_conflict(client, admin_auth_header):
+def test_update_stager_name_conflict(client, admin_auth_header, created_stagers):
     base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true",
@@ -603,6 +643,7 @@ def test_update_stager_name_conflict(client, admin_auth_header):
     )
     assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
 
     response = client.get(
         f"/api/v2/stagers/{stager_id}",
@@ -611,7 +652,7 @@ def test_update_stager_name_conflict(client, admin_auth_header):
     assert response.status_code == status.HTTP_200_OK
 
     base_stager_2 = base_stager.copy()
-    base_stager_2["name"] = "test_stager_2"
+    base_stager_2["name"] = _unique("test_stager_2")
     response2 = client.post(
         "/api/v2/stagers/?save=true",
         headers=admin_auth_header,
@@ -619,6 +660,7 @@ def test_update_stager_name_conflict(client, admin_auth_header):
     )
     assert response2.status_code == status.HTTP_201_CREATED
     stager_id_2 = response2.json()["id"]
+    created_stagers.append(stager_id_2)
 
     response2 = client.get(
         f"/api/v2/stagers/{stager_id_2}",
@@ -641,11 +683,8 @@ def test_update_stager_name_conflict(client, admin_auth_header):
         == f"Stager with name {stager_2['name']} already exists."
     )
 
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
-    client.delete(f"/api/v2/stagers/{stager_id_2}", headers=admin_auth_header)
 
-
-def test_get_stagers(client, admin_auth_header):
+def test_get_stagers(client, admin_auth_header, created_stagers):
     base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true",
@@ -654,9 +693,10 @@ def test_get_stagers(client, admin_auth_header):
     )
     assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
 
     base_stager_2 = base_stager.copy()
-    base_stager_2["name"] = "test_stager_2"
+    base_stager_2["name"] = _unique("test_stager_2")
     response = client.post(
         "/api/v2/stagers/?save=true",
         headers=admin_auth_header,
@@ -664,23 +704,22 @@ def test_get_stagers(client, admin_auth_header):
     )
     assert response.status_code == status.HTTP_201_CREATED
     stager_id_2 = response.json()["id"]
+    created_stagers.append(stager_id_2)
 
     response = client.get(
         "/api/v2/stagers",
         headers=admin_auth_header,
     )
 
-    stager_count = 2
     assert response.status_code == status.HTTP_200_OK
-    assert len(response.json()["records"]) == stager_count
-    assert response.json()["records"][0]["id"] == stager_id
-    assert response.json()["records"][1]["id"] == stager_id_2
+    # Scoped to this test's rows: a global count blames the next test for an
+    # earlier leak, and indexing bets on the query's row order.
+    ids = [record["id"] for record in response.json()["records"]]
+    assert ids.count(stager_id) == 1
+    assert ids.count(stager_id_2) == 1
 
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
-    client.delete(f"/api/v2/stagers/{stager_id_2}", headers=admin_auth_header)
 
-
-def test_delete_stager(client, admin_auth_header):
+def test_delete_stager(client, admin_auth_header, created_stagers):
     base_stager = get_base_stager()
     response = client.post(
         "/api/v2/stagers/?save=true",
@@ -689,6 +728,9 @@ def test_delete_stager(client, admin_auth_header):
     )
     assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
+    # Registered even though this test deletes it: if the 204 below fails the
+    # row would leak. The fixture accepts the resulting 404.
+    created_stagers.append(stager_id)
 
     response = client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
     assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -702,7 +744,7 @@ def test_delete_stager(client, admin_auth_header):
 
 
 @pytest.mark.slow
-def test_pyinstaller_stager_creation(client, admin_auth_header):
+def test_pyinstaller_stager_creation(client, admin_auth_header, created_stagers):
     pyinstaller_stager = get_pyinstaller_stager()
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=pyinstaller_stager
@@ -710,9 +752,8 @@ def test_pyinstaller_stager_creation(client, admin_auth_header):
 
     # Check if the stager is successfully created
     assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["id"] != 0
-
     stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
 
     response = client.get(
         f"/api/v2/stagers/{stager_id}",
@@ -730,19 +771,16 @@ def test_pyinstaller_stager_creation(client, admin_auth_header):
 
     # Check if the file is downloaded successfully
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] in [
-        "text/plain",
-        "application/octet-stream",
-    ]
+    assert (
+        response.headers.get("content-type").split(";")[0] == "application/octet-stream"
+    )
     assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty
     assert len(response.content) > 0
 
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
-
-def test_bat_stager_creation(client, admin_auth_header):
+def test_bat_stager_creation(client, admin_auth_header, created_stagers):
     bat_stager = get_bat_stager()
     response = client.post(
         "/api/v2/stagers/?save=true", headers=admin_auth_header, json=bat_stager
@@ -750,9 +788,8 @@ def test_bat_stager_creation(client, admin_auth_header):
 
     # Check if the stager is successfully created
     assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["id"] != 0
-
     stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
 
     response = client.get(
         f"/api/v2/stagers/{stager_id}",
@@ -770,10 +807,7 @@ def test_bat_stager_creation(client, admin_auth_header):
 
     # Check if the file is downloaded successfully
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] in [
-        "application/x-msdownload",
-        "application/x-msdos-program",
-    ]
+    assert response.headers.get("content-type").split(";")[0] == "text/plain"
     assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty
@@ -800,8 +834,6 @@ def test_bat_stager_creation(client, admin_auth_header):
     assert "DownloadData" in ps
     assert "IEX" in ps or "Invoke-Expression" in ps
 
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
-
 
 @pytest.mark.parametrize(
     ("document_type", "trigger_function", "expected_trigger"),
@@ -815,6 +847,7 @@ def test_bat_stager_creation(client, admin_auth_header):
 def test_macro_stager_generation(
     client,
     admin_auth_header,
+    created_stagers,
     document_type,
     trigger_function,
     expected_trigger,
@@ -831,9 +864,8 @@ def test_macro_stager_generation(
 
     # Check if the stager is successfully created
     assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["id"] != 0
-
     stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
 
     response = client.get(
         f"/api/v2/stagers/{stager_id}",
@@ -851,21 +883,16 @@ def test_macro_stager_generation(
 
     # Check if the file is downloaded successfully
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] in [
-        "text/plain",
-        "application/octet-stream",
-    ]
+    assert response.headers.get("content-type").split(";")[0] == "text/plain"
     assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty
     assert len(response.content) > 0
     assert expected_trigger in response.content.decode("utf-8")
 
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
-
 
 @pytest.mark.slow
-def test_csharp_stager_creation(client, admin_auth_header):
+def test_csharp_stager_creation(client, admin_auth_header, created_stagers):
     base_stager = get_base_csharp_exe_stager()
 
     response = client.post(
@@ -874,9 +901,8 @@ def test_csharp_stager_creation(client, admin_auth_header):
 
     # Check if the stager is successfully created
     assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["id"] != 0
-
     stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
 
     response = client.get(
         f"/api/v2/stagers/{stager_id}",
@@ -894,19 +920,19 @@ def test_csharp_stager_creation(client, admin_auth_header):
 
     # Check if the file is downloaded successfully
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] in [
-        "application/x-msdownload",
-        "application/x-msdos-program",
-    ]
+    assert (
+        response.headers.get("content-type").split(";")[0] == "application/octet-stream"
+    )
+    assert response.content[:2] == b"MZ", "not a PE binary"
     assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty
     assert len(response.content) > 0
 
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
-
-def test_windows_c_stager_creation(client, admin_auth_header):
+@pytest.mark.mingw
+@requires_mingw
+def test_windows_c_stager_creation(client, admin_auth_header, created_stagers):
     stager_data = get_windows_c_stager()
 
     response = client.post(
@@ -914,13 +940,11 @@ def test_windows_c_stager_creation(client, admin_auth_header):
     )
 
     assert response.status_code == status.HTTP_201_CREATED, response.text
-    assert response.json()["id"] != 0
-
     stager_id = response.json()["id"]
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+    created_stagers.append(stager_id)
 
 
-def test_create_stager_download_metadata(client, admin_auth_header):
+def test_create_stager_download_metadata(client, admin_auth_header, created_stagers):
     """Verify that stager download metadata has basename-only filename."""
     base_stager = get_base_stager()
     response = client.post(
@@ -928,6 +952,7 @@ def test_create_stager_download_metadata(client, admin_auth_header):
     )
     assert response.status_code == status.HTTP_201_CREATED
     stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
 
     downloads = response.json().get("downloads", [])
     assert len(downloads) > 0
@@ -938,8 +963,6 @@ def test_create_stager_download_metadata(client, admin_auth_header):
     assert "/" not in filename
     assert "\\" not in filename
     assert len(filename) > 0
-
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
 def test_generate_stager_catches_module_execution_exception(caplog):
@@ -974,7 +997,9 @@ def test_generate_stager_catches_module_execution_exception(caplog):
     )
 
 
-def test_windows_c_stager_download(client, admin_auth_header):
+@pytest.mark.mingw
+@requires_mingw
+def test_windows_c_stager_download(client, admin_auth_header, created_stagers):
     stager_data = get_windows_c_stager()
 
     response = client.post(
@@ -983,14 +1008,13 @@ def test_windows_c_stager_download(client, admin_auth_header):
     assert response.status_code == status.HTTP_201_CREATED
 
     stager_id = response.json()["id"]
+    created_stagers.append(stager_id)
     download_link = response.json()["downloads"][0]["link"]
 
     response = client.get(download_link, headers=admin_auth_header)
     assert response.status_code == status.HTTP_200_OK
     assert isinstance(response.content, bytes)
     assert len(response.content) > 0
-
-    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
 @pytest.mark.slow
@@ -1013,7 +1037,7 @@ def test_create_go_stager_compile_failure_returns_400_not_500(
     )
 
     go_stager = {
-        "name": "test-go-compile-failure",
+        "name": _unique("test-go-compile-failure"),
         "template": "multi_go_exe",
         "options": {"Listener": "new-listener-1"},
     }
@@ -1028,3 +1052,18 @@ def test_create_go_stager_compile_failure_returns_400_not_500(
     assert "Go build failed" in response.json().get("detail", ""), (
         "Error detail must reach the API response so operators see it in the UI"
     )
+
+
+def test_windows_c_stager_missing_mingw_raises_generation_exception(main, monkeypatch):
+    """Monkeypatched because the branch is unreachable on a host that has the
+    toolchain. ``generate_stager`` turns this exception into a 400.
+    """
+    stager = c_launcher.Stager(main)
+    stager.options["Listener"]["Value"] = "new-listener-1"
+
+    monkeypatch.setattr(
+        c_launcher.subprocess, "run", MagicMock(side_effect=FileNotFoundError(MINGW_CC))
+    )
+
+    with pytest.raises(StagerGenerationException, match="gcc-mingw-w64-x86-64"):
+        stager.generate()
