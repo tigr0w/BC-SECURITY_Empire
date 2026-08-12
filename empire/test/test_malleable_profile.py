@@ -7,7 +7,7 @@ JSON blob at runtime, so the server needs a single canonical serializer —
 that blob.
 
 These tests pin the v1 schema so the agents (which live in separate
-repos / submodules) have a stable contract. Every transform op and
+repos) have a stable contract. Every transform op and
 terminator type listed in ``transformation.py`` is round-tripped through
 the serializer here; adding a new op will fail these tests until it is
 mapped explicitly.
@@ -17,8 +17,6 @@ import base64
 import json
 import re
 from pathlib import Path
-
-import pytest
 
 from empire.server.common.malleable.profile import (
     _AGENT_PROFILE_SCHEMA_VERSION,
@@ -335,19 +333,18 @@ class TestPostClientRouting:
 
 
 class TestRealProfile:
-    """Smoke-test against a bundled real profile, if one exists."""
+    """Smoke-test against a bundled real profile."""
 
     def _find_profile(self):
-        if not PROFILES_DIR.is_dir():
-            return None
-        for candidate in sorted(PROFILES_DIR.rglob("*.profile")):
-            return candidate
-        return None
+        # Profiles are vendored into the repo, so an empty tree is a packaging
+        # bug, not a missing optional fixture. Fail rather than skip.
+        assert PROFILES_DIR.is_dir(), f"vendored profiles missing at {PROFILES_DIR}"
+        candidates = sorted(PROFILES_DIR.rglob("*.profile"))
+        assert candidates, f"no .profile files under {PROFILES_DIR}"
+        return candidates[0]
 
     def test_ingest_and_serialize_roundtrip(self):
         path = self._find_profile()
-        if not path:
-            pytest.skip("No bundled .profile fixtures found")
 
         p = Profile()
         p.ingest(file=str(path))
@@ -601,12 +598,10 @@ class TestShippedProfilesAllowList:
     """
 
     def test_no_warnings_loading_shipped_profiles(self, caplog):
-        if not PROFILES_DIR.is_dir():
-            pytest.skip("No bundled .profile fixtures found")
-
+        # See _find_profile: an empty vendored tree is a bug, not a skip.
+        assert PROFILES_DIR.is_dir(), f"vendored profiles missing at {PROFILES_DIR}"
         shipped = sorted(PROFILES_DIR.rglob("*.profile"))
-        if not shipped:
-            pytest.skip("PROFILES_DIR exists but contains no .profile files")
+        assert shipped, f"no .profile files under {PROFILES_DIR}"
 
         offenders: list[tuple[str, str]] = []
         with caplog.at_level(

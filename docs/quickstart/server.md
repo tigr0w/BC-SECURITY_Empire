@@ -176,9 +176,3 @@ directories:
 ```
 
 * **logging** - See [Logging](../settings/logging.md) for more information on logging configuration.
-* **submodules** - Control if submodules will be auto updated on startup.
-
-```
-submodules:
-  auto_update: true
-```

@@ -65,8 +65,6 @@ starkiller:
   repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
   # Can be a branch, tag, or commit hash
   ref: sponsors-main
-submodules:
-  auto_update: true
 plugin_marketplace:
   registries:
     - name: BC-SECURITY

@@ -1,5 +1,7 @@
 from starlette import status
 
+from empire.test.test_startup_loaders import MINIMUM_SHIPPED_PROFILES
+
 
 def test_get_profile_not_found(client, admin_auth_header):
     response = client.get("/api/v2/malleable-profiles/9999", headers=admin_auth_header)
@@ -20,7 +22,13 @@ def test_get_profiles(client, admin_auth_header):
     response = client.get("/api/v2/malleable-profiles", headers=admin_auth_header)
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(response.json()["records"]) > 0
+    # This asserts against the database, not the disk: leftover rows from a run
+    # whose teardown failed would satisfy it even on a truncated tree, so it is
+    # not by itself proof that the tree shipped. The disk-based check is
+    # test_startup_loaders.test_vendored_profile_tree_layout, which also owns the
+    # floor this shares. Still a real floor rather than > 0, and >= rather than
+    # == because test_create_profile inserts into the same database.
+    assert len(response.json()["records"]) >= MINIMUM_SHIPPED_PROFILES
 
 
 def test_create_profile(client, admin_auth_header):

@@ -22,6 +22,6 @@ Launching a Malleable C2 Listener can be simply done by selecting http\_malleabl
 
 One of the areas that still needs some improvement is when the listener tries to ingest serialized profiles. Occasionally Empire will successfully start the listener, but the agent will fail to properly stage when using a launcher. We are always trying to improve Empire functionality, so please [submit any issues](https://github.com/BC-SECURITY/Empire/issues) to our Github, since we heavily rely on users to help us identify areas for improvement.
 
-We have also set up a [repository](https://github.com/BC-SECURITY/Malleable-C2-Profiles) for working profiles, which we will continue to update as new threat profiles are generated. This is also an opportunity for everyone to submit and share their profiles (assuming they work with Empire).
+The bundled profiles live in `empire/server/data/profiles` and ship with Empire, and we will continue to update them as new threat profiles are generated. This is also an opportunity for everyone to submit and share their profiles (assuming they work with Empire) — open a pull request against [Empire](https://github.com/BC-SECURITY/Empire) adding your profile under the appropriate category directory.
 
 Similar to Cobalt Strike, Empire can only load a single profile per instance (for now). You can always spin up another instance of Empire if you want to run multiple Malleable Listeners at once. Otherwise, other listener types will still work while you have an active Malleable C2 Listener.

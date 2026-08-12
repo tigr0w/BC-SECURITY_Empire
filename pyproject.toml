@@ -10,9 +10,11 @@ repository = "https://github.com/BC-SECURITY/Empire.git"
 # what it matches, which is how `empire/server/**/*.py` dropped every yaml,
 # ps1, dll and profile.
 packages = [{ include = "empire" }]
-# `**/.git` is the profiles submodule's gitlink. Poetry's VCS exclusion cannot
-# see it (`git ls-files` does not descend into submodules) and it would bake
-# the build machine's path into the wheel.
+# `**/.git` keeps a nested repository's metadata directory -- and only that
+# directory, not its files -- out of a build. It was added for the profiles
+# submodule's gitlink, which poetry's VCS exclusion could not see; that
+# submodule is gone, and this repository's own top-level `.git` was never a
+# build candidate, being outside the `empire` package include.
 exclude = ["empire/test", "**/.git"]
 
 [tool.poetry.dependencies]

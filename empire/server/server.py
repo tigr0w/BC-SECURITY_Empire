@@ -18,7 +18,6 @@ from empire.server.core.config.config_manager import (
 )
 from empire.server.core.db import base
 from empire.server.utils import cert_util
-from empire.server.utils.file_util import run_as_user
 from empire.server.utils.log_util import setup_logging
 
 log = logging.getLogger(__name__)
@@ -37,8 +36,8 @@ def reset():
 
 def shutdown_handler(signum, frame):
     """
-    Handle SIGINT during the pre-uvicorn setup phase (cert generation,
-    submodule checks, etc.) when MainMenu has not yet been created.
+    Handle SIGINT during the pre-uvicorn setup phase (cert generation, etc.)
+    when MainMenu has not yet been created.
 
     Once uvicorn is running, it manages SIGINT itself and triggers the
     lifespan's ``finally`` block in app.py, which handles MainMenu shutdown.
@@ -85,35 +84,6 @@ def log_version():
     log.info(f"Starting Empire {empire.VERSION} (commit: {get_commit_sha()})")
 
 
-def check_submodules():
-    log.info("Checking submodules...")
-    if not paths.is_git_checkout():
-        log.info("Not running from a git checkout. Skipping submodule check.")
-        return
-
-    result = subprocess.run(
-        ["git", "submodule", "status"],
-        cwd=paths.REPO_ROOT,
-        stdout=subprocess.PIPE,
-        text=True,
-        check=False,
-    )
-    for line in result.stdout.splitlines():
-        if line[0] == "-":
-            log.error(
-                "Some git submodules are not initialized. Please run 'git submodule update --init --recursive'"
-            )
-            sys.exit(1)
-
-
-def fetch_submodules():
-    if not paths.is_git_checkout():
-        log.info("Not running from a git checkout. Skipping submodule fetch.")
-        return
-    command = ["git", "submodule", "update", "--init", "--recursive"]
-    run_as_user(command, cwd=paths.REPO_ROOT)
-
-
 def check_recommended_configuration():
     log.info(f"Using {empire_config.database.use} database.")
     if empire_config.database.use == "sqlite":
@@ -133,13 +103,6 @@ def run(args):
     setup_logging(args)
     log_version()
 
-    if empire_config.submodules.auto_update:
-        log.info("Submodules auto update enabled. Loading.")
-        fetch_submodules()
-    else:
-        log.info("Submodules auto update disabled. Not fetching.")
-
-    check_submodules()
     check_recommended_configuration()
 
     if args.reset:

@@ -28,15 +28,14 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: 'BC-Security/Empire-Sponsors'
-          submodules: 'recursive'
           ref: private-main
           token: ${{ secrets.RELEASE_TOKEN }}
           fetch-depth: 0
       - name: Add public repo
         run: |
           git remote add public https://github.com/BC-Security/empire.git
-          # recursing submodules in the fetch will cause remote error: upload-pack: not our ref since the
-          # remote for starkiller hasn't been synced yet
+          # Inert as written: this repo has no submodules and actions/checkout
+          # populates none, so git has nothing to recurse into.
           git fetch public --no-recurse-submodules
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}

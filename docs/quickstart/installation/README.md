@@ -16,7 +16,7 @@ As of Empire 6.0, Python 3.13 is the minimum required Python version.
 Note: The `main` branch is a reflection of the latest changes and may not always be stable. After cloning the repo, you can checkout the latest stable release by running the `setup/checkout-latest-tag.sh` script.
 
 ```bash
-git clone --recursive https://github.com/BC-SECURITY/Empire.git
+git clone https://github.com/BC-SECURITY/Empire.git
 cd Empire
 ./setup/checkout-latest-tag.sh
 ./ps-empire install -y
@@ -39,7 +39,7 @@ When running the ps-empire installation script, you can use the following option
 **Sponsors:**
 
 ```
-git clone --recursive https://github.com/BC-SECURITY/Empire-Sponsors.git
+git clone https://github.com/BC-SECURITY/Empire-Sponsors.git
 cd Empire-Sponsors
 ./setup/checkout-latest-tag.sh sponsors
 ./ps-empire install -y

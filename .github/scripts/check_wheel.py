@@ -23,12 +23,27 @@ PROFILES_PREFIX = "empire/server/data/profiles/"
 # none of them", which is what the `**/*.py` glob did.
 MIN_YAML = 400
 MIN_MODULE_SOURCE_PS1 = 100
+# The same number the two container-structure configs use, though they spell it
+# `-gt` and this one passes at exactly 50; both sit far below the ~75 shipped,
+# so the boundary never decides anything. A bare "is it zero" check would pass a
+# wheel carrying a single profile, which is the shape a botched exclude leaves.
+MIN_PROFILES = 50
 
 # Single files a count-based floor would never miss the loss of, and without
 # which a server cannot start (config) or compile (confuser).
+#
+# The last three are a redistribution obligation rather than a runtime one.
+# NOTICE.md states that it and the LICENSES/ texts accompany the profiles in
+# every distribution, and they reach the wheel only via a negation of the
+# blanket `*.txt` rule in .gitignore -- poetry drops VCS-ignored files, so
+# reordering that negation would ship a wheel whose own NOTICE.md is false
+# while every .profile check here still passes.
 REQUIRED_MEMBERS = (
     "empire/server/config.yaml",
     "empire/server/data/confuser.crproj",
+    "empire/server/data/profiles/NOTICE.md",
+    "empire/server/data/profiles/LICENSES/GPL-3.0.txt",
+    "empire/server/data/profiles/LICENSES/BSD-3-Clause-bluscreenofjeff.txt",
 )
 
 WHEEL_GLOB = "empire_bc_security_fork-*.whl"
@@ -66,10 +81,13 @@ def _asset_failures(names: list[str]) -> list[str]:
         f"{m} is missing from the wheel" for m in REQUIRED_MEMBERS if m not in names
     ]
 
-    if not _count(names, PROFILES_PREFIX, ".profile"):
+    profile_count = _count(names, PROFILES_PREFIX, ".profile")
+    if profile_count < MIN_PROFILES:
         failures.append(
-            "no .profile files -- the profiles submodule was not checked out. "
-            "Nothing errors at runtime on this; profile_service just returns []."
+            f"only {profile_count} .profile files (expected >= {MIN_PROFILES}) -- "
+            "the vendored tree did not reach the wheel. A server built from this "
+            "still starts: profile_service logs the empty tree at ERROR, and on a "
+            "fresh database malleable listeners have none to select."
         )
 
     leaked_tests = [n for n in names if n.startswith("empire/test/")]

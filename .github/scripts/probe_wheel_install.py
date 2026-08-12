@@ -13,7 +13,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-from check_wheel import MIN_MODULE_SOURCE_PS1, MIN_YAML, REQUIRED_MEMBERS
+from check_wheel import (
+    MIN_MODULE_SOURCE_PS1,
+    MIN_PROFILES,
+    MIN_YAML,
+    REQUIRED_MEMBERS,
+)
 
 from empire.server.core.config import paths
 
@@ -47,7 +52,7 @@ def _asset_failures() -> list[str]:
         ),
         (
             len(list((server_root / "data/profiles").rglob("*.profile"))),
-            1,
+            MIN_PROFILES,
             ".profile under data/profiles",
         ),
     )

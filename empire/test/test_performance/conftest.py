@@ -119,7 +119,6 @@ def _build_test_config(mysql_port: int, empire_port: int) -> str:
     config["database"]["mysql"]["pool_size"] = 5
     config["database"]["mysql"]["max_overflow"] = 3
     config["starkiller"]["enabled"] = False
-    config["submodules"]["auto_update"] = False
     config["logging"]["level"] = "WARNING"
 
     return yaml.dump(config, default_flow_style=False)

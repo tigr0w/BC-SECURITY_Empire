@@ -63,6 +63,18 @@ commandTests:
     command: "which"
     args: ["perl"]
     expectedOutput: ["/usr/bin/perl"]
+  # A floor, not the exact count: this job does not run on ordinary pull
+  # requests, so an exact number turns "someone added a profile" into a
+  # release-time failure for whoever cuts the release. What it has to catch is
+  # the tree not reaching the install at all.
+  - name: "profiles-shipped"
+    command: "bash"
+    args: ["-c", "test $(find /empire/empire/server/data/profiles -name '*.profile'
+        | wc -l) -gt 50 && echo shipped"]
+    # Unanchored: container-structure-test matches with Go's regexp, where `$`
+    # is end-of-text and does not skip the newline `echo` writes. The command
+    # prints nothing at all when the floor is not met, so this is exact enough.
+    expectedOutput: ["shipped"]
   # run
   - name: "ps-empire help"
     command: "./ps-empire"
@@ -75,6 +87,14 @@ commandTests:
 fileExistenceTests:
   - name: 'profiles'
     path: '/empire/empire/server/data/profiles/'
+    shouldExist: true
+  # The redistribution obligation NOTICE.md records covers this install too,
+  # not just the wheel that .github/scripts/check_wheel.py gates.
+  - name: 'profiles third-party notice'
+    path: '/empire/empire/server/data/profiles/NOTICE.md'
+    shouldExist: true
+  - name: 'profiles license texts'
+    path: '/empire/empire/server/data/profiles/LICENSES/GPL-3.0.txt'
     shouldExist: true
   - name: 'starkiller'
     path: '/home/empire/.local/share/empire/starkiller/'

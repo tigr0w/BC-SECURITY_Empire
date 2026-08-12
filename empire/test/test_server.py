@@ -44,8 +44,13 @@ def test_clean_wipes_config_data_and_cache(monkeypatch):
     assert set(removed) == {server.CONFIG_DIR, server.DATA_DIR, server.CACHE_DIR}
 
 
-def test_git_helpers_are_inert_when_not_a_checkout(monkeypatch):
-    """A wheel install must not shell out to git at all."""
+def test_get_commit_sha_is_inert_when_not_a_checkout(monkeypatch):
+    """A wheel install must not shell out to git for the version.
+
+    Named for the one function it drives. The broader claim -- that a package
+    install shells out to git nowhere on the boot path -- is asserted through
+    server.run() in test_run_derives_ssl_kwargs_from_cert_util_constants.
+    """
     monkeypatch.setattr(paths, "is_git_checkout", lambda: False)
     monkeypatch.delenv("EMPIRE_COMMIT_SHA", raising=False)
 
@@ -53,19 +58,15 @@ def test_git_helpers_are_inert_when_not_a_checkout(monkeypatch):
         raise AssertionError(f"git must not run on a package install: {args}")
 
     _stub_subprocess(monkeypatch, _explode)
-    monkeypatch.setattr(server, "run_as_user", _explode)
-
-    server.fetch_submodules()
-    server.check_submodules()
 
     assert server.get_commit_sha() == "unknown"
 
 
-def test_git_helpers_use_repo_root_not_the_cwd(monkeypatch, tmp_path):
-    """Every git invocation must be pinned to REPO_ROOT.
+def test_get_commit_sha_runs_git_in_the_repo_root_not_the_cwd(monkeypatch, tmp_path):
+    """Every git invocation get_commit_sha makes must be pinned to REPO_ROOT.
 
-    `git submodule update --init --recursive` with cwd=None mutates whatever
-    repository the operator happened to launch from.
+    `git rev-parse --short HEAD` with cwd=None reports the HEAD of whatever
+    repository the operator happened to launch from as Empire's own version.
     """
     launch_dir = tmp_path / "someone-elses-repo"
     (launch_dir / ".git").mkdir(parents=True)
@@ -79,17 +80,13 @@ def test_git_helpers_use_repo_root_not_the_cwd(monkeypatch, tmp_path):
         calls.append({"command": command, "cwd": kwargs.get("cwd")})
         return subprocess.CompletedProcess(command, 0, stdout="deadbee\n", stderr="")
 
-    def _record_run_as_user(command, **kwargs):
-        calls.append({"command": command, "cwd": kwargs.get("cwd")})
-
     _stub_subprocess(monkeypatch, _record_run)
-    monkeypatch.setattr(server, "run_as_user", _record_run_as_user)
 
-    server.fetch_submodules()
-    server.check_submodules()
     assert server.get_commit_sha() == "deadbee"
 
-    assert len(calls) == 3  # noqa: PLR2004
+    # Every recorded call, not a fixed number of them: a later change that
+    # adds a second git invocation should have to pin it too, not fail here
+    # for having added one. The assert above guarantees the list is non-empty.
     for call in calls:
         assert call["cwd"] == paths.REPO_ROOT, (
             f"{call['command']} ran with cwd={call['cwd']}, expected {paths.REPO_ROOT}"
@@ -108,9 +105,20 @@ def test_run_derives_ssl_kwargs_from_cert_util_constants(monkeypatch, tmp_path):
     """A rename of CERT_FILENAME/KEY_FILENAME must not desync uvicorn's ssl
     kwargs from what generate_self_signed_cert actually writes -- re-hardcoding
     the two filename strings here would otherwise pass unnoticed.
+
+    Doubles as the boot-path assertion that a package install shells out to git
+    nowhere in run(). Removing the submodule helpers left get_commit_sha as the
+    only git caller, so a test naming that one function no longer covers the
+    module; driving run() end to end does, and keeps covering it if another
+    caller is added.
     """
     monkeypatch.setattr(paths, "is_git_checkout", lambda: False)
     monkeypatch.delenv("EMPIRE_COMMIT_SHA", raising=False)
+
+    def _explode(*args, **kwargs):
+        raise AssertionError(f"git must not run on a package install: {args}")
+
+    _stub_subprocess(monkeypatch, _explode)
     # Not part of the branch under test, but setup_logging() attaches handlers
     # to the root logger for the life of the process -- skip it so this test
     # doesn't leak logging state into the rest of the session.

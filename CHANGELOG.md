@@ -132,6 +132,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   The two heaviest C# compile tests (SharpHound, Rubeus) now run only on release branches / the `run-all-versions` label instead of every PR; the other C# modules still compile per-PR (developer/CI change).
 -   Download responses now carry an explicit `Content-Type` from an Empire-owned extension map, so a file no longer serves as a different type depending on the operator's distro; anything unmapped serves as `application/octet-stream`.
 -   The self-signed server certificate is now generated in process with `cryptography` instead of shelling out to `setup/cert.sh`, which removes Empire's runtime dependency on `bash` and an `openssl` binary.
+-   Vendored the Malleable C2 profiles directly into the repository instead of shipping them as a git submodule, so installs that do not clone with submodules -- release tarballs, "Download ZIP", and the sdist and wheel -- now receive all 75 profiles instead of silently receiving none.
+    **Upgrading an existing clone:** run `rm -rf empire/server/data/profiles` before checking out or merging this change, or git will abort with "untracked working tree files would be overwritten".
 
 ### Removed
 
@@ -148,6 +150,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed dead `getIV()` function from agent stager AES code (bypassed by inline `os.urandom()`).
 -   Removed a byte-identical duplicate definition of `Profile._apply_set_directive` in `malleable/profile.py` (dead code from a merge artifact).
 -   Removed `setup/cert.sh`; certificate generation happens automatically on first server start.
+-   Removed the `submodules.auto_update` config key and the startup submodule check/fetch; existing configs carrying the key still load and the key is ignored.
+-   The startup submodule check used to abort the server with `sys.exit(1)` on an unpopulated submodule, though it returned early when no `.git` directory was present and so never fired for the archive installs this release fixes; with the submodule gone, a missing profiles directory is now logged rather than fatal.
 
 ### Fixed
 
@@ -203,6 +207,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Running the server with no subcommand now prints usage and exits 2, instead of importing the whole server and exiting 0 for what is a usage error.
 -   The server now regenerates its self-signed certificate when either half of the pair is missing, so a key written without its certificate is no longer left mismatched on every subsequent start.
 -   An HTTPS `http_malleable` listener with no `CertPath` now falls back to the generated pair in the data directory instead of a CWD-relative `setup/`, which never contained one.
+-   Removed a startup network fetch (`git submodule update --init --recursive`) that ran by default on git checkouts and blocked air-gapped installs.
+-   The profile loader now logs an error when it finds no profiles at all instead of starting up silently, so an empty profiles directory is visible at boot rather than when a malleable listener has nothing to select.
 
 ## [6.7.1] - 2026-07-25
 

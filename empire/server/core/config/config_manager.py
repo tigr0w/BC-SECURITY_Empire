@@ -83,10 +83,6 @@ class ApiConfig(EmpireBaseModel):
     cors_origins: list[str] = ["*"]
 
 
-class SubmodulesConfig(EmpireBaseModel):
-    auto_update: bool = True
-
-
 class StarkillerConfig(EmpireBaseModel):
     enabled: bool = True
     repo: str = "bc-security/starkiller"
@@ -236,7 +232,6 @@ class EmpireConfig(BaseSettings):
     server: ServerConfig = ServerConfig()
     empire_compiler: EmpireCompilerConfig = EmpireCompilerConfig()
     starkiller: StarkillerConfig = StarkillerConfig()
-    submodules: SubmodulesConfig = SubmodulesConfig()
     database: DatabaseConfig = DatabaseConfig(
         sqlite=SQLiteDatabaseConfig(),
         mysql=MySQLDatabaseConfig(),

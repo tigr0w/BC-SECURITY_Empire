@@ -5,8 +5,10 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
+import yaml
 
 from empire.server.core.config import paths
 from empire.server.core.config.config_manager import (
@@ -14,8 +16,10 @@ from empire.server.core.config.config_manager import (
     DATA_DIR,
     DEFAULT_CONFIG,
     DEFAULT_USER_CONFIG,
+    EmpireConfig,
     seed_config,
 )
+from empire.test.conftest import SERVER_CONFIG_LOC
 
 
 def test_config_manager_import_does_not_wipe_data_dir():
@@ -60,6 +64,63 @@ def test_config_manager_import_does_not_wipe_data_dir():
         )
     finally:
         sentinel.unlink(missing_ok=True)
+
+
+def test_config_tolerates_stale_submodules_key():
+    """A config.yaml written before the submodule removal must still load.
+
+    EmpireConfig sets extra="allow", so the now-unknown key is ignored rather
+    than rejected. Without this, removing the field would be a breaking change
+    for every existing install.
+    """
+    config = EmpireConfig.model_validate({"submodules": {"auto_update": True}})
+
+    assert config.database.use  # the rest of the model still populates
+
+
+def test_config_tolerates_stale_submodules_key_on_disk(tmp_path):
+    """The same, through the real --config path rather than model_validate.
+
+    model_validate bypasses settings_customise_sources, so on its own it does
+    not show that an operator's existing config.yaml still boots — which is
+    the compatibility claim the changelog actually makes.
+
+    Runs in a subprocess for the same reason as the DATA_DIR test above:
+    building a second EmpireConfig in-process disturbs module state that the
+    session-scoped app fixture depends on, which shows up as unrelated
+    collection errors across the API suites. A fresh interpreter also means
+    _module_base_config_path is resolved from this process's own argv rather
+    than left set by an earlier test, so this exercises the resolution an
+    operator actually gets.
+    """
+    base = yaml.safe_load(Path(SERVER_CONFIG_LOC).read_text(encoding="utf-8"))
+    base["submodules"] = {"auto_update": True}
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(yaml.safe_dump(base), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from empire.server.core.config.config_manager import EmpireConfig;"
+            "c = EmpireConfig();"
+            "print('EXTRA:', c.model_extra.get('submodules'));"
+            "print('DB:', c.database.use)",
+            "server",
+            "--config",
+            str(config_file),
+        ],
+        env=os.environ.copy(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, (
+        f"config carrying a stale submodules key failed to load:\n{result.stderr}"
+    )
+    assert "EXTRA: {'auto_update': True}" in result.stdout, result.stdout
+    assert "DB:" in result.stdout
 
 
 def test_default_config_paths_are_absolute_and_inside_the_package():

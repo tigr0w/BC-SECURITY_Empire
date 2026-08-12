@@ -33,16 +33,57 @@ class ProfileService:
         db_existing_names = set(db.scalars(select(models.Profile.name)).all())
         added_in_loop: dict[str, str] = {}
 
-        for file_path in malleable_path.rglob("*.profile"):
-            filename = file_path.name
+        # Filtered before the loop so the emptiness check below is about files
+        # on disk. A tree holding only template.profile is an unusable install,
+        # not one profile. Sorted because rglob yields in directory order: two
+        # categories holding the same basename would otherwise resolve to a
+        # different winner on different machines, since the loop keeps the first.
+        profile_files = sorted(
+            path
+            for path in malleable_path.rglob("*.profile")
+            if not fnmatch.fnmatch(path.name, "*template.profile")
+        )
 
-            # don't load up any of the templates
-            if fnmatch.fnmatch(filename, "*template.profile"):
-                continue
+        # Keyed on files, not rows inserted -- a normal restart legitimately
+        # inserts nothing because the database is already full. Both branches
+        # log at ERROR: the shipped tree is missing either way. An install that
+        # manages profiles only through the API is the false positive, and one
+        # log line is the right price for catching an empty release archive.
+        if not profile_files:
+            if db_existing_names:
+                log.error(
+                    "No malleable profiles found on disk under %s; the %d already in the "
+                    "database are now the only copy. Restore the directory before "
+                    "resetting profiles or creating a new database, or both will leave "
+                    "you with none.",
+                    malleable_path,
+                    len(db_existing_names),
+                )
+            else:
+                log.error(
+                    "No malleable profiles found under %s and none in the database, so "
+                    "malleable listeners have none to select. Restore the directory from "
+                    "a git clone or a release archive that ships it, or add a profile "
+                    "through the Malleable Profiles UI.",
+                    malleable_path,
+                )
 
+        category_and_name_depth = 2
+        for file_path in profile_files:
             malleable_split = file_path.relative_to(malleable_path).parts
-            profile_category = malleable_split[0]
-            profile_name = malleable_split[1]
+            # README.md in this directory tells operators to drop new profiles
+            # in, so a misplaced one is reachable. Unguarded, a root-level file
+            # IndexErrors the whole boot and a nested one silently registers the
+            # subdirectory's name as the profile.
+            if len(malleable_split) != category_and_name_depth:
+                log.warning(
+                    "Skipping malleable profile %s; profiles must live at "
+                    "<Category>/<name>.profile under %s",
+                    file_path,
+                    malleable_path,
+                )
+                continue
+            profile_category, profile_name = malleable_split
 
             if profile_name in db_existing_names:
                 continue
@@ -56,7 +97,13 @@ class ProfileService:
                 continue
 
             log.debug(f"Adding malleable profile: {profile_name}")
-            profile_data = file_path.read_text()
+            try:
+                profile_data = file_path.read_text(encoding="utf-8")
+            except UnicodeDecodeError as e:
+                # The decode error carries a byte offset but no filename, so an
+                # operator who saved a profile as CP1252 would otherwise have to
+                # bisect the tree to find which one broke startup.
+                raise ValueError(f"{file_path} is not valid UTF-8") from e
             db.add(
                 models.Profile(
                     file_path=str(file_path),

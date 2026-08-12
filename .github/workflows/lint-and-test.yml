@@ -36,16 +36,6 @@ jobs:
       matrix: ${{ fromJson(needs.matrix-prep-config.outputs.config) }}
     steps:
       - uses: actions/checkout@v7
-        if: ${{ endsWith(github.repository, 'Empire') }}
-        with:
-          submodules: 'recursive'
-      # token is only needed in sponsors repo because of private submodules
-      # don't use token in public repo because prs from forks cannot access secrets
-      - uses: actions/checkout@v7
-        if: ${{ endsWith(github.repository, 'Empire-Sponsors') }}
-        with:
-          submodules: 'recursive'
-          token: ${{ secrets.RELEASE_TOKEN }}
       - name: Install Poetry
         run: |
           curl -sL https://install.python-poetry.org | python - -y
@@ -141,14 +131,6 @@ jobs:
     name: Performance Tests
     steps:
       - uses: actions/checkout@v7
-        if: ${{ endsWith(github.repository, 'Empire') }}
-        with:
-          submodules: 'recursive'
-      - uses: actions/checkout@v7
-        if: ${{ endsWith(github.repository, 'Empire-Sponsors') }}
-        with:
-          submodules: 'recursive'
-          token: ${{ secrets.RELEASE_TOKEN }}
       - name: Install Poetry
         run: |
           curl -sL https://install.python-poetry.org | python - -y
@@ -201,16 +183,6 @@ jobs:
     name: Test Wheel
     steps:
       - uses: actions/checkout@v7
-        if: ${{ endsWith(github.repository, 'Empire') }}
-        with:
-          submodules: 'recursive'
-      # token is only needed in sponsors repo because of private submodules
-      # don't use token in public repo because prs from forks cannot access secrets
-      - uses: actions/checkout@v7
-        if: ${{ endsWith(github.repository, 'Empire-Sponsors') }}
-        with:
-          submodules: 'recursive'
-          token: ${{ secrets.RELEASE_TOKEN }}
       - name: Install Poetry
         run: |
           curl -sL https://install.python-poetry.org | python - -y
@@ -248,9 +220,6 @@ jobs:
     name: Test Docker Image
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: 'recursive'
-          token: ${{ secrets.RELEASE_TOKEN }}
       - name: Set up SSH
         run: |
           eval "$(ssh-agent -s)"
@@ -298,7 +267,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          submodules: 'recursive'
           depth: 0
       - name: Set up SSH
         run: |
