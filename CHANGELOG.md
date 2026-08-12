@@ -14,8 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [7.0.0] - 2026-08-01
-
 ### Security
 
 -   **BREAKING:** Replaced bcrypt password hashing with PBKDF2-HMAC-SHA256 (600K iterations) for FIPS SP 800-132 compliance. Existing hashes are incompatible — reset passwords or recreate the database.
@@ -1629,9 +1627,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.0...HEAD
-
-[7.0.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.1...v7.0.0
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.1...HEAD
 
 [6.7.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.0...v6.7.1
 
