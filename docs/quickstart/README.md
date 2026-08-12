@@ -98,7 +98,7 @@ The first thing you need to do is set up a local listener. The **listeners** tab
 
 ![](../.gitbook/assets/listeners_tab.png)
 
-HTTP is the most commonly used listener and supports both HTTP and HTTPS. For HTTPS, you must first set the CertPath to be a local .pem file. The provided **./setup/cert.sh** script will generate a self-signed cert and place it in the data directory's `cert/empire.pem` (**\~/.local/share/empire/cert/empire.pem** by default; see [data & config locations](server.md#data--config-locations)).
+HTTP is the most commonly used listener and supports both HTTP and HTTPS. For HTTPS, CertPath is the **directory** holding the certificate/key pair — Empire appends the `empire-chain.pem` and `empire-priv.key` filenames itself, so it is a folder, not a single `.pem` file. Empire generates a self-signed pair on first server start in the data directory's `cert/` folder (**\~/.local/share/empire/cert/** by default; see [data & config locations](server.md#data--config-locations)); point CertPath there to use it.
 
 Set any optional parameters such as WorkingHours, KillDate, DefaultDelay, and DefaultJitter for the listener, as well as whatever name you want it to be referred to as. You can then hit **submit** to start the listener. If the name is already taken, a nameX variant will be used, and Empire will alert you if the port is already in use.
 

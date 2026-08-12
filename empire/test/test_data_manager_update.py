@@ -20,11 +20,12 @@ from empire.server.utils.git_util import GitOperationException
 
 @pytest.fixture
 def fake_repo_root(tmp_path):
-    """Lay out a minimal repo tree: `.git/` + the shipped config + the script."""
+    """Lay out a minimal repo tree: `.git/` + `setup/checkout-latest-tag.sh`.
+
+    No shipped `config.yaml` — `overwrite_base_config` reads
+    `config_manager.DEFAULT_CONFIG`, not anything under this root.
+    """
     (tmp_path / ".git").mkdir()
-    server_dir = tmp_path / "empire" / "server"
-    server_dir.mkdir(parents=True)
-    (server_dir / "config.yaml").write_text("starkiller:\n  ref: 4.0-dev\n")
     setup_dir = tmp_path / "setup"
     setup_dir.mkdir()
     script = setup_dir / "checkout-latest-tag.sh"
@@ -35,36 +36,45 @@ def fake_repo_root(tmp_path):
 # ---------- overwrite_base_config ----------
 
 
-def test_overwrite_base_config_copies_template(tmp_path, fake_repo_root, monkeypatch):
+@pytest.fixture
+def shipped_config(tmp_path, monkeypatch):
+    """Point `DEFAULT_CONFIG` at a template this test owns."""
+    src = tmp_path / "shipped-config.yaml"
+    src.write_text("starkiller:\n  ref: 4.0-dev\n")
+    monkeypatch.setattr(data_manager.config_manager, "DEFAULT_CONFIG", src)
+    return src
+
+
+def test_overwrite_base_config_copies_template(tmp_path, shipped_config, monkeypatch):
     dst = tmp_path / "active-config.yaml"
     dst.write_text("starkiller:\n  ref: stale\n")
     monkeypatch.setattr(data_manager.config_manager, "CONFIG_PATH", dst)
 
-    assert data_manager.overwrite_base_config(fake_repo_root) is True
+    assert data_manager.overwrite_base_config() is True
     assert dst.read_text() == "starkiller:\n  ref: 4.0-dev\n"
 
 
 def test_overwrite_base_config_missing_src_returns_false(tmp_path, monkeypatch):
-    repo_root = tmp_path / "repo-with-no-shipped-config"
-    repo_root.mkdir()
     dst = tmp_path / "active.yaml"
+    monkeypatch.setattr(
+        data_manager.config_manager, "DEFAULT_CONFIG", tmp_path / "never-shipped.yaml"
+    )
     monkeypatch.setattr(data_manager.config_manager, "CONFIG_PATH", dst)
 
-    assert data_manager.overwrite_base_config(repo_root) is False
+    assert data_manager.overwrite_base_config() is False
     assert not dst.exists()
 
 
-def test_overwrite_base_config_same_path_skips_copy(fake_repo_root, monkeypatch):
-    src = fake_repo_root / "empire" / "server" / "config.yaml"
-    monkeypatch.setattr(data_manager.config_manager, "CONFIG_PATH", src)
+def test_overwrite_base_config_same_path_skips_copy(shipped_config, monkeypatch):
+    monkeypatch.setattr(data_manager.config_manager, "CONFIG_PATH", shipped_config)
 
     # Should detect that src and dst resolve to the same file and skip the
     # copy without raising shutil.SameFileError.
-    assert data_manager.overwrite_base_config(fake_repo_root) is True
+    assert data_manager.overwrite_base_config() is True
 
 
 def test_overwrite_base_config_returns_false_on_oserror(
-    tmp_path, fake_repo_root, monkeypatch
+    tmp_path, shipped_config, monkeypatch
 ):
     dst = tmp_path / "active.yaml"
     monkeypatch.setattr(data_manager.config_manager, "CONFIG_PATH", dst)
@@ -72,9 +82,9 @@ def test_overwrite_base_config_returns_false_on_oserror(
     def boom(*_args, **_kwargs):
         raise PermissionError("dst is root-owned")
 
-    monkeypatch.setattr(data_manager.shutil, "copy", boom)
+    monkeypatch.setattr(data_manager.config_manager, "seed_config", boom)
 
-    assert data_manager.overwrite_base_config(fake_repo_root) is False
+    assert data_manager.overwrite_base_config() is False
 
 
 # ---------- _detect_release_channel ----------

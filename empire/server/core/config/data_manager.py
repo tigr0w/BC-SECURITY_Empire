@@ -2,14 +2,13 @@ import logging
 import os
 import platform
 import pwd
-import shutil
 import subprocess
 import tarfile
 from pathlib import Path
 
 import requests
 
-from empire.server.core.config import config_manager
+from empire.server.core.config import config_manager, paths
 from empire.server.core.config.config_manager import (
     EmpireCompilerConfig,
     PluginRegistryConfig,
@@ -112,7 +111,15 @@ def _configure_compiler(
     confuser_project_file = confuser_base_dir / "empire.crproj"
 
     if not confuser_project_file.exists():
-        confuser_template = Path(compiler_config.confuser_proj).read_text()
+        # `confuser_proj` names a file that ships inside the package, so a
+        # relative value is relative to the install root -- never the CWD.
+        # REPO_ROOT is the repo root from a checkout and site-packages from a
+        # wheel, which is also where an existing install's `empire/server/...`
+        # config value resolves correctly.
+        confuser_template_path = Path(compiler_config.confuser_proj)
+        if not confuser_template_path.is_absolute():
+            confuser_template_path = paths.REPO_ROOT / confuser_template_path
+        confuser_template = confuser_template_path.read_text()
         confuser_project_file.parent.mkdir(parents=True, exist_ok=True)
         confuser_project_file.write_text(
             confuser_template.format(
@@ -265,7 +272,7 @@ def _git_fast_forward(target: Path, ref: str, label: str) -> bool:
     return True
 
 
-def overwrite_base_config(repo_root: Path) -> bool:
+def overwrite_base_config() -> bool:
     """Copy the shipped `config.yaml` over the user's active base config.
 
     Customizations belong in `config.user.yaml` under the config dir, which the
@@ -273,8 +280,12 @@ def overwrite_base_config(repo_root: Path) -> bool:
     merges on top of the base — so treating the base as team-owned defaults
     lets us ship new refs (compiler, starkiller, registries) without trying
     to reconcile them against the user's edits.
+
+    `DEFAULT_CONFIG` rather than a path rebuilt from the repo root: the guard
+    below only means anything if `src` is the same file the seeding code
+    reads, and nothing would enforce that across two derivations.
     """
-    src = repo_root / "empire" / "server" / "config.yaml"
+    src = config_manager.DEFAULT_CONFIG
     dst = config_manager.CONFIG_PATH
     if not src.exists():
         _error(f"Config: shipped template missing at {src}; skipping overwrite")
@@ -283,7 +294,9 @@ def overwrite_base_config(repo_root: Path) -> bool:
         _banner(f"Config: {dst} already points at the shipped template; skipping copy")
         return True
     try:
-        shutil.copy(src, dst)
+        # Same helper the import-time seeding uses, so the "copyfile, not
+        # copy" reasoning lives in exactly one place.
+        config_manager.seed_config(src, dst)
     except OSError as e:
         # PermissionError (e.g. dst is root-owned from a prior sudo install) and
         # any other OSError — surface it and let the rest of run_update proceed.
@@ -602,7 +615,7 @@ def _current_username() -> str:
 def check_no_foreign_ownership() -> bool:
     """Pre-flight for `setup` / `update`: bail with a single actionable banner
     if any of the user's Empire dirs are owned by another user. Without this,
-    the calling subcommand fails partway through — `shutil.copy` hits `EPERM`,
+    the calling subcommand fails partway through — the config copy hits `EPERM`,
     and `git fetch` inside root-owned clones hits "dubious ownership" — and
     the user is left to piece together the remediation from per-step errors.
     """
@@ -731,7 +744,7 @@ def run_update(args, *, repo_root: Path) -> bool:
             "local template."
         )
 
-    config_ok = overwrite_base_config(repo_root)
+    config_ok = overwrite_base_config()
     if config_ok:
         # Reload so the update_* helpers operate on whatever refs the new
         # base config (merged with the user's config.user.yaml) resolves to.

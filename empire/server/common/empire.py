@@ -1,6 +1,4 @@
 import logging
-import os
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from empire.server.core import hooks_internal
@@ -10,6 +8,7 @@ from empire.server.core.agent_service import AgentService
 from empire.server.core.agent_socks_service import AgentSocksService
 from empire.server.core.agent_task_service import AgentTaskService
 from empire.server.core.bypass_service import BypassService
+from empire.server.core.config import paths
 from empire.server.core.credential_service import CredentialService
 from empire.server.core.dotnet import DotnetCompiler
 from empire.server.core.download_service import DownloadService
@@ -43,7 +42,7 @@ class MainMenu:
     def __init__(self):
         log.info("Empire starting up...")
 
-        self.install_path = Path(os.path.realpath(__file__)).parent.parent
+        self.install_path = paths.SERVER_ROOT
 
         self.socketio: SocketIO | None = None
 

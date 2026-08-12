@@ -4,8 +4,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
+from empire.server.core.config import paths
 from empire.server.core.config.config_manager import EmpireCompilerConfig
 from empire.server.core.config.data_manager import (
+    _configure_compiler,
     _resolve_compiler_download_url,
     _resolve_compiler_platform,
 )
@@ -202,3 +204,46 @@ def test_stager_yaml_launcher_path_matches_service(stager_file):
             f"{stager_file}: EmbeddedResources Location '{loc}' does not match "
             f"expected '{LAUNCHER_RESOURCE_RELATIVE_PATH}'"
         )
+
+
+def test_configure_compiler_resolves_confuser_proj_off_the_package(
+    monkeypatch, tmp_path
+):
+    """A relative `confuser_proj` must resolve against the installed package.
+
+    Resolving it against the CWD meant a server started from anywhere but the
+    repo root died inside MainMenu.__init__.
+    """
+    package_root = tmp_path / "install-root"
+    template_path = package_root / "empire" / "server" / "data" / "confuser.crproj"
+    template_path.parent.mkdir(parents=True)
+    template_path.write_text("<project base='{confuser_base_dir}' />")
+    monkeypatch.setattr(paths, "REPO_ROOT", package_root)
+
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+
+    extracted = tmp_path / "extracted"
+    (extracted / "EmpireCompiler").mkdir(parents=True)
+    config = EmpireCompilerConfig(confuser_proj="empire/server/data/confuser.crproj")
+
+    _configure_compiler(config, extracted)
+
+    written = extracted / "EmpireCompiler" / "Data" / "Temp" / "empire.crproj"
+    assert written.exists()
+    assert "confuser_base_dir" not in written.read_text()
+
+
+def test_configure_compiler_honours_an_absolute_confuser_proj(tmp_path):
+    """Operators who set an absolute path must keep getting that exact file."""
+    template_path = tmp_path / "custom.crproj"
+    template_path.write_text("<project base='{confuser_base_dir}' />")
+
+    extracted = tmp_path / "extracted"
+    (extracted / "EmpireCompiler").mkdir(parents=True)
+    config = EmpireCompilerConfig(confuser_proj=str(template_path))
+
+    _configure_compiler(config, extracted)
+
+    assert (extracted / "EmpireCompiler" / "Data" / "Temp" / "empire.crproj").exists()

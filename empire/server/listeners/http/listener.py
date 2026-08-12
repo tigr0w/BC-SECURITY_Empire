@@ -20,7 +20,7 @@ from empire.server.common.encryption import AESCipher
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import ListenerValidationException
-from empire.server.utils import data_util, listener_util, log_util
+from empire.server.utils import cert_util, data_util, listener_util, log_util
 
 LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
@@ -1130,8 +1130,8 @@ class Listener:
                 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
                 context.minimum_version = ssl.TLSVersion.TLSv1_2
                 context.load_cert_chain(
-                    cert_path / "empire-chain.pem",
-                    cert_path / "empire-priv.key",
+                    cert_path / cert_util.CERT_FILENAME,
+                    cert_path / cert_util.KEY_FILENAME,
                 )
 
                 if ja3_evasion:

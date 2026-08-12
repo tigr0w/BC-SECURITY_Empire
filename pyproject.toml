@@ -6,10 +6,14 @@ authors = ["BC Security <info@bc-security.org>"]
 readme = "README.md"
 homepage = "https://github.com/BC-SECURITY/Empire"
 repository = "https://github.com/BC-SECURITY/Empire.git"
-packages = [
-    { include = "empire.py" },
-    { include = "empire/server/**/*.py" },
-]
+# A directory include ships everything beneath it; a glob include keeps only
+# what it matches, which is how `empire/server/**/*.py` dropped every yaml,
+# ps1, dll and profile.
+packages = [{ include = "empire" }]
+# `**/.git` is the profiles submodule's gitlink. Poetry's VCS exclusion cannot
+# see it (`git ls-files` does not descend into submodules) and it would bake
+# the build machine's path into the wheel.
+exclude = ["empire/test", "**/.git"]
 
 [tool.poetry.dependencies]
 python = ">=3.13,<3.15"
@@ -31,6 +35,8 @@ python-multipart = "^0.0.32"
 pyjwt = "^2.13.0"
 python-socketio = "^5.16.3"
 Flask = "^3.1.3"
+click = "^8.4.2"
+werkzeug = "^3.1.8"
 pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git", rev = "da5be0e"}
 # The official donut-shellcode release doesn't support arm64
 # and on newer linux kernels, it's starting to fail due to
@@ -55,6 +61,9 @@ ruff = "^0.15.20"
 pytest-cov = "^7.1.0"
 pytest-env = "^1.6.0"
 pytest-rerunfailures = "^16.3"
+
+[tool.poetry.scripts]
+empire-server = "empire.main:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -137,6 +146,8 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 
 # Can't control how many fixtures are needed for the tests.
 "empire/test/*" = ["PLR0913", "S", "SLF"]
+# S603: the wheel probe spawns the console script it is there to verify.
+".github/scripts/*" = ["S603"]
 "empire/server/modules/powershell/persistence/elevated/schtasks.py" = ["PLR2004"]
 "empire/server/modules/powershell/persistence/elevated/wmi.py" = ["PLR2004"]
 "empire/server/modules/powershell/persistence/elevated/wmi_updater.py" = ["PLR2004"]
@@ -155,6 +166,9 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 # pay db.base's module-level side effects (engine init, create_all)
 # on a --help or pre-flight failure.
 "empire/server/core/config/data_manager.py" = ["PLC0415"]
+# Same reason: main() lazy-imports the server so the `install` refusal is
+# reachable before db.base connects to a MySQL that isn't there yet.
+"empire/main.py" = ["PLC0415"]
 
 # Intentional S findings in server code (same C2 rationale as the block above):
 "empire/server/api/v2/listener/listener_dto.py" = ["S104"]  # listener bind default

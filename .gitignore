@@ -59,6 +59,7 @@ addons/
 __pycache__/
 workspace.xml
 starkiller-dist.tar.gz
+/dist/
 .worktrees/
 config.user.yaml
 .claude/settings.local.json

@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added `filter='data'` to `tar.extractall()` in compiler download to prevent path traversal from untrusted archives.
 -   Malleable profile `header` directives now reject CRLF in the name or value at both parse and deserialize time (dropping the directive with a warning), closing a header-injection vector through the Flask `after_request` merge.
 -   Replaced MySQL `MD5()` with `SHA2(..., 256)` for the `hosts.unique_check` generated column.
+-   The generated TLS private key is now written with mode `0600` rather than inheriting the process umask, which under `sudo -E` left a root-owned world-readable key.
+-   The generated TLS private key and staged certificate are written with `O_NOFOLLOW`, so a symlink planted at either path during a `sudo -E` (root) run can no longer redirect the write and truncate an arbitrary root-owned file.
 
 ### Added
 
@@ -93,6 +95,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Added a standalone C# module compilation test (`tests/test_compile_csharp.py`) compiling every C# module against the real EmpireCompiler, parametrized per-module. Marked `@pytest.mark.slow`.
 -   Added AES-GCM interoperability and routing-packet tests: cross-implementation server/agent parity, plus wrong-key rejection, tampered packets, AAD mismatch, empty/non-block-aligned plaintexts, and concatenated packets.
 -   Migration `0006`: widens `agent_files.session_id` to `String(255)` and adds `ON DELETE CASCADE` FK to `agents.session_id`.
+-   Added an `empire-server` console script so an installed Empire has a working entry point.
+-   Added `click` and `werkzeug` as explicit dependencies; both were imported directly but supplied only transitively by Flask.
 
 ### Changed
 
@@ -127,6 +131,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Parallelized the test suite with pytest-xdist and preserved the cached empire-compiler / Starkiller / Go-build dirs across runs instead of re-downloading them each time (developer/CI change).
 -   The two heaviest C# compile tests (SharpHound, Rubeus) now run only on release branches / the `run-all-versions` label instead of every PR; the other C# modules still compile per-PR (developer/CI change).
 -   Download responses now carry an explicit `Content-Type` from an Empire-owned extension map, so a file no longer serves as a different type depending on the operator's distro; anything unmapped serves as `application/octet-stream`.
+-   The self-signed server certificate is now generated in process with `cryptography` instead of shelling out to `setup/cert.sh`, which removes Empire's runtime dependency on `bash` and an `openssl` binary.
 
 ### Removed
 
@@ -142,6 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Removed the `powershell/management/switch_listener` module and all switch-listener infrastructure (API endpoint, packet types, task service, response handlers).
 -   Removed dead `getIV()` function from agent stager AES code (bypassed by inline `os.urandom()`).
 -   Removed a byte-identical duplicate definition of `Profile._apply_set_directive` in `malleable/profile.py` (dead code from a merge artifact).
+-   Removed `setup/cert.sh`; certificate generation happens automatically on first server start.
 
 ### Fixed
 
@@ -190,6 +196,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed `ShellPostRequest.literal` firing a spurious `DeprecationWarning` on every shell POST; the handler no longer reads the field and `literal` was dropped from `create_task_shell`, though the DTO keeps it `deprecated=` for clients.
 -   Fixed `is_option_required` raising `KeyError` on a `depends_on` entry that omits a `values` list; a valueless dependency now imposes no value constraint, matching `evaluate_dependencies`. No shipped module triggers this, but it crashed validation for any valueless `depends_on`.
 -   Fixed a missing `x86_64-w64-mingw32-gcc` in the Windows C stager returning an opaque 500 instead of a 400 naming the toolchain and its install command.
+-   The built wheel now ships modules, listeners, stagers, profiles, agent sources and configs, so an installed Empire is no longer left with zero of them.
+-   The server no longer resolves its seeded config, ConfuserEx project file or certificate script against the current working directory, so it can be started from any directory.
+-   `git` submodule and commit-SHA lookups now run against Empire's own repository instead of whatever directory the server was launched from.
+-   The `install` subcommand now exits with an error where it is unavailable instead of silently succeeding.
+-   Running the server with no subcommand now prints usage and exits 2, instead of importing the whole server and exiting 0 for what is a usage error.
+-   The server now regenerates its self-signed certificate when either half of the pair is missing, so a key written without its certificate is no longer left mismatched on every subsequent start.
+-   An HTTPS `http_malleable` listener with no `CertPath` now falls back to the generated pair in the data directory instead of a CWD-relative `setup/`, which never contained one.
 
 ## [6.7.1] - 2026-07-25
 

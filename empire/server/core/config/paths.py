@@ -27,6 +27,26 @@ CONFIG_FILENAME = "config.yaml"
 USER_CONFIG_FILENAME = "config.user.yaml"
 SEEDED_CONFIG_FILENAMES = (CONFIG_FILENAME, USER_CONFIG_FILENAME)
 
+# Anchors for files that ship *inside* the package, as opposed to the
+# platformdirs locations below (which hold per-user state). Everything the boot
+# path reads out of the package must resolve against these -- resolving against
+# the CWD is what made `cd / && empire-server server` fail.
+SERVER_ROOT = Path(__file__).resolve().parent.parent.parent
+# The directory the `empire` package sits in: the repository root in a git
+# checkout, `site-packages` in a wheel install.
+REPO_ROOT = SERVER_ROOT.parent.parent
+
+
+def is_git_checkout() -> bool:
+    """Whether Empire is running from a git checkout rather than an install.
+
+    Anchored at ``REPO_ROOT``, never the CWD: a packaged Empire launched from
+    inside an unrelated repository must not run git commands against it.
+    ``.git`` is a *file* rather than a directory inside a git worktree, so this
+    tests existence, not directory-ness.
+    """
+    return (REPO_ROOT / ".git").exists()
+
 
 def config_dir(app_name: str) -> Path:
     return Path(platformdirs.user_config_dir(app_name, appauthor=False))

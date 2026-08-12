@@ -435,8 +435,9 @@ class HttpsCertificate(MalleableObject):
     Parses CS-style ``https-certificate { set CN "..."; ... }`` blocks
     into a typed object. **Empire does not generate a TLS certificate at
     listener-start time today** — the listener loads a pre-existing PEM
-    from ``CertPath`` (built once by ``setup/cert.sh``), so these fields
-    are not yet driven into the underlying cert.
+    from ``CertPath`` (generated once at first server start by
+    ``empire.server.utils.cert_util``), so these fields are not yet driven
+    into the underlying cert.
 
     The listener emits a startup WARNING if a profile defines this block
     while the listener is configured for HTTPS (regardless of CertPath

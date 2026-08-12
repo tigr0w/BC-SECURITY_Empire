@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 parent_parser = argparse.ArgumentParser()
 subparsers = parent_parser.add_subparsers(dest="subparser_name")
@@ -64,7 +65,18 @@ general_group.add_argument(
     help="Specify a config.yaml different from the config.yaml in the empire/server directory.",
 )
 
-args = parent_parser.parse_args()
 
-if parent_parser.parse_args().subparser_name is None:
-    parent_parser.print_help()
+def parse_args():
+    """Parse argv, or print usage and exit 2 when no subcommand is given.
+
+    A function, not module scope: the console-script target `empire.main`
+    imports this module, so parsing (and, worse, exiting) at import time makes
+    `import empire.main` unusable for anything that doesn't own argv --
+    `python -c "import empire.main"`, a packager's import check, autodoc. The
+    bare-invocation exit stays identical for real CLI use.
+    """
+    args = parent_parser.parse_args()
+    if args.subparser_name is None:
+        parent_parser.print_help()
+        sys.exit(2)
+    return args

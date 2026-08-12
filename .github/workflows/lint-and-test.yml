@@ -189,6 +189,56 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           DATABASE_USE=mysql poetry run pytest -v --runslow --durations=10 empire/test/test_performance
+  test_wheel:
+    # Nothing here publishes a wheel -- downstream packagers (nixpkgs) build
+    # one from source -- so this job is all that stands between an edit to
+    # `packages` and a broken distro package. Build, inspect, install into a
+    # throwaway venv and probe it: about a minute, no database, no compiler.
+    needs:
+      - lint
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    name: Test Wheel
+    steps:
+      - uses: actions/checkout@v7
+        if: ${{ endsWith(github.repository, 'Empire') }}
+        with:
+          submodules: 'recursive'
+      # token is only needed in sponsors repo because of private submodules
+      # don't use token in public repo because prs from forks cannot access secrets
+      - uses: actions/checkout@v7
+        if: ${{ endsWith(github.repository, 'Empire-Sponsors') }}
+        with:
+          submodules: 'recursive'
+          token: ${{ secrets.RELEASE_TOKEN }}
+      - name: Install Poetry
+        run: |
+          curl -sL https://install.python-poetry.org | python - -y
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          cache: 'poetry'
+      - name: Build wheel
+        run: poetry build --format wheel
+      - name: Assert wheel contents
+        run: python .github/scripts/check_wheel.py
+      - name: Install the wheel into a clean venv
+        # --no-deps: empire.main and empire.arguments are stdlib-only and
+        # paths needs only platformdirs, so the entry point and the installed
+        # asset tree both verify in seconds. Resolving Empire's real
+        # dependency closure is the `test` job's business.
+        run: |
+          python -m venv "$HOME/wheel-venv"
+          "$HOME/wheel-venv/bin/pip" install --no-deps \
+            dist/empire_bc_security_fork-*.whl platformdirs
+      - name: Probe the install from /
+        # From /, because resolving package files against the CWD rather than
+        # the package is the bug this job exists to catch.
+        run: |
+          cd /
+          "$HOME/wheel-venv/bin/python" \
+            "$GITHUB_WORKSPACE/.github/scripts/probe_wheel_install.py"
   test_image:
     # To save CI time, only run these tests on the release PRs
     if: ${{ startsWith(github.head_ref, 'release/') || contains( github.event.pull_request.labels.*.name,

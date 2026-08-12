@@ -19,13 +19,14 @@ from werkzeug.serving import WSGIRequestHandler
 from empire.server.common import encryption, helpers, malleable, packets, templating
 from empire.server.common.empire import MainMenu
 from empire.server.common.encryption import AESCipher
+from empire.server.core.config import config_manager
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import (
     ListenerValidationException,
     ModuleExecutionException,
 )
-from empire.server.utils import data_util, listener_util, log_util
+from empire.server.utils import cert_util, data_util, listener_util, log_util
 
 LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
@@ -1364,13 +1365,15 @@ class ExtendedPacketHandler(PacketHandler):
         # listener is configured for HTTPS — the block does not yet drive
         # cert generation, so the operator's CN/O/validity won't take
         # effect. We deliberately gate on listener_uses_https rather than
-        # `certPath` truthiness: an empty CertPath still loads
-        # setup/empire-chain.pem at line ~1921, so the warning must
-        # fire there too. The original `certPath and ...` guard missed
-        # that case and false-positived on stale HTTP listeners.
+        # `certPath` truthiness: an empty CertPath still falls back to the
+        # boot-generated pair under DATA_DIR/cert, so the warning must fire
+        # there too. The original `certPath and ...` guard missed that case
+        # and false-positived on stale HTTP listeners.
         if listener_uses_https and not profile.https_certificate.is_default():
             effective_cert_path = (
-                certPath if (certPath and str(certPath).strip()) else "setup (default)"
+                certPath
+                if (certPath and str(certPath).strip())
+                else f"{config_manager.CERT_DIR} (default)"
             )
             self.instance_log.warning(
                 "%s: https-certificate block in profile is ignored — Empire "
@@ -1928,13 +1931,16 @@ class ExtendedPacketHandler(PacketHandler):
             if host.startswith("https"):
                 if certPath.strip() == "" or not Path(certPath).is_dir():
                     log.info(f"Unable to find certpath {certPath}, using default.")
-                    certPath = "setup"
+                    # The pair server.run generates at boot. The old default was
+                    # a CWD-relative "setup", which never held a certificate and
+                    # resolved against wherever the operator happened to launch.
+                    certPath = config_manager.CERT_DIR
                 cert_path = Path(certPath).resolve()
                 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
                 context.minimum_version = ssl.TLSVersion.TLSv1_2
                 context.load_cert_chain(
-                    cert_path / "empire-chain.pem",
-                    cert_path / "empire-priv.key",
+                    cert_path / cert_util.CERT_FILENAME,
+                    cert_path / cert_util.KEY_FILENAME,
                 )
 
                 if ja3_evasion:

@@ -54,6 +54,11 @@ if os.environ.get("TEST_MODE") and _XDIST_WORKER:
 else:
     DATA_DIR = _DATA_BASE
 CONFIG_PATH = CONFIG_DIR / paths.CONFIG_FILENAME
+# The boot self-signed pair's directory. Anchored here so server.run (which
+# generates it) and the malleable listener (which loads it) resolve the same
+# path; cert_util owns the filenames but is a crypto leaf that can't import
+# this module.
+CERT_DIR = DATA_DIR / "cert"
 
 
 class EmpireBaseModel(BaseModel):
@@ -352,7 +357,7 @@ def _resolve_base_config_path() -> Path:
     return CONFIG_PATH
 
 
-DEFAULT_CONFIG = Path("empire/server") / paths.CONFIG_FILENAME
+DEFAULT_CONFIG = paths.SERVER_ROOT / paths.CONFIG_FILENAME
 
 # CONFIG_DIR / DATA_DIR / CACHE_DIR / CONFIG_PATH are defined near the top of this
 # module (platformdirs). The TEST_MODE wipe lives in root conftest.py::
@@ -374,15 +379,28 @@ if os.environ.get("TEST_MODE") and _XDIST_WORKER:
             with suppress(FileExistsError):
                 _worker_link.symlink_to(_shared_target)
 
-if not CONFIG_PATH.exists():
-    shutil.copy(DEFAULT_CONFIG, CONFIG_PATH)
-    log.info(f"Copied {DEFAULT_CONFIG} to {CONFIG_PATH}")
 
-DEFAULT_USER_CONFIG = DEFAULT_CONFIG.parent / paths.USER_CONFIG_FILENAME
+def seed_config(source: Path, destination: Path) -> None:
+    """Copy a shipped config template into the operator's config directory.
+
+    ``copyfile``, not ``copy``: ``copy`` is ``copyfile`` + ``copymode``, and a
+    packaged config.yaml can be read-only (0444 in a Nix store). Carrying that
+    mode across leaves the operator unable to edit the very file Empire
+    directs them to edit, and ``overwrite_base_config``'s PermissionError
+    handler then advises ``sudo chown $USER`` -- useless for a mode problem on
+    a file they already own.
+    """
+    shutil.copyfile(source, destination)
+    log.info(f"Copied {source} to {destination}")
+
+
+if not CONFIG_PATH.exists():
+    seed_config(DEFAULT_CONFIG, CONFIG_PATH)
+
+DEFAULT_USER_CONFIG = paths.SERVER_ROOT / paths.USER_CONFIG_FILENAME
 USER_CONFIG_PATH = CONFIG_DIR / paths.USER_CONFIG_FILENAME
 if DEFAULT_USER_CONFIG.exists() and not USER_CONFIG_PATH.exists():
-    shutil.copy(DEFAULT_USER_CONFIG, USER_CONFIG_PATH)
-    log.info(f"Copied {DEFAULT_USER_CONFIG} to {USER_CONFIG_PATH}")
+    seed_config(DEFAULT_USER_CONFIG, USER_CONFIG_PATH)
 
 
 _module_base_config_path: Path | None = _resolve_base_config_path()

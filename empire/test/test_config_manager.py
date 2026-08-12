@@ -6,7 +6,16 @@ import os
 import subprocess
 import sys
 
-from empire.server.core.config.config_manager import DATA_DIR
+import pytest
+
+from empire.server.core.config import paths
+from empire.server.core.config.config_manager import (
+    CONFIG_PATH,
+    DATA_DIR,
+    DEFAULT_CONFIG,
+    DEFAULT_USER_CONFIG,
+    seed_config,
+)
 
 
 def test_config_manager_import_does_not_wipe_data_dir():
@@ -51,3 +60,60 @@ def test_config_manager_import_does_not_wipe_data_dir():
         )
     finally:
         sentinel.unlink(missing_ok=True)
+
+
+def test_default_config_paths_are_absolute_and_inside_the_package():
+    """Regression for the CWD-relative `Path("empire/server") / ...` default.
+
+    This resolved against the launch directory, so importing config_manager
+    from anywhere but the repo root raised FileNotFoundError before argparse
+    ever ran.
+    """
+    assert DEFAULT_CONFIG.is_absolute()
+    assert DEFAULT_CONFIG == paths.SERVER_ROOT / paths.CONFIG_FILENAME
+    assert DEFAULT_CONFIG.exists()
+
+    assert DEFAULT_USER_CONFIG.is_absolute()
+    assert DEFAULT_USER_CONFIG == paths.SERVER_ROOT / paths.USER_CONFIG_FILENAME
+
+
+def test_default_config_still_resolves_from_an_unrelated_cwd(monkeypatch, tmp_path):
+    """`cd / && empire-server server` must still find the shipped template.
+
+    Deliberately an in-process assertion rather than a subprocess import: the
+    seeding copy at import time only runs `if not CONFIG_PATH.exists()`, so
+    under TEST_MODE with a config already seeded, a subprocess import would
+    succeed even with the bug present and prove nothing.
+    """
+    monkeypatch.chdir(tmp_path)
+
+    assert DEFAULT_CONFIG.exists(), (
+        f"{DEFAULT_CONFIG} does not resolve from {tmp_path} — it is CWD-relative"
+    )
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores the mode either way")
+def test_seed_config_does_not_carry_a_read_only_source_mode(tmp_path):
+    """`shutil.copy` is copyfile + copymode; a packaged config.yaml is 0444.
+
+    The source has to be made read-only here for this to test anything. A
+    checkout's config.yaml is 0644, so `copy` and `copyfile` are
+    indistinguishable against it, and asserting on the already-seeded
+    CONFIG_PATH passes with the bug fully present.
+    """
+    source = tmp_path / "config.yaml"
+    source.write_text("suppress_self_cert_warning: true\n")
+    source.chmod(0o444)
+    destination = tmp_path / "seeded.yaml"
+
+    seed_config(source, destination)
+
+    assert destination.stat().st_mode & 0o200, (
+        f"seeded config is not writable by its owner "
+        f"({destination.stat().st_mode & 0o777:#o}) — copymode carried 0444 across"
+    )
+    assert destination.read_text() == source.read_text()
+
+
+def test_config_is_seeded_at_import_time():
+    assert CONFIG_PATH.exists(), "config_manager seeds this at import time"
