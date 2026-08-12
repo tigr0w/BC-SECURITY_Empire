@@ -8,6 +8,7 @@ the `check_no_foreign_ownership` pre-flight, `run_update`'s aggregation
 """
 
 import logging
+import os
 import stat
 import subprocess
 from pathlib import Path
@@ -767,14 +768,18 @@ def test_check_no_foreign_ownership_detects_root_owned_starkiller_clone(
 
     def stat_with_root_starkiller(self, *args, **kwargs):
         if self == starkiller_clone:
-            # Pretend this child is owned by root (uid 0); everything else
-            # delegates to the real stat (= current user's uid). `st_mode`
-            # carries the directory bit because `_ownership_check_paths`
-            # routes children through `is_dir()` before adding them, and on
-            # 3.13 `is_dir` reads `S_ISDIR(st_mode)` via the patched `stat`.
+            # Pretend this child is owned by *another* user; everything else
+            # delegates to the real stat (= current user's uid). Derived from
+            # the current uid rather than hardcoded to 0, because the check is
+            # `st_uid != os.getuid()` — so a literal 0 is not foreign when the
+            # suite runs as root, which is what happens inside the Docker
+            # image. `st_mode` carries the directory bit because
+            # `_ownership_check_paths` routes children through `is_dir()`
+            # before adding them, and on 3.13 `is_dir` reads
+            # `S_ISDIR(st_mode)` via the patched `stat`.
             class FakeStat:
                 st_mode = stat.S_IFDIR | 0o755
-                st_uid = 0
+                st_uid = os.getuid() + 1
 
             return FakeStat()
         return real_stat(self, *args, **kwargs)
