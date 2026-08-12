@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **BREAKING:** Added a `./ps-empire update` subcommand that moves the checkout to the latest release tag, refreshes `config.yaml`, and fast-forwards Starkiller, the plugin registry, and the Empire Compiler binary (skips source on dev branches). The base `config.yaml` is overwritten on every update — move local customizations to `config.user.yaml`.
 -   `./ps-empire update` now applies pending Alembic migrations during the upgrade (prompts to back up first, `-y` to auto-confirm), so a schema mismatch no longer crashes the server on next start.
 -   Smoothed the bcrypt → PBKDF2 upgrade: a bcrypt-shaped default-user hash is auto-reset to PBKDF2 on startup (logged with recovery steps) and non-default bcrypt users are left untouched. **Manual recovery:** an admin `PUT /api/v2/users/{id}/password` (or Starkiller) stores a PBKDF2 hash.
+-   Added `starkiller.directory` config option to serve an already-built Starkiller instead of cloning one from GitHub at startup, enabling air-gapped and distro-packaged installs.
 -   Added `wdtoggle`, `psx`, `psm`, `psk`, `psw`, `psc`, and `winver` BOF modules from the Outflank C2-Tool-Collection:
     -   `wdtoggle` — patch WDigest/Credential Guard in LSASS to re-enable plaintext credential caching
     -   `psx` — process list annotated with detected security products (AV/EDR/logging tools)

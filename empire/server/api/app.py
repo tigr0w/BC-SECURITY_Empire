@@ -31,7 +31,11 @@ from empire.server.api.v2.user import user_api
 from empire.server.api.v2.websocket.socketio import setup_socket_events
 from empire.server.common import empire
 from empire.server.core.config.config_manager import empire_config
-from empire.server.core.config.data_manager import sync_starkiller
+from empire.server.core.config.data_manager import (
+    resolve_starkiller_dist,
+    starkiller_directory_problem,
+    sync_starkiller,
+)
 from empire.server.core.db import base
 
 log = logging.getLogger(__name__)
@@ -66,21 +70,27 @@ def load_starkiller(app, port):
         starkiller_dir = sync_starkiller(empire_config.starkiller)
     except Exception as e:
         log.warning("Failed to load Starkiller: %s", e, exc_info=True)
-        log.warning(
-            "If you are trying to pull Starkiller from a private repository ("
-            "such as Starkiller-Sponsors), make sure you have the proper ssh "
-            "credentials set in your Empire config. See "
-            "https://docs.github.com/en/github/authenticating-to-github"
-            "/connecting-to-github-with-ssh"
-        )
+        if not empire_config.starkiller.directory:
+            # Only the clone path can fail on credentials; under a directory
+            # override nothing was fetched, so this advice would misdirect.
+            log.warning(
+                "If you are trying to pull Starkiller from a private repository ("
+                "such as Starkiller-Sponsors), make sure you have the proper ssh "
+                "credentials set in your Empire config. See "
+                "https://docs.github.com/en/github/authenticating-to-github"
+                "/connecting-to-github-with-ssh"
+            )
         return
 
-    dist_dir = starkiller_dir / "dist"
-    if not dist_dir.is_dir():
+    dist_dir = resolve_starkiller_dist(starkiller_dir)
+    if dist_dir is None:
+        hint = "Run a Starkiller build first."
+        if empire_config.starkiller.directory:
+            hint = starkiller_directory_problem(starkiller_dir) or hint
         log.warning(
-            "Starkiller dist directory not found at '%s'. "
-            "The UI will not be available. Run a Starkiller build first.",
-            dist_dir,
+            "No Starkiller build found under '%s'. The UI will not be available. %s",
+            starkiller_dir,
+            hint,
         )
         return
 

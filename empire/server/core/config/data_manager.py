@@ -19,8 +19,125 @@ from empire.server.utils.git_util import GitOperationException, clone_git_repo
 
 log = logging.getLogger(__name__)
 
+_FIX_DIRECTORY_HINT = (
+    "Fix `starkiller.directory` in config.user.yaml, or unset it to clone from GitHub."
+)
 
-def sync_starkiller(starkiller_config: StarkillerConfig):
+
+def resolve_starkiller_dist(starkiller_dir: Path) -> Path | None:
+    """Find the servable build under a Starkiller root, or None if there isn't
+    one.
+
+    Both layouts are legitimate. A git checkout keeps its build in `dist/`; a
+    packaged build flattens that away -- the nixpkgs derivation does
+    `cp -r dist/** $out`, and the level above `$out` is `/nix/store`, so that
+    package has no `dist/` parent it could name. Accepting both also means
+    pointing at `dist/` itself works, which is the likeliest operator mistake.
+
+    `dist/` wins when both match: a built checkout also carries an index.html at
+    its root, but that one is Vite's entry template (`src="/src/main.js"`), not a
+    build -- serving it yields a blank UI. That template is also why an
+    index.html alone isn't proof of a build; `package.json` discriminates, since
+    every source checkout has one and no build output does.
+
+    Keying on index.html rather than on `dist/` merely existing keeps an
+    interrupted `npm run build` -- or an unrelated project's `dist/` of wheels --
+    from being mounted.
+    """
+    if (starkiller_dir / "dist" / "index.html").is_file():
+        return starkiller_dir / "dist"
+    if (starkiller_dir / "index.html").is_file() and not (
+        starkiller_dir / "package.json"
+    ).is_file():
+        return starkiller_dir
+    return None
+
+
+def _starkiller_layout_hint(starkiller_dir: Path) -> str:
+    """Operator-facing advice for a directory that exists but holds no build.
+    Only meaningful when `resolve_starkiller_dist` has already returned None.
+    """
+    if (starkiller_dir / "package.json").is_file():
+        return (
+            "That looks like a Starkiller source checkout that has not been "
+            "built -- run the build first, then point `starkiller.directory` "
+            "at the checkout or at its dist/ output."
+        )
+    if (starkiller_dir / "dist").is_dir():
+        # Saying "point at a directory containing dist/" here would be a dead
+        # end -- they did. The dist/ is the incomplete thing.
+        return (
+            "There is a dist/ there, but it has no index.html, so the build is "
+            "incomplete -- re-run the Starkiller build."
+        )
+    return (
+        "`starkiller.directory` must point at a built Starkiller: either a "
+        "directory containing dist/, or the build output itself (an index.html "
+        "beside its assets)."
+    )
+
+
+def starkiller_directory_problem(starkiller_dir: Path) -> str | None:
+    """Why `starkiller_dir` can't be served, or None when it holds a build.
+
+    Single source for the diagnosis so the server's boot warning and
+    `setup`/`update`'s validation can't drift apart on the wording.
+    """
+    if not starkiller_dir.is_dir():
+        if str(starkiller_dir).startswith("~"):
+            # Expansion left the `~` in place, so there is no home to resolve
+            # (unset $HOME, an unmapped uid, no such user). Diagnosed after
+            # `is_dir` so a literal `~name` directory that really exists is
+            # still servable, and separately from the "not a directory" case
+            # because the path it names may well exist -- what failed is the
+            # expansion, and no amount of checking the spelling reveals that.
+            return (
+                f"configured directory '{starkiller_dir}' begins with `~`, but "
+                f"this process has no resolvable home directory, so it could "
+                f"not be expanded. Use a literal absolute path. "
+                f"{_FIX_DIRECTORY_HINT}"
+            )
+        return (
+            f"configured directory '{starkiller_dir}' is not a directory "
+            f"(or does not exist). {_FIX_DIRECTORY_HINT}"
+        )
+    if resolve_starkiller_dist(starkiller_dir) is None:
+        return (
+            f"configured directory '{starkiller_dir}' contains no Starkiller "
+            f"build. {_starkiller_layout_hint(starkiller_dir)} "
+            f"{_FIX_DIRECTORY_HINT}"
+        )
+    return None
+
+
+def _starkiller_override_dir(starkiller_config: StarkillerConfig) -> Path | None:
+    """The configured `directory`, expanded, or None when there is no override.
+
+    `os.path.expanduser` rather than `Path.expanduser`: the latter raises
+    `RuntimeError` for a `~user` with no resolvable home (an unmapped uid in a
+    container, a typo'd username), which would abort `setup`/`update` on a
+    traceback instead of reporting the path as bad.
+    """
+    if not starkiller_config.directory:
+        return None
+    return Path(os.path.expanduser(starkiller_config.directory))  # noqa: PTH111
+
+
+def sync_starkiller(starkiller_config: StarkillerConfig) -> Path:
+    local_dir = _starkiller_override_dir(starkiller_config)
+    if local_dir is not None:
+        # Never fall back to a clone: this override exists for air-gapped and
+        # distro-packaged installs, where a silent GitHub fetch would serve
+        # upstream Starkiller in place of the operator's vetted build.
+        if local_dir.is_dir():
+            log.info(f"Starkiller: using local directory {local_dir}")
+        else:
+            log.error(
+                f"Starkiller: {starkiller_directory_problem(local_dir)} "
+                "Not falling back to a clone."
+            )
+        return local_dir
+
     starkiller_dir = config_manager.DATA_DIR / "starkiller" / starkiller_config.ref
 
     if not Path(starkiller_dir).exists():
@@ -136,7 +253,9 @@ def _configure_compiler(
 
 def sync_empire_compiler(compiler_config: EmpireCompilerConfig):
     # Allow a local directory override so developers can test without
-    # publishing a GitHub release (mirrors how Starkiller handles this).
+    # publishing a GitHub release. A stale path falls back to downloading the
+    # published release, which is safe because this override is a developer
+    # convenience rather than a deployment mechanism.
     if compiler_config.directory:
         local_dir = Path(compiler_config.directory)
         if local_dir.exists():
@@ -408,6 +527,17 @@ def update_empire_source(repo_root: Path) -> bool:
 def update_starkiller(
     starkiller_config: StarkillerConfig, *, assume_yes: bool = False
 ) -> bool:
+    local_dir = _starkiller_override_dir(starkiller_config)
+    if local_dir is not None:
+        # Nothing to fetch, but still check the override resolves: `update` is
+        # what operators run after editing config, and reporting success for a
+        # path that `setup` would reject hands them a green "Update complete"
+        # over a server that will boot with no UI.
+        _banner(
+            f"Starkiller: using local directory override {local_dir}; nothing to update"
+        )
+        return _starkiller_directory_ok(starkiller_config)
+
     starkiller_root = config_manager.DATA_DIR / "starkiller"
     target = starkiller_root / starkiller_config.ref
 
@@ -796,6 +926,47 @@ def run_update(args, *, repo_root: Path) -> bool:
     return True
 
 
+def _starkiller_directory_ok(starkiller_config: StarkillerConfig) -> bool:
+    """Validate a configured `directory` for `setup` / `update`.
+
+    `sync_starkiller` returns an override unvalidated -- it never falls back to
+    a clone -- so this is where a bad one has to fail. `_error` rather than
+    `log.error` because these entry points run without the server logger's
+    formatting.
+
+    Resolves the build, not just the directory: a directory that exists but
+    holds no build still boots to a blank UI, and `is_dir()` alone would print a
+    green banner over that.
+
+    A relative override warns instead of failing: it is a legal value (the field
+    is typed `str` precisely so relative paths survive verbatim), but nothing
+    anchors it, so `setup` and the server each resolve it against whichever
+    directory they happened to be launched from.
+
+    A disabled Starkiller passes regardless. The sync still runs, `enabled` or
+    not, so the build stays ready for whenever the operator flips it back on --
+    but failing a whole install over a UI they switched off is not acceptable.
+    """
+    starkiller_dir = _starkiller_override_dir(starkiller_config)
+    if not starkiller_config.enabled or starkiller_dir is None:
+        return True
+    # An unexpanded `~` is not relative in any sense the operator can act on;
+    # the CWD advice would contradict the diagnosis that follows it.
+    if not starkiller_dir.is_absolute() and not str(starkiller_dir).startswith("~"):
+        _warn(
+            f"Starkiller: configured directory '{starkiller_dir}' is relative, so "
+            f"it resolves against the current working directory ({Path.cwd()}). "
+            "The server is normally launched from somewhere else (systemd unit, "
+            "console script, container), where the same value names a different "
+            "path -- use an absolute path."
+        )
+    problem = starkiller_directory_problem(starkiller_dir)
+    if problem:
+        _error(f"Starkiller: {problem}")
+        return False
+    return True
+
+
 def run_setup(args) -> dict[str, bool] | None:
     """Entry point for `./ps-empire setup`. Runs the install-time syncs
     (`sync_starkiller` / `sync_empire_compiler` / `sync_plugin_registry`)
@@ -833,12 +1004,14 @@ def run_setup(args) -> dict[str, bool] | None:
     results: dict[str, bool] = {}
 
     _banner("Starkiller: syncing")
+    starkiller_config = config_manager.empire_config.starkiller
     try:
-        sync_starkiller(config_manager.empire_config.starkiller)
-        results["Starkiller"] = True
+        sync_starkiller(starkiller_config)
     except GitOperationException as e:
         _error(f"Starkiller: clone failed ({e}).")
         results["Starkiller"] = False
+    else:
+        results["Starkiller"] = _starkiller_directory_ok(starkiller_config)
 
     _banner("Empire Compiler: syncing")
     # Mirrors the failure model in update_empire_compiler:

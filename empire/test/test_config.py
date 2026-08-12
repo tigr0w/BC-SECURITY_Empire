@@ -209,6 +209,28 @@ def test_user_config_layers_on_base(tmp_path):
 
 
 @pytest.mark.usefixtures("_isolated_config")
+def test_starkiller_directory_relative_value_survives_as_literal_string(tmp_path):
+    """`starkiller.directory` is typed `str`, not `Path`, specifically so a
+    relative value passes through unchanged instead of being silently
+    reinterpreted as DATA_DIR-relative by `EmpireBaseModel.set_path`.
+
+    Every other test for this field uses an absolute path or `~`, and both
+    survive being typed as `Path` too (absolutes resolve as-is, and `~`
+    expands to an absolute before the `is_absolute()` check runs) -- only a
+    relative value actually distinguishes `str` from `Path` here.
+    """
+    config_dict = copy.deepcopy(BASE_CONFIG)
+    config_dict["starkiller"] = {"directory": "relative/starkiller-build"}
+
+    base = tmp_path / "config.yaml"
+    base.write_text(yaml.dump(config_dict))
+
+    config = EmpireConfig(_base_config_path=base)
+
+    assert config.starkiller.directory == "relative/starkiller-build"
+
+
+@pytest.mark.usefixtures("_isolated_config")
 def test_no_user_config_uses_base_only(tmp_path):
     """When no config.user.yaml exists, base config is used as-is."""
     base = tmp_path / "config.yaml"

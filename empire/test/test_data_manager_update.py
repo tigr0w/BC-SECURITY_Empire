@@ -7,8 +7,10 @@ the `check_no_foreign_ownership` pre-flight, `run_update`'s aggregation
 + EmpireConfig reload, and `run_setup`'s install-time sync orchestration.
 """
 
+import logging
 import stat
 import subprocess
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -363,6 +365,113 @@ def test_update_starkiller_cached_other_ref_declined_skips(
     assert "migration skipped" in capsys.readouterr().out
 
 
+# ---------- sync_starkiller directory override ----------
+
+
+def test_sync_starkiller_directory_override_skips_clone(tmp_path, monkeypatch):
+    """A configured `directory` must be used as-is with no network access.
+
+    This is the whole point of the override: an air-gapped or distro install
+    has no way to reach GitHub, so reaching `clone_git_repo` at all is a
+    failure regardless of what the function returns.
+    """
+    build_dir = tmp_path / "starkiller-build"
+    build_dir.mkdir()
+
+    def boom(*_a, **_kw):
+        pytest.fail("clone_git_repo must not run when `directory` is set")
+
+    monkeypatch.setattr(data_manager, "clone_git_repo", boom)
+    cfg = data_manager.StarkillerConfig(directory=str(build_dir))
+
+    assert data_manager.sync_starkiller(cfg) == build_dir
+
+
+def test_sync_starkiller_directory_override_missing_does_not_fall_back(
+    tmp_path, monkeypatch, caplog
+):
+    """A typo'd `directory` must NOT fall back to cloning.
+
+    Falling back would turn a config typo into an unexpected GitHub fetch on
+    a machine meant to be offline, and would silently serve upstream
+    Starkiller in place of the operator's vetted build. The compiler's
+    override does fall back; this one deliberately does not.
+    """
+    missing = tmp_path / "does-not-exist"
+
+    def boom(*_a, **_kw):
+        pytest.fail("a missing `directory` must not fall back to a clone")
+
+    monkeypatch.setattr(data_manager, "clone_git_repo", boom)
+    cfg = data_manager.StarkillerConfig(directory=str(missing))
+
+    with caplog.at_level(logging.ERROR):
+        assert data_manager.sync_starkiller(cfg) == missing
+
+    assert "does not exist" in caplog.text
+    assert str(missing) in caplog.text
+
+
+def test_sync_starkiller_directory_override_expands_user(tmp_path, monkeypatch):
+    """`~/starkiller` is a natural operator value.
+
+    Without expansion, `Path("~/starkiller")` is CWD-relative, and with no
+    fallback the operator gets no UI and no clue why.
+    """
+    monkeypatch.setenv("HOME", str(tmp_path))
+    build_dir = tmp_path / "starkiller-build"
+    build_dir.mkdir()
+
+    monkeypatch.setattr(
+        data_manager,
+        "clone_git_repo",
+        lambda *_a, **_kw: pytest.fail("clone must not run"),
+    )
+    cfg = data_manager.StarkillerConfig(directory="~/starkiller-build")
+
+    assert data_manager.sync_starkiller(cfg) == build_dir
+
+
+def test_unresolvable_tilde_user_is_diagnosed_not_raised(capsys):
+    """`Path.expanduser()` raises `RuntimeError` for a `~user` whose home can't
+    be resolved -- a typo'd username, or an unmapped uid in the very containers
+    this override exists to serve. Both entry points are asserted because both
+    would surface it as a traceback: `run_setup` catches only
+    `GitOperationException` around `sync_starkiller`, and `update`'s override
+    branch has no handler at all.
+    """
+    cfg = data_manager.StarkillerConfig(directory="~nosuchuser12345/starkiller")
+
+    assert data_manager.sync_starkiller(cfg) == Path("~nosuchuser12345/starkiller")
+    assert data_manager.update_starkiller(cfg, assume_yes=True) is False
+
+    out = capsys.readouterr().out
+    assert "no resolvable home directory" in out
+    # The unexpanded value is not absolute, so the relative-path warning would
+    # otherwise fire and blame the working directory -- advice that leads
+    # nowhere, since moving the config or the process changes nothing here.
+    assert "is relative" not in out
+    assert "is not a directory" not in out
+
+
+def test_sync_starkiller_without_directory_still_clones(tmp_path, monkeypatch):
+    """The negative case: unset `directory` must behave exactly as before.
+
+    Guards against the override short-circuit swallowing the default path.
+    """
+    monkeypatch.setattr(data_manager.config_manager, "DATA_DIR", tmp_path)
+    calls = []
+    monkeypatch.setattr(
+        data_manager, "clone_git_repo", lambda *a, **_kw: calls.append(a)
+    )
+    cfg = data_manager.StarkillerConfig(ref="sponsors-main")
+
+    result = data_manager.sync_starkiller(cfg)
+
+    assert result == tmp_path / "starkiller" / "sponsors-main"
+    assert len(calls) == 1
+
+
 def test_update_empire_compiler_directory_override_short_circuits(monkeypatch):
     cfg = data_manager.EmpireCompilerConfig(directory="/tmp/local-compiler")
     # Should not call sync_empire_compiler or _resolve_compiler_platform
@@ -372,6 +481,35 @@ def test_update_empire_compiler_directory_override_short_circuits(monkeypatch):
         lambda: pytest.fail("should not resolve when directory override is set"),
     )
     assert data_manager.update_empire_compiler(cfg, assume_yes=True) is True
+
+
+def test_update_starkiller_directory_override_short_circuits(
+    tmp_path, monkeypatch, capsys
+):
+    """`update` must not touch an externally managed Starkiller directory.
+
+    Fast-forwarding a read-only store path or a distro-owned directory fails,
+    and "update" has no meaning for an install the operator manages elsewhere.
+    """
+    monkeypatch.setattr(data_manager, "_git_fast_forward", boom_no_git)
+    monkeypatch.setattr(data_manager, "sync_starkiller", boom_no_git)
+    cfg = data_manager.StarkillerConfig(directory=str(_layout(tmp_path, dist=True)))
+
+    assert data_manager.update_starkiller(cfg, assume_yes=True) is True
+    assert "nothing to update" in capsys.readouterr().out
+
+
+def test_update_starkiller_directory_override_fails_on_a_bad_path(monkeypatch, capsys):
+    """`update` is what operators run after editing config. Reporting success
+    for an override `setup` would reject hands them a green "Update complete"
+    over a server that will boot with no UI.
+    """
+    monkeypatch.setattr(data_manager, "_git_fast_forward", boom_no_git)
+    monkeypatch.setattr(data_manager, "sync_starkiller", boom_no_git)
+    cfg = data_manager.StarkillerConfig(directory="/nonexistent/starkiller")
+
+    assert data_manager.update_starkiller(cfg, assume_yes=True) is False
+    assert "is not a directory" in capsys.readouterr().out
 
 
 def test_update_empire_compiler_already_on_ref_returns_true(tmp_path, monkeypatch):
@@ -865,7 +1003,7 @@ def fake_setup_config(monkeypatch):
     let the real syncs run (the per-test monkeypatches replace them).
     """
     fake = SimpleNamespace(
-        starkiller=SimpleNamespace(ref="v1.0"),
+        starkiller=SimpleNamespace(ref="v1.0", directory=None, enabled=True),
         empire_compiler=SimpleNamespace(),
         plugin_marketplace=SimpleNamespace(
             registries=[SimpleNamespace(name="marketplace")]
@@ -1046,3 +1184,281 @@ def test_run_setup_all_succeed_no_warning_summary(
     assert all(results.values())
     out = capsys.readouterr().out
     assert "Setup finished with" not in out
+
+
+def test_run_setup_missing_directory_override_marks_failure(
+    fake_setup_config, monkeypatch, capsys
+):
+    """`setup` must fail loudly on a typo'd `starkiller.directory`.
+
+    `sync_starkiller` returns a configured directory unvalidated (it never
+    falls back to a clone), so without an explicit check here `setup` prints
+    its success banner and exits 0 on a misconfiguration -- and `setup` is
+    the install-time path for exactly the air-gapped and distro deployments
+    this override exists to serve.
+
+    `log.error` cannot carry this: `setup_logging` is only called from
+    server.py, and `empire/main.py` dispatches `setup` without it.
+    """
+    missing = "/nonexistent/starkiller"
+    fake_setup_config.starkiller.directory = missing
+
+    monkeypatch.setattr(data_manager, "sync_starkiller", lambda _cfg: Path(missing))
+    monkeypatch.setattr(data_manager, "sync_empire_compiler", lambda _cfg: object())
+    monkeypatch.setattr(data_manager, "sync_plugin_registry", lambda _cfg: object())
+
+    args = type("Args", (), {})()
+    results = data_manager.run_setup(args)
+
+    assert results["Starkiller"] is False
+    out = capsys.readouterr().out
+    assert "starkiller.directory" in out
+    assert missing in out
+    assert "Setup finished with 1 failure" in out
+
+
+def test_run_setup_present_directory_override_succeeds(
+    fake_setup_config, monkeypatch, tmp_path
+):
+    """The positive case: a valid override (directory + dist/) records success.
+
+    Pins that the new check keys on the path being absent, not on the
+    override merely being set.
+    """
+    build_dir = tmp_path / "starkiller-build"
+    (build_dir / "dist").mkdir(parents=True)
+    (build_dir / "dist" / "index.html").write_text('<script src="/assets/i.js">')
+    fake_setup_config.starkiller.directory = str(build_dir)
+
+    monkeypatch.setattr(data_manager, "sync_starkiller", lambda _cfg: build_dir)
+    monkeypatch.setattr(data_manager, "sync_empire_compiler", lambda _cfg: object())
+    monkeypatch.setattr(data_manager, "sync_plugin_registry", lambda _cfg: object())
+
+    args = type("Args", (), {})()
+
+    assert data_manager.run_setup(args)["Starkiller"] is True
+
+
+def test_run_setup_relative_directory_override_warns(
+    fake_setup_config, monkeypatch, capsys, tmp_path
+):
+    """A relative override resolves against the process CWD, so `setup` (run
+    from the repo root) and the server (launched by a systemd unit, console
+    script, or container from somewhere else) can disagree about which
+    directory is being served -- and `setup`'s green banner would then mean
+    nothing for the boot that follows.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "starkiller-build" / "dist").mkdir(parents=True)
+    (tmp_path / "starkiller-build" / "dist" / "index.html").write_text("<html>")
+    fake_setup_config.starkiller.directory = "starkiller-build"
+
+    monkeypatch.setattr(
+        data_manager, "sync_starkiller", lambda _cfg: Path("starkiller-build")
+    )
+    monkeypatch.setattr(data_manager, "sync_empire_compiler", lambda _cfg: object())
+    monkeypatch.setattr(data_manager, "sync_plugin_registry", lambda _cfg: object())
+
+    args = type("Args", (), {})()
+    results = data_manager.run_setup(args)
+
+    # Relative is legal, so the step still passes -- but it must not pass silently.
+    assert results["Starkiller"] is True
+    out = capsys.readouterr().out
+    assert "is relative" in out
+    assert str(tmp_path) in out
+
+
+def _run_setup_against(fake_setup_config, monkeypatch, build_dir):
+    fake_setup_config.starkiller.directory = str(build_dir)
+    monkeypatch.setattr(data_manager, "sync_starkiller", lambda _cfg: build_dir)
+    monkeypatch.setattr(data_manager, "sync_empire_compiler", lambda _cfg: object())
+    monkeypatch.setattr(data_manager, "sync_plugin_registry", lambda _cfg: object())
+    return data_manager.run_setup(type("Args", (), {})())
+
+
+def test_run_setup_flattened_build_succeeds(
+    fake_setup_config, monkeypatch, tmp_path, capsys
+):
+    """The nixpkgs derivation does `cp -r dist/** $out`, so its files land
+    directly at `$out/` with no `dist/` level -- and the level above `$out` is
+    `/nix/store`, so there is no other value the packager could supply.
+    Requiring `dist/` would leave that package unusable, which is the case
+    this override exists to serve.
+    """
+    build_dir = tmp_path / "starkiller-out"
+    build_dir.mkdir()
+    (build_dir / "index.html").write_text('<script src="/assets/index-abc.js">')
+
+    results = _run_setup_against(fake_setup_config, monkeypatch, build_dir)
+
+    assert results["Starkiller"] is True
+    assert "Setup finished with" not in capsys.readouterr().out
+
+
+def test_run_setup_unbuilt_checkout_marks_failure(
+    fake_setup_config, monkeypatch, tmp_path, capsys
+):
+    """A source checkout carries Vite's entry template at its root, so
+    index.html alone is not proof of a build -- serving it would render a
+    blank page. The `package.json` beside it marks it as source, and `setup`
+    must say so rather than pass.
+    """
+    checkout = tmp_path / "starkiller"
+    checkout.mkdir()
+    (checkout / "index.html").write_text('<script src="/src/main.js">')
+    (checkout / "package.json").write_text("{}")
+
+    results = _run_setup_against(fake_setup_config, monkeypatch, checkout)
+
+    assert results["Starkiller"] is False
+    out = capsys.readouterr().out
+    assert "has not been built" in out
+    assert str(checkout) in out
+
+
+def test_run_setup_disabled_starkiller_ignores_a_bad_override(
+    fake_setup_config, monkeypatch, tmp_path
+):
+    """`app.py` only loads Starkiller when `enabled`, so a stale override for a
+    switched-off UI must not fail the whole install. Reachable in practice: a
+    packaged `directory` outlives the package, and turning the UI off is the
+    obvious thing to do once it's broken.
+    """
+    fake_setup_config.starkiller.enabled = False
+
+    results = _run_setup_against(fake_setup_config, monkeypatch, tmp_path / "gone")
+
+    assert results["Starkiller"] is True
+
+
+def test_run_setup_directory_without_a_build_marks_failure(
+    fake_setup_config, monkeypatch, tmp_path, capsys
+):
+    """A directory that exists but matches neither layout must fail `setup`,
+    not report success. Checking only `starkiller_dir.is_dir()` would print a
+    green banner over a broken install.
+    """
+    build_dir = tmp_path / "starkiller-build"
+    build_dir.mkdir()
+
+    results = _run_setup_against(fake_setup_config, monkeypatch, build_dir)
+
+    assert results["Starkiller"] is False
+    out = capsys.readouterr().out
+    assert "contains no Starkiller build" in out
+    assert str(build_dir) in out
+
+
+def boom_no_git(*_a, **_kw):
+    pytest.fail("no git or sync work may run under a directory override")
+
+
+def _layout(tmp_path, *, dist=False, dist_index=True, index=False, package=False):
+    """`dist` builds a *populated* dist/ by default -- an empty one is not a
+    build, so it would be the wrong baseline for the accept-path tests. Pass
+    `dist_index=False` for the interrupted-build case.
+    """
+    root = tmp_path / "starkiller"
+    root.mkdir()
+    if dist:
+        (root / "dist").mkdir()
+        if dist_index:
+            (root / "dist" / "index.html").write_text('<script src="/assets/i.js">')
+    if index:
+        (root / "index.html").write_text("<html></html>")
+    if package:
+        (root / "package.json").write_text("{}")
+    return root
+
+
+@pytest.mark.parametrize(
+    ("layout", "expected"),
+    [
+        ({"dist": True}, "dist"),
+        ({"index": True}, "root"),
+        ({"dist": True, "index": True, "package": True}, "dist"),
+        ({"dist": True, "index": True}, "dist"),
+        ({"index": True, "package": True}, None),
+        ({}, None),
+        ({"dist": True, "dist_index": False}, None),
+    ],
+    ids=[
+        "dist-subdirectory",
+        "flattened-build",
+        "built-checkout-serves-dist-not-the-template",
+        "both-rules-match-dist-wins",
+        "unbuilt-checkout-rejected-by-package-json",
+        "neither",
+        "bare-dist-without-an-index",
+    ],
+)
+def test_resolve_starkiller_dist(tmp_path, layout, expected):
+    """The whole rule as the table it is. Three rows carry the reasoning:
+
+    `both-rules-match-dist-wins` is the only row that pins rule *order* -- a
+    built checkout is caught by the package.json guard whichever rule runs
+    first, so it cannot. `unbuilt-checkout` is why package.json discriminates at
+    all: a checkout root carries Vite's entry template, so an index.html is not
+    proof of a build and serving one renders blank. `bare-dist-without-an-index`
+    is why both branches key on index.html rather than on `dist/` existing -- an
+    interrupted `npm run build` leaves an empty one, and so does any unrelated
+    project's dist/ of wheels.
+    """
+    root = _layout(tmp_path, **layout)
+
+    assert (
+        data_manager.resolve_starkiller_dist(root)
+        == {
+            "dist": root / "dist",
+            "root": root,
+            None: None,
+        }[expected]
+    )
+
+
+def test_a_real_directory_named_like_a_tilde_path_is_still_served(
+    tmp_path, monkeypatch
+):
+    """Ordering, isolated: the unexpanded-`~` diagnosis sits after `is_dir()`.
+
+    Absurd input, but it is the only one that reaches both branches and so the
+    only one that can pin which runs first. Checking the `~` first would reject
+    a build that resolves perfectly well.
+    """
+    monkeypatch.chdir(tmp_path)
+    _layout(tmp_path, dist=True).rename(tmp_path / "~nosuchuser12345")
+
+    assert data_manager.starkiller_directory_problem(Path("~nosuchuser12345")) is None
+
+
+def test_dist_without_a_build_hint_does_not_send_operator_back_to_dist(tmp_path):
+    """They already pointed at a directory containing dist/; repeating that
+    advice is a dead end. The incomplete dist/ is the actionable fact.
+    """
+    root = _layout(tmp_path, dist=True, dist_index=False)
+
+    hint = data_manager._starkiller_layout_hint(root)
+
+    assert "build is incomplete" in hint
+    assert "directory containing dist/" not in hint
+
+
+def test_starkiller_directory_problem_reports_a_path_that_is_not_a_directory(tmp_path):
+    """A `directory` pointing at a file (or a dangling symlink) exists, so
+    reporting it as "does not exist" sends the operator to `ls` it, see it
+    there, and conclude Empire is broken.
+    """
+    not_a_dir = tmp_path / "starkiller.tar.gz"
+    not_a_dir.write_text("x")
+
+    problem = data_manager.starkiller_directory_problem(not_a_dir)
+
+    assert "is not a directory" in problem
+    assert str(not_a_dir) in problem
+
+
+def test_starkiller_directory_problem_none_for_a_real_build(tmp_path):
+    root = _layout(tmp_path, dist=True)
+
+    assert data_manager.starkiller_directory_problem(root) is None

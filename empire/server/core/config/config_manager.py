@@ -87,6 +87,11 @@ class StarkillerConfig(EmpireBaseModel):
     enabled: bool = True
     repo: str = "bc-security/starkiller"
     ref: str = "main"
+    # Points at an already-built Starkiller so the server doesn't clone one.
+    # `str`, not `Path`: a `Path` field would pick up `EmpireBaseModel.set_path`,
+    # which silently reinterprets a relative value as DATA_DIR-relative.
+    # `sync_starkiller` calls `expanduser()` itself.
+    directory: str | None = None
 
 
 class EmpireCompilerConfig(EmpireBaseModel):

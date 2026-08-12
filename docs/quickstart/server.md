@@ -140,6 +140,27 @@ empire_compiler:
   # directory: /path/to/local/EmpireCompiler
 ```
 
+* **starkiller** - Configure the Starkiller web UI that Empire serves at its own IP and port.
+
+enabled: Whether to serve Starkiller at all.
+repo: The git repository to clone Starkiller from.
+ref: A branch, tag, or commit hash.
+directory: (optional) Path to an already-built Starkiller. When set, Empire serves that build directly and never clones from GitHub — this is what makes air-gapped and distro-packaged installs possible. `./ps-empire update` reports the override and never writes to it, so an externally managed or read-only directory is left alone.
+
+`directory` accepts either a directory containing a `dist/index.html` build (a git checkout that has been built) or the build output itself (an `index.html` beside its assets, which is what a packaged build like the nixpkgs derivation produces). When both match, `dist/` wins. A source checkout that has not been built is rejected rather than served — its root `index.html` is a build-time template, so serving it would render a blank page. A `dist/` with no `index.html` in it is rejected too: an interrupted build leaves one behind, and so does any unrelated project.
+
+When set and the path is missing or holds no build, the server logs the problem, starts without a UI, and does **not** fall back to cloning — a typo would otherwise serve upstream Starkiller in place of your build. `./ps-empire setup` and `./ps-empire update` check the same conditions and exit non-zero when any fails, so a bad override is caught at install or upgrade time rather than at the next boot. Both skip the check when `enabled` is false — a UI you have switched off will not fail your install.
+
+Use an **absolute** path. A relative value is kept verbatim and resolved against the process's working directory, so `setup` (run from the repo root) and the server (launched by a systemd unit, console script, or container) can end up resolving the same value to different directories; `setup` warns when it sees one.
+
+Put `directory` in `config.user.yaml`, not in the base `config.yaml`. `./ps-empire update` overwrites the base config with the shipped template on every run, which would drop the override and let the next boot clone from GitHub.
+
+```yaml
+# ~/.config/empire/config.user.yaml
+starkiller:
+  directory: /opt/starkiller   # a dist/ parent, or the build output itself
+```
+
 * **plugins** - Config related to plugins auto\_start - boolean, whether the plugin should start automatically. If this is not set, Empire will defer to the plugin's own configuration. auto\_execute - run an execute command on the plugin at startup. If this is not set, Empire will defer to the plugin's own configuration.
 
 ```yaml
