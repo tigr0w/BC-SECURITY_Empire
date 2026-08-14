@@ -99,7 +99,9 @@ function install_mono(){
   fi
   if [ "$answer" != "${answer#[Yy]}" ] ;then
     echo -e "\x1b[1;34m[*] Installing mono\x1b[0m"
-    sudo DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y mono-runtime
+    # mono-complete, not mono-runtime: ConfuserEx resolves Mono.Posix and the
+    # System.Runtime facade out of the GAC, and mono-runtime ships neither.
+    sudo DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y mono-complete
   else
     echo -e "\x1b[1;34m[*] Skipping Mono\x1b[0m"
   fi

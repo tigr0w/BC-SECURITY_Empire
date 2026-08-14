@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+-   C# obfuscation now works with a stock install: the Docker image and `install.sh` install `mono-complete` rather than `mono-runtime`, which ships neither `Mono.Posix` nor the `System.Runtime` facade that ConfuserEx resolves out of the GAC. Any module whose merged assembly pulls in `IronPython.dll` or `System.Memory.dll` — SharpHound among them — previously failed obfuscation with `Could not resolve assembly: Mono.Posix`.
+-   C# obfuscation of `Net47` modules now resolves framework types: `empire/server/data/confuser.crproj` gained a `net47` probePath alongside net35/net40/net45. Without it ConfuserEx resolves `mscorlib` from the net45 reference set, which lacks the `System.ValueTuple` type forward, and aborts with `Could not resolve type: System.ValueTuple`2`. SharpHound is currently the only `Net47` module. Both this and the `mono-complete` change are required to obfuscate it — neither is sufficient alone.
+
 ## [7.0.0] - 2026-08-12
 
 ### Security

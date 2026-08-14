@@ -16,4 +16,5 @@
       <probePath>{confuser_proj_dir}/Data/AssemblyReferences/net35/</probePath>
       <probePath>{confuser_proj_dir}/Data/AssemblyReferences/net40/</probePath>
       <probePath>{confuser_proj_dir}/Data/AssemblyReferences/net45/</probePath>
+      <probePath>{confuser_proj_dir}/Data/AssemblyReferences/net47/</probePath>
 </project>

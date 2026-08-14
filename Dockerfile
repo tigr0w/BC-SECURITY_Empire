@@ -35,7 +35,7 @@ RUN apt-get update && \
     git \
     openssh-client \
     default-jdk \
-    mono-runtime \
+    mono-complete \
     build-essential \
     mingw-w64 \
     perl \
