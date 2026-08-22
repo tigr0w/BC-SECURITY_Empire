@@ -19,6 +19,7 @@ from empire.server.common.credential_parsers.credtypes import (
     DPAPI_SYSTEM_KEY,
     DPAPI_VAULT_CRED,
     HASH,
+    KRB_SESSION_KEY,
     KRB_TICKET,
     KRBASREP,
     KRBTGS,
@@ -94,6 +95,7 @@ def test_credtype_constants_have_stable_values():
     assert KRBTGS == "krbtgs"
     assert KRBASREP == "krbasrep"
     assert KRB_TICKET == "krb_ticket"
+    assert KRB_SESSION_KEY == "krb_session_key"
     assert DPAPI_MASTERKEY == "dpapi_masterkey"
     assert DPAPI_SYSTEM_KEY == "dpapi_system_key"
     assert DPAPI_VAULT_CRED == "dpapi_vault_cred"
@@ -449,6 +451,324 @@ def test_rubeus_asktgt_emits_ticket_and_ntlm_hash(agent):
     assert h.domain == "CYBERDEF.LAB"
     assert h.password == "eeb5fd1a992838d0d4894418d6bb44fb"
     assert "rubeus" in (h.notes or "")
+
+
+# Captured from `Rubeus {"Command": "dump"}` on a live agent. `dump` differs
+# from asktgt/asktgs in three ways this fixture preserves verbatim: the anchor
+# is `Base64EncodedTicket :` rather than `base64(ticket.kirbi):`, the metadata
+# block sits ABOVE that anchor rather than below it, and tickets are grouped
+# under logon-session headers carrying `UserSID`. The `WINHOSTTHREE$` ticket
+# also keeps the mid-value line wrap the agent transport introduced.
+RUBEUS_DUMP_SAMPLE = """
+   ______        _
+  (_____ \\      | |
+   _____) )_   _| |__  _____ _   _  ___
+
+  v2.3.2
+
+
+Action: Dump Kerberos Ticket Data (All Users)
+
+[*] Current LUID    : 0x86263
+
+  UserName                 : LEO_MADDEN
+  Domain                   : ASGARD
+  LogonId                  : 0x86485
+  UserSID                  : S-1-5-21-3981194929-2845007435-449810890-4550
+  AuthenticationPackage    : Negotiate
+  LogonType                : RemoteInteractive
+  LogonServerDNSDomain     : ASGARD.CORP
+  UserPrincipalName        : LEO_MADDEN@asgard.corp
+
+
+    ServiceName              :  krbtgt/ASGARD.CORP
+    ServiceRealm             :  ASGARD.CORP
+    UserName                 :  LEO_MADDEN (NT_PRINCIPAL)
+    UserRealm                :  ASGARD.CORP
+    StartTime                :  8/20/2026 6:34:34 PM
+    EndTime                  :  8/21/2026 4:34:34 AM
+    RenewTill                :  8/27/2026 6:34:34 PM
+    Flags                    :  name_canonicalize, pre_authent, initial, renewable, forwardable
+    KeyType                  :  aes256_cts_hmac_sha1
+    Base64(key)              :  bsntG2x5Umfv9OIxCZrFHgkblbRK2P58kVqZSc5An/I=
+    Base64EncodedTicket   :
+
+      doIFwDCCBbygAwIBBaEDAgEWooIExjCCBMJhggS+MIIEuqADAgEFoQ0bC0FTR0FSRC5DT1JQ
+      oiAwHqADAgECoRcwFRsGa3JidGd0GwtBU0dBUkQuQ09SUKOCBIAwggR8oAMCARKhAwIBAqKC
+
+
+[*] Current LUID    : 0x3e7
+
+  UserName                 : WINHOSTTHREE$
+  Domain                   : ASGARD
+  LogonId                  : 0x3e7
+  UserSID                  : S-1-5-18
+  AuthenticationPackage    : Negotiate
+
+
+    ServiceName              :  GC/dc.asgard.corp/asgard.corp
+    ServiceRealm             :  ASGARD.CORP
+    UserName                 :  WINHOSTTHREE$ (NT_PRINC
+IPAL)
+    UserRealm                :  ASGARD.CORP
+    StartTime                :  8/20/2026 6:36:18 PM
+    EndTime                  :  8/21/2026 4:33:59 AM
+    RenewTill                :  8/27/2026 6:33:59 PM
+    Flags                    :  name_canonicalize, ok_as_delegate, pre_authent, renewable, forwardable
+    KeyType                  :  aes256_cts_hmac_sha1
+    Base64(key)              :  AcH70brAsMtQ2wkJ7Egev2EkLEItfs5IDnM6NM7YdB8=
+    Base64EncodedTicket   :
+
+      doIGRDCCBkCgAwIBBaEDAgEWooIFVzCCBVNhggVPMIIFS6ADAgEFoQ0bC0FTR0FSRC5DT1JQ
+      QVNHQVJELkNPUlA=
+"""
+
+
+def test_rubeus_dump_extracts_tickets_above_anchor(agent):
+    """`dump` prints metadata ABOVE `Base64EncodedTicket :`. Reading it in the
+    kirbi direction (below) silently attributed each ticket to the *next*
+    ticket's fields, so pin the pairing, not just the count.
+    """
+    creds = RubeusParser().parse(RUBEUS_DUMP_SAMPLE, agent)
+    tickets = [c for c in creds if c.credtype == KRB_TICKET]
+
+    # The list comparison pins both the count and the ordered pairing.
+    assert [t.username for t in tickets] == ["LEO_MADDEN", "WINHOSTTHREE$"]
+    assert {t.domain for t in tickets} == {"ASGARD.CORP"}
+
+    tgt = tickets[0]
+    assert tgt.password.startswith("doIFwDCCBbygAwIBBaEDAgEWooIExjCCBMJhggS+")
+    assert tgt.password.endswith(
+        "oiAwHqADAgECoRcwFRsGa3JidGd0GwtBU0dBUkQuQ09SUKOCBIAwggR8oAMCARKhAwIBAqKC"
+    )
+    assert "\n" not in tgt.password
+    # Bodies must not bleed into each other across ticket boundaries.
+    assert tickets[1].password.startswith(
+        "doIGRDCCBkCgAwIBBaEDAgEWooIFVzCCBVNhggVPMIIFS6"
+    )
+
+
+def test_rubeus_dump_tags_subcommand_from_anchor(agent):
+    """The Flags heuristic would call the TGT here `asktgt` (it carries
+    `initial`). The anchor already tells us it came from `dump`, so the
+    notes must say so — operators filter on that tag.
+    """
+    creds = RubeusParser().parse(RUBEUS_DUMP_SAMPLE, agent)
+    # Compare the tag itself, not a substring — `notes` carries a trailing
+    # service name, and `in` would also accept `rubeus:dump-anything`.
+    assert all((c.notes or "").split(" ")[0] == "rubeus:dump" for c in creds)
+
+
+def test_rubeus_dump_carries_logon_session_sid(agent):
+    """Only `dump` exposes the owning `UserSID`; each ticket must inherit the
+    SID of the session header it appears under, not the first one seen.
+    """
+    creds = RubeusParser().parse(RUBEUS_DUMP_SAMPLE, agent)
+    by_user = {c.username: c.sid for c in creds}
+    assert by_user["LEO_MADDEN"] == "S-1-5-21-3981194929-2845007435-449810890-4550"
+    assert by_user["WINHOSTTHREE$"] == "S-1-5-18"
+
+
+def test_rubeus_dump_rejoins_transport_wrapped_field(agent):
+    """The agent transport hard-wraps long lines mid-value. The orphan tail
+    (`IPAL)`) otherwise reads as a block boundary and truncates the metadata,
+    dropping the username entirely.
+    """
+    creds = RubeusParser().parse(RUBEUS_DUMP_SAMPLE, agent)
+    usernames = [c.username for c in creds]
+    assert "WINHOSTTHREE$" in usernames
+    assert not any(u == "" for u in usernames)
+    # The `(NT_PRINCIPAL)` annotation must still be stripped after rejoining.
+    assert not any("NT_PRINC" in u for u in usernames)
+
+
+def test_rubeus_dump_extracts_session_keys(agent):
+    """Every ticket carries a `Base64(key)` session key. It is stored with its
+    encryption type prefixed, because a bare key is ambiguous between
+    rc4_hmac and the aes variants and unusable without that.
+    """
+    creds = RubeusParser().parse(RUBEUS_DUMP_SAMPLE, agent)
+    keys = [c for c in creds if c.credtype == KRB_SESSION_KEY]
+
+    assert [k.username for k in keys] == ["LEO_MADDEN", "WINHOSTTHREE$"]
+    assert keys[0].password == (
+        "aes256_cts_hmac_sha1:bsntG2x5Umfv9OIxCZrFHgkblbRK2P58kVqZSc5An/I="
+    )
+    assert keys[1].password == (
+        "aes256_cts_hmac_sha1:AcH70brAsMtQ2wkJ7Egev2EkLEItfs5IDnM6NM7YdB8="
+    )
+
+
+def test_rubeus_session_key_pairs_with_ticket_via_notes(agent):
+    """One logon session holds many tickets, so a key is only actionable if
+    you can tell which ticket it decrypts. The service name in `notes` is
+    what joins the two rows back together.
+    """
+    creds = RubeusParser().parse(RUBEUS_DUMP_SAMPLE, agent)
+    by_type = {}
+    for c in creds:
+        by_type.setdefault(c.credtype, []).append(c)
+
+    for ticket, key in zip(by_type[KRB_TICKET], by_type[KRB_SESSION_KEY], strict=True):
+        assert ticket.notes == key.notes
+    assert by_type[KRB_SESSION_KEY][0].notes == "rubeus:dump krbtgt/ASGARD.CORP"
+    assert (
+        by_type[KRB_SESSION_KEY][1].notes == "rubeus:dump GC/dc.asgard.corp/asgard.corp"
+    )
+
+
+# Real `dump` groups several tickets under one logon-session header, and the
+# first ticket abuts that header with no blank line between them.
+RUBEUS_DUMP_SHARED_SESSION_SAMPLE = """
+[*] Current LUID    : 0x86263
+
+  UserName                 : LEO_MADDEN
+  Domain                   : ASGARD
+  LogonId                  : 0x86485
+  UserSID                  : S-1-5-21-3981194929-2845007435-449810890-4550
+  AuthenticationPackage    : Negotiate
+    ServiceName              :  krbtgt/ASGARD.CORP
+    ServiceRealm             :  ASGARD.CORP
+    UserName                 :  leo_madden (NT_PRINCIPAL)
+    UserRealm                :  ASGARD.CORP
+    KeyType                  :  aes256_cts_hmac_sha1
+    Base64(key)              :  bsntG2x5Umfv9OIxCZrFHgkblbRK2P58kVqZSc5An/I=
+    Base64EncodedTicket   :
+
+      doIFwDCCBbygAwIBBaEDAgEWooIExjCCBMJhggS+MIIEuqADAgEFoQ0bC0FTR0FSRC5DT1JQ
+
+    ServiceName              :  cifs/fs01.asgard.corp
+    ServiceRealm             :  ASGARD.CORP
+    UserName                 :  leo_madden (NT_PRINCIPAL)
+    UserRealm                :  ASGARD.CORP
+    KeyType                  :  aes256_cts_hmac_sha1
+    Base64(key)              :  Zm9vYmFyMTIzNDU2Nzg5MGFiY2RlZmdoaWprbG1ub3A=
+    Base64EncodedTicket   :
+
+      doIGRDCCBkCgAwIBBaEDAgEWooIFVzCCBVNhggVPMIIFS6ADAgEFoQ0bC0FTR0FSRC5DT1JQ
+
+    ServiceName              :  LDAP/dc01.asgard.corp
+    ServiceRealm             :  ASGARD.CORP
+    UserName                 :  leo_madden (NT_PRINCIPAL)
+    UserRealm                :  ASGARD.CORP
+    KeyType                  :  rc4_hmac
+    Base64(key)              :  T1RIRVJLRVkxMjM0NTY3OA==
+    Base64EncodedTicket   :
+
+      doIHRDCCB0CgAwIBBaEDAgEWooIGVzCCBlNhggZPMIIGS6ADAgEFoQ0bC0FTR0FSRC5DT1JQ
+"""
+
+
+def test_rubeus_dump_ticket_abutting_header_keeps_own_username(agent):
+    """The first ticket under a logon-session header has no blank line above
+    it, so the backward walk runs straight into the header. The boundary stop
+    cannot help there — only "nearest key wins" keeps the ticket's own
+    `UserName` from being shadowed by the session owner's.
+    """
+    creds = RubeusParser().parse(RUBEUS_DUMP_SHARED_SESSION_SAMPLE, agent)
+    tickets = [c for c in creds if c.credtype == KRB_TICKET]
+
+    # The session header says `LEO_MADDEN`; every ticket says `leo_madden`.
+    assert [t.username for t in tickets] == ["leo_madden"] * 3
+
+
+def test_rubeus_dump_multiple_tickets_share_one_session_header(agent):
+    """One session holds many tickets. Each must keep its own service name
+    and inherit the single header's SID, rather than collapsing into one
+    credential or picking up a neighbour's fields.
+    """
+    creds = RubeusParser().parse(RUBEUS_DUMP_SHARED_SESSION_SAMPLE, agent)
+    tickets = [c for c in creds if c.credtype == KRB_TICKET]
+
+    assert [t.notes for t in tickets] == [
+        "rubeus:dump krbtgt/ASGARD.CORP",
+        "rubeus:dump cifs/fs01.asgard.corp",
+        "rubeus:dump LDAP/dc01.asgard.corp",
+    ]
+    assert {t.sid for t in tickets} == {"S-1-5-21-3981194929-2845007435-449810890-4550"}
+
+
+def test_rubeus_asktgt_extracts_session_key(agent):
+    """The kirbi-style layout carries `Base64(key)` too — the session key is
+    not a dump-only field, so both metadata directions must yield it.
+    """
+    creds = RubeusParser().parse(RUBEUS_ASKTGT_SAMPLE, agent)
+    keys = [c for c in creds if c.credtype == KRB_SESSION_KEY]
+
+    assert len(keys) == 1
+    assert keys[0].password == "rc4_hmac:lv0970NGUZwGumWhU32aZQ=="
+    assert keys[0].username == "m.torres"
+    assert keys[0].domain == "CYBERDEF.LAB"
+
+
+RUBEUS_DUMP_NO_KEY_SAMPLE = """
+    ServiceName              :  krbtgt/ASGARD.CORP
+    UserName                 :  LEO_MADDEN (NT_PRINCIPAL)
+    UserRealm                :  ASGARD.CORP
+    KeyType                  :  aes256_cts_hmac_sha1
+    Base64(key)              :
+    Base64EncodedTicket   :
+
+      doIFwDCCBbygAwIBBaEDAgEWooIExjCCBMJhggS+MIIEuqADAgEFoQ0bC0FTR0FSRC5DT1JQ
+"""
+
+
+def test_rubeus_skips_missing_session_key(agent):
+    """Rubeus prints an empty `Base64(key)` when it cannot read the key.
+    Storing an empty-password credential would be noise the operator has to
+    triage, so the ticket is kept and the key row is dropped.
+    """
+    creds = RubeusParser().parse(RUBEUS_DUMP_NO_KEY_SAMPLE, agent)
+
+    assert [c.credtype for c in creds] == [KRB_TICKET]
+
+
+RUBEUS_DUMP_ODD_KEYTYPE_SAMPLE = """
+    ServiceName              :  krbtgt/ASGARD.CORP
+    UserName                 :  LEO_MADDEN (NT_PRINCIPAL)
+    UserRealm                :  ASGARD.CORP
+    KeyType                  :  0x17 (unknown)
+    Base64(key)              :  bsntG2x5Umfv9OIxCZrFHgkblbRK2P58kVqZSc5An/I=
+    Base64EncodedTicket   :
+
+      doIFwDCCBbygAwIBBaEDAgEWooIExjCCBMJhggS+MIIEuqADAgEFoQ0bC0FTR0FSRC5DT1JQ
+"""
+
+
+def test_rubeus_session_key_drops_unparseable_keytype(agent):
+    """A key with an unknown etype is still worth having; a key labelled with
+    the WRONG etype silently wastes an operator's time. When `KeyType` is not
+    a clean identifier the prefix is omitted rather than guessed.
+    """
+    creds = RubeusParser().parse(RUBEUS_DUMP_ODD_KEYTYPE_SAMPLE, agent)
+    keys = [c for c in creds if c.credtype == KRB_SESSION_KEY]
+
+    assert len(keys) == 1
+    assert keys[0].password == "bsntG2x5Umfv9OIxCZrFHgkblbRK2P58kVqZSc5An/I="
+
+
+RUBEUS_DUMP_DES_KEY_SAMPLE = """
+    ServiceName              :  krbtgt/ASGARD.CORP
+    UserName                 :  LEO_MADDEN (NT_PRINCIPAL)
+    UserRealm                :  ASGARD.CORP
+    KeyType                  :  des_cbc_md5
+    Base64(key)              :  QUFBQUFBQUE=
+    Base64EncodedTicket   :
+
+      doIFwDCCBbygAwIBBaEDAgEWooIExjCCBMJhggS+MIIEuqADAgEFoQ0bC0FTR0FSRC5DT1JQ
+"""
+
+
+def test_rubeus_keeps_legacy_des_session_key(agent):
+    """A DES key is 8 bytes, which base64s to 12 characters — shorter than an
+    rc4/aes key. A length floor set for the modern etypes drops it silently:
+    the ticket lands, its key does not.
+    """
+    creds = RubeusParser().parse(RUBEUS_DUMP_DES_KEY_SAMPLE, agent)
+    keys = [c for c in creds if c.credtype == KRB_SESSION_KEY]
+
+    assert len(keys) == 1
+    assert keys[0].password == "des_cbc_md5:QUFBQUFBQUE="
 
 
 RUBEUS_KERBEROAST_SAMPLE = """

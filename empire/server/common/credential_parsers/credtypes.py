@@ -18,6 +18,14 @@ The `password` column holds different secret material per credtype:
     KRBASREP           — full Hashcat/John $krb5asrep$... blob (single line)
     KRB_TICKET         — base64 .kirbi (pass-the-ticket) or JSON envelope
                          packing AP-REQ + session key (tgtdelegation).
+    KRB_SESSION_KEY    — Kerberos session key lifted from a ticket, prefixed
+                         with its encryption type so the key is usable on its
+                         own (a bare key is ambiguous between rc4_hmac and the
+                         aes variants).
+                         Format: <keytype>:<base64key>
+                         e.g. aes256_cts_hmac_sha1:bsntG2x5Umfv9OIx...
+                         Pairs with the KRB_TICKET row sharing its `notes`
+                         service-name suffix.
     DPAPI_MASTERKEY    — masterkey GUID joined to its SHA1-derived key.
                          Format: <guid>:<sha1_hex>
     DPAPI_SYSTEM_KEY   — DPAPI_SYSTEM LSA secret (machine or user hex key)
@@ -35,6 +43,7 @@ DCC2 = "dcc2"
 KRBTGS = "krbtgs"
 KRBASREP = "krbasrep"
 KRB_TICKET = "krb_ticket"
+KRB_SESSION_KEY = "krb_session_key"
 DPAPI_MASTERKEY = "dpapi_masterkey"
 DPAPI_SYSTEM_KEY = "dpapi_system_key"
 DPAPI_VAULT_CRED = "dpapi_vault_cred"
