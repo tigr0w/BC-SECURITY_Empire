@@ -50,6 +50,13 @@ class EmpireModuleOption(BaseModel):
     type: str | None = None
     internal: bool = False
     depends_on: list[dict[str, str | list[str]]] | None = None
+    # Per-option override of `advanced.option_format_string`, letting a single
+    # option opt out of the module-wide `-{{ KEY }} "{{ VALUE }}"` quoting.
+    # Only consulted for the value branch — boolean switches still use
+    # `advanced.option_format_string_boolean`. Tokens are expanded in
+    # `ModuleService.generate_script_powershell`: `{{ KEY }}`, `{{ VALUE }}`
+    # and `{{ VALUE_ARRAY }}`, each also accepted without the inner spaces.
+    format_string: str | None = None
 
     @model_validator(mode="before")
     @classmethod

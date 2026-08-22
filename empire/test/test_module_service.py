@@ -833,6 +833,72 @@ def test_execute_bof_module_missing_option(module_service, agent_mock):
     assert "required option missing: Port" in str(excinfo.value)
 
 
+def test_execute_module_inveigh_array_option_quoted_elements(
+    module_service, agent_mock
+):
+    """Regression: a PowerShell ``[Array]`` option with a ``{{ VALUE_ARRAY }}``
+    format_string must render each element double-quoted so the value binds as a
+    string array.
+
+    ``-NBNSTypes "00,20"`` binds as the single element ``"00,20"`` (fails the
+    ValidateSet) and unquoted ``-NBNSTypes 00,20`` parses ``00`` as the number
+    ``0`` (also fails); only ``-NBNSTypes "00","20"`` yields ``@("00","20")``.
+
+    mDNSTypes covers the same path for an option that also carries
+    ``suggested_values``: it must not be ``strict``, or validation rejects a
+    multi-type value before the format string ever renders.
+
+    The NBNSTypes value is written the way an operator actually types a list —
+    with a space after the comma and a trailing comma — so the element
+    ``strip()`` and blank-drop are pinned. Without them PowerShell receives
+    ``" 20"`` and ``""``, which fail the same ``ValidateSet`` this fix exists
+    to satisfy.
+
+    All six of the module's ``[Array]`` options are rendered here, not just the
+    two with a ``ValidateSet``: the four Spoofer lists default to empty, so
+    without an explicit value the ``and value`` guard skips them and a typo in
+    any of their format strings would never surface.
+
+    A scalar option must stay a single quoted token — asserted with a
+    comma-bearing value, so an over-broad array expansion would visibly split
+    it.
+
+    Note this also covers default-value validation for every option left
+    unset — it is currently the only test that fails if ``Proxy`` regresses to
+    ``strict: true``.
+    """
+    agent_mock.language = "powershell"
+    module_id = "powershell_situational_awareness_host_inveigh"
+    scalar = "Access denied, please authenticate"
+    params = {
+        "Agent": agent_mock.session_id,
+        "NBNSTypes": "00, 20,",
+        "mDNSTypes": "QU,QM",
+        "SpooferHostsIgnore": "host1,host2",
+        "SpooferHostsReply": "host3,host4",
+        "SpooferIPsIgnore": "10.0.0.1,10.0.0.2",
+        "SpooferIPsReply": "10.0.0.3,10.0.0.4",
+        "HTTPResponse": scalar,
+    }
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+    assert err is None
+    assert '-NBNSTypes "00","20"' in res.data
+    assert '-NBNSTypes "00,20"' not in res.data
+    # Bare-substring "not in" checks would collide with the Invoke-Inveigh
+    # source, which declares [Array] params as = "" — assert the exact tokens.
+    assert '-NBNSTypes "00"," 20"' not in res.data
+    assert '-NBNSTypes "00","20",""' not in res.data
+    assert '-mDNSTypes "QU","QM"' in res.data
+    assert '-SpooferHostsIgnore "host1","host2"' in res.data
+    assert '-SpooferHostsReply "host3","host4"' in res.data
+    assert '-SpooferIPsIgnore "10.0.0.1","10.0.0.2"' in res.data
+    assert '-SpooferIPsReply "10.0.0.3","10.0.0.4"' in res.data
+    # module-wide format string still quotes scalar options as a single token
+    assert f'-HTTPResponse "{scalar}"' in res.data
+
+
 def test_execute_module_task_command_powershell_agent(module_service, agent_mock):
     agent_mock.language = "powershell"
     params = {
@@ -1627,6 +1693,7 @@ def test_generate_script_powershell_inline_script_obfuscation(module_service, mo
     inline_module.script = "function Invoke-Inline { <# inline source #> }"
     inline_module.script_end = module.script_end
     inline_module.advanced = module.advanced
+    inline_module.options = module.options
 
     obfuscation_config = Mock()
     obfuscation_config.enabled = True

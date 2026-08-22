@@ -30,6 +30,7 @@ from empire.server.common.credential_parsers.credtypes import (
 from empire.server.common.credential_parsers.internal_monologue import (
     InternalMonologueParser,
 )
+from empire.server.common.credential_parsers.inveigh import InveighParser
 from empire.server.common.credential_parsers.kerberoast import KerberoastParser
 from empire.server.common.credential_parsers.mimikatz import MimikatzParser
 from empire.server.common.credential_parsers.ntlmextract import NtlmExtractParser
@@ -72,6 +73,7 @@ def test_registry_contains_all_parsers():
         "sharpsecdump",
         "ntlmextract",
         "tgtdelegation",
+        "inveigh",
     }
     assert expected <= set(credential_parsers.registered_parser_names())
 
@@ -851,6 +853,95 @@ def test_internal_monologue_tolerates_none_agent():
     assert all(c.os is None for c in creds)
 
 
+# ---------- Invoke-Inveigh ----------------------------------------------------
+
+
+# Shaped like real Invoke-Inveigh console output: a header line per capture
+# followed by the hashcat-format response. Mixes NTLMv2 (5600) and NTLMv1
+# (5500), an SMB machine account, a local (domainless) account, a second
+# distinct capture for an already-seen user, and a verbatim repeat of the
+# first hash to exercise dedup.
+INVEIGH_SAMPLE = b"""\
+2026-08-21T12:00:01 - SMB NTLMv2 challenge/response captured from 10.0.0.5(WORKSTATION01):
+m.torres::CYBERDEF:1122334455667788:a663c2b423c438db1751609aa5d95e27:0101000000000000c0653150de09d20100000000
+2026-08-21T12:00:02 - HTTP NTLMv2 challenge/response captured from 10.0.0.6(WORKSTATION02):
+AROSE-WS01$::CYBERDEF:1122334455667788:b774d3c534d549ec2862710bb6ea6f38:0101000000000000c0653150de09d20111111111
+2026-08-21T12:00:03 - SMB NTLMv1 challenge/response captured from 10.0.0.7(WORKSTATION03):
+j.doe::CYBERDEF:a8e83683ef2503f2e28859eb4bd7d1cc237cc11d77685a73:a8e83683ef2503f2e28859eb4bd7d1cc237cc11d77685a73:1122334455667788
+2026-08-21T12:00:04 - SMB NTLMv2 challenge/response captured from 10.0.0.8(STANDALONE01):
+localadmin:::1122334455667788:c885e4d645e65afd3973821cc7fb7049:0101000000000000c0653150de09d20122222222
+2026-08-21T12:00:05 - SMB NTLMv2 challenge/response captured from 10.0.0.5(WORKSTATION01):
+m.torres::CYBERDEF:99aabbccddeeff00:d996f5e756f76afe4984932dd8fc8f5a:0101000000000000c0653150de09d20133333333
+2026-08-21T12:00:06 - SMB NTLMv2 challenge/response captured from 10.0.0.5(WORKSTATION01):
+m.torres::CYBERDEF:1122334455667788:a663c2b423c438db1751609aa5d95e27:0101000000000000c0653150de09d20100000000
+"""
+
+
+def test_inveigh_parses_netntlmv1_and_v2(agent):
+    creds = InveighParser().parse(INVEIGH_SAMPLE, agent)
+
+    # 5 unique creds: the last line repeats the first verbatim and collapses.
+    assert len(creds) == 5  # noqa: PLR2004
+
+    # Deliberately not indexed by username — m.torres appears twice and a
+    # username-keyed dict would hide the regression this asserts against.
+    # Re-authentication yields a fresh challenge, so both captures are real
+    # credentials; only a byte-identical repeat dedups. Keying `seen` on the
+    # whole line is what buys that, and keying it on the username would not.
+    torres_rows = [c for c in creds if c.username == "m.torres"]
+    assert len(torres_rows) == 2  # noqa: PLR2004
+    assert len({c.password for c in torres_rows}) == 2  # noqa: PLR2004
+    assert all(c.credtype == NETNTLMV2 for c in torres_rows)
+    assert all(c.domain == "CYBERDEF" for c in torres_rows)
+    assert all(c.notes == "inveigh" for c in torres_rows)
+    assert all(c.host == "WIN-AGENT" for c in torres_rows)
+
+    doe = next(c for c in creds if c.username == "j.doe")
+    assert doe.credtype == NETNTLMV1
+    assert doe.password.endswith(":1122334455667788")
+
+    machine = next(c for c in creds if c.username == "AROSE-WS01$")
+    assert machine.credtype == NETNTLMV2
+    assert "machine_account" in machine.notes
+
+    # A local account capture carries no domain; the row must still be stored.
+    local = next(c for c in creds if c.username == "localadmin")
+    assert local.credtype == NETNTLMV2
+    assert local.domain == ""
+
+
+# Nothing in INVEIGH_SAMPLE exercises a near miss, so these pin the rejection
+# side. One line per length-constrained segment of both patterns, so a relaxed
+# quantifier anywhere is caught; plus a correct-length non-hex segment, since a
+# widened character class (`[^:]`, `\w`) is the likelier accidental edit and no
+# length case can catch it. The console-chatter lines are the noise Inveigh
+# interleaves with captures — the spoofer status line embeds a comma-joined
+# type list, making it the closest thing in real output to a false positive.
+INVEIGH_NEAR_MISS = [
+    # v2 challenge: 15 nibbles, wants 16
+    b"short.challenge::CYBERDEF:112233445566778:a663c2b423c438db1751609aa5d95e27:0101000000000000",
+    # v2 ntproof: 31 nibbles, wants 32
+    b"short.ntproof::CYBERDEF:1122334455667788:a663c2b423c438db1751609aa5d95e2:0101000000000000",
+    # v2 challenge: right length, not hex
+    b"bad.hex::CYBERDEF:zzzzzzzzzzzzzzzz:a663c2b423c438db1751609aa5d95e27:0101000000000000",
+    # v1 lmresp: 47 nibbles, wants 48
+    b"short.lmresp::CYBERDEF:a8e83683ef2503f2e28859eb4bd7d1cc237cc11d77685a7:a8e83683ef2503f2e28859eb4bd7d1cc237cc11d77685a73:1122334455667788",
+    # v1 ntresp: 47 nibbles, wants 48
+    b"short.ntresp::CYBERDEF:a8e83683ef2503f2e28859eb4bd7d1cc237cc11d77685a73:a8e83683ef2503f2e28859eb4bd7d1cc237cc11d77685a7:1122334455667788",
+    # v1 challenge: 15 nibbles, wants 16
+    b"short.v1chal::CYBERDEF:a8e83683ef2503f2e28859eb4bd7d1cc237cc11d77685a73:a8e83683ef2503f2e28859eb4bd7d1cc237cc11d77685a73:112233445566778",
+    # console chatter, not captures
+    b"WARNING: Inveigh is running",
+    b"2026-08-21T12:00:00 - NBNS Spoofer For Types 00,20 = Enabled",
+    b"2026-08-21T12:05:00 - Inveigh exited",
+]
+
+
+@pytest.mark.parametrize("line", INVEIGH_NEAR_MISS)
+def test_inveigh_rejects_near_miss_and_noise_lines(agent, line):
+    assert InveighParser().parse(line, agent) == []
+
+
 # ---------- tgtdelegation BOF -------------------------------------------------
 
 
@@ -1090,6 +1181,7 @@ _PARSER_AGENT_NONE_SAMPLES = [
     (SharpSecDumpParser, SHARPSECDUMP_SAMPLE),
     (NtlmExtractParser, NTLMEXTRACT_SAMPLE),
     (TgtDelegationParser, TGTDELEG_SAMPLE),
+    (InveighParser, INVEIGH_SAMPLE),
 ]
 
 

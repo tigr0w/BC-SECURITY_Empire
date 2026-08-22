@@ -794,6 +794,19 @@ class ModuleService:
         script_end = f" {module.script_end} "
         option_strings = []
 
+        # Per-option format-string overrides, keyed by name_in_code when set,
+        # else the option name — matching the keys validate_options emits from
+        # its normal and dependency branches. Its file branch keys by plain
+        # name only, but no file option reaches this loop (both modules that
+        # declare one use custom_generate), so that asymmetry is moot here.
+        # Lets an individual option escape the module-wide quoting; the token
+        # reference lives in docs/modules/module-development/powershell-modules.md.
+        option_format_overrides = {
+            (option.name_in_code or option.name): option.format_string
+            for option in module.options
+            if option.format_string
+        }
+
         # This is where the code goes for all the modules that do not have a custom generate function.
         for key, raw_value in params.items():
             # Native bool/int/float options arrive typed; the switch detection
@@ -813,11 +826,35 @@ class ModuleService:
                     # Have to add a continue for false statements, else it adds -option 'False'
                     continue
                 else:
-                    this_option = (
-                        module.advanced.option_format_string.replace(
-                            "{{ KEY }}", str(key)
+                    format_string = option_format_overrides.get(
+                        key, module.advanced.option_format_string
+                    )
+                    # {{ VALUE_ARRAY }} expands a comma-separated value into
+                    # individually double-quoted, comma-joined elements so
+                    # PowerShell binds it as a string array. "00,20" becomes
+                    # "00","20" (@("00","20")); quoting it whole binds one
+                    # element, and an unquoted 00,20 parses 00 as the number 0
+                    # — both fail a string ValidateSet. Elements are stripped
+                    # and blanks dropped, so the "00, 20" and "00,20," a user
+                    # naturally types don't reach PowerShell as " 20" or "".
+                    # Only built when the format string asks for it; the
+                    # replaces below are no-ops otherwise.
+                    value_array = (
+                        ",".join(
+                            f'"{stripped}"'
+                            for stripped in (
+                                element.strip() for element in str(value).split(",")
+                            )
+                            if stripped
                         )
+                        if "VALUE_ARRAY" in format_string
+                        else ""
+                    )
+                    this_option = (
+                        format_string.replace("{{ KEY }}", str(key))
                         .replace("{{KEY}}", str(key))
+                        .replace("{{ VALUE_ARRAY }}", value_array)
+                        .replace("{{VALUE_ARRAY}}", value_array)
                         .replace("{{ VALUE }}", str(value))
                         .replace("{{VALUE}}", str(value))
                     )

@@ -204,6 +204,26 @@ advanced:
   option_format_string_boolean: ""
 ```
 
+**format\_string:** An individual option can override `option_format_string` for itself, for the cases where the module-wide quoting is wrong for just that one parameter. It accepts the same `{{ KEY }}` / `{{ VALUE }}` tokens, plus `{{ VALUE_ARRAY }}`, which splits a comma-separated value and double-quotes each element.
+
+`{{ VALUE_ARRAY }}` exists for PowerShell `[Array]` parameters. The default format quotes the value whole, so `-NBNSTypes "00,20"` binds as the single element `@("00,20")` and fails the script's `ValidateSet`; dropping the quotes doesn't help either, because PowerShell then parses `00` as the number `0`. Only per-element quoting binds a real string array:
+
+```yaml
+  - name: NBNSTypes
+    description: 'NBNS types to spoof. Default: 00,20 (Workstation/Server services).'
+    required: false
+    value: '00,20'
+    format_string: '-{{ KEY }} {{ VALUE_ARRAY }}'
+```
+
+This renders `-NBNSTypes "00","20"`, which binds as `@("00","20")`. It renders per element after trimming surrounding whitespace and dropping empty entries, so a list typed as `00, 20,` still comes out as `-NBNSTypes "00","20"`.
+
+Note that an array option must not be `strict` if it should accept more than one element. A `strict` option is validated for exact membership in `suggested_values` *before* the format string renders, so a multi-element value is rejected and the override never runs. Watch for the adjacent trap too: `suggested_values` defaults to an empty list rather than `None`, and the check only skips when it is `None` — so `strict: true` with no `suggested_values` rejects *every* value on every run.
+
+Keep `suggested_values` if you want the values offered in Starkiller — with `strict: false` they render as an editable combobox rather than a locked dropdown. The combobox is single-select, so operators pick one suggested value or type the full comma-separated list themselves.
+
+Only the value branch consults `format_string`; boolean switches still use `option_format_string_boolean`.
+
 **name\_in\_code**: There may be times when you want the display name for an option in Starkiller to be different from how it looks in the module's code. For this, you can use `name_in_code` such as in the [sharpsecdump module](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/credentials/sharpsecdump.yaml)
 
 ```yaml

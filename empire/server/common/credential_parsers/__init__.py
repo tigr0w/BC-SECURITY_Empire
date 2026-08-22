@@ -14,6 +14,7 @@ from empire.server.common.credential_parsers.base import (
 from empire.server.common.credential_parsers.internal_monologue import (
     InternalMonologueParser,
 )
+from empire.server.common.credential_parsers.inveigh import InveighParser
 from empire.server.common.credential_parsers.kerberoast import KerberoastParser
 from empire.server.common.credential_parsers.mimikatz import MimikatzParser
 from empire.server.common.credential_parsers.ntlmextract import NtlmExtractParser
@@ -34,6 +35,7 @@ _REGISTRY: dict[str, CredentialParser] = {
     "sharp_dpapi": SharpDpapiParser(),
     "session_gopher": SessionGopherParser(),
     "internal_monologue": InternalMonologueParser(),
+    "inveigh": InveighParser(),
     "sharpsecdump": SharpSecDumpParser(),
     "ntlmextract": NtlmExtractParser(),
     "tgtdelegation": TgtDelegationParser(),
