@@ -2,7 +2,7 @@ import json
 import logging
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import inspect, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -22,15 +22,23 @@ def persist_and_fire_chat(db: Session, user_id: int, username: str, text: str):
     """Persist a chat message and fire AFTER_CHAT_MESSAGE_HOOK with it.
 
     Factored out of on_message so it is unit-testable without a live socket.
-    The message is expunged before commit so it stays fully populated
-    (avoids DetachedInstanceError) for callers that read its attributes -
-    e.g. hooks.run_hooks merging it into a fresh session, and on_message's
-    emit reading msg.created_at - even though the session commits with
-    expire_on_commit=True.
+
+    msg is expunged before the commit so on_message's emit reads it without a
+    post-commit reload. That is what makes the preload necessary: created_at
+    defaults to utcnow(), a SQL expression, so its value only exists once the
+    INSERT has run, and dialects without INSERT..RETURNING (MySQL) leave it
+    unloaded pending a follow-up SELECT that detaching would prevent.
     """
     msg = models.ChatMessage(user_id=user_id, username=username, message=text)
     db.add(msg)
     db.flush()
+    # Skip the refresh where RETURNING already supplied created_at, or every
+    # message pays a redundant SELECT. `unloaded` is never empty - the untouched
+    # `user` relationship is always in it - hence the specific key. Keep the
+    # refresh scoped: a whole-row one expires relationships too, and the expunge
+    # below would strand them.
+    if "created_at" in inspect(msg).unloaded:
+        db.refresh(msg, ["created_at"])
     db.expunge(msg)
     db.commit()
     hooks.run_hooks(hooks.AFTER_CHAT_MESSAGE_HOOK, None, msg)
