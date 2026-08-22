@@ -26,13 +26,14 @@ Create, Refresh, and Delete render in the top app bar rather than on the page ca
 | `krbtgs` | Full Hashcat/John `$krb5tgs$...` blob, single line |
 | `krbasrep` | Full Hashcat/John `$krb5asrep$...` blob, single line |
 | `krb_ticket` | Base64 `.kirbi` (pass-the-ticket), or a JSON envelope packing an AP-REQ plus session key (TGT delegation) |
+| `krb_session_key` | Kerberos session key lifted from a ticket, prefixed with its encryption type, format `<keytype>:<base64key>` — e.g. `aes256_cts_hmac_sha1:bsntG2x5...`. Pairs with the `krb_ticket` row sharing its `notes` service-name suffix |
 | `dpapi_masterkey` | Masterkey GUID joined to its SHA1-derived key, format `<guid>:<sha1_hex>` |
 | `dpapi_system_key` | The `DPAPI_SYSTEM` LSA secret, machine or user hex key |
 | `dpapi_vault_cred` | `json.dumps({"url":..., "username":..., "password":...})` |
 
 ## Automatic collection
 
-Empire ships twelve registered credential parsers: `mimikatz`, `prompt`, `kerberoast`, `rubeus`, `pwdump_hashes`, `sharp_dpapi`, `session_gopher`, `internal_monologue`, `sharpsecdump`, `ntlmextract`, `tgtdelegation`, and `inveigh`. A module opts into one by declaring `credential_parser` in its YAML, and that value is validated against the registry when the module loads, so a typo there fails loudly at startup rather than silently dropping credentials later. Seventeen shipped modules do this today, including `mimikatz/logonpasswords`, `Rubeus`, and `SharpDPAPI`.
+Empire ships twelve registered credential parsers: `mimikatz`, `prompt`, `kerberoast`, `rubeus`, `pwdump_hashes`, `sharp_dpapi`, `session_gopher`, `internal_monologue`, `sharpsecdump`, `ntlmextract`, `tgtdelegation`, and `inveigh`. A module opts into one by declaring `credential_parser` in its YAML, and that value is validated against the registry when the module loads, so a typo there fails loudly at startup rather than silently dropping credentials later. Seventeen shipped modules do this today, including `mimikatz/logonpasswords`, `Rubeus`, and `SharpDPAPI`. See [Credential Parsers](../modules/module-development/credential-parsers.md) for how to write and register one.
 
 Output from an ad-hoc shell command with no associated module is still checked. Empire falls back to sniffing the first line of output only: a first line starting with `Hostname:` is treated as `mimikatz` output, and a first line starting with `[+] Prompted credentials:` or containing `text returned:` is treated as a credential prompt. A match on a later line doesn't count. Either way, every credential's `notes` field is stamped with the tool name plus a timestamp, so a harvested row typically reads something like `mimikatz 2026-08-02 14:03:11`.
 

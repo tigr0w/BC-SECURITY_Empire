@@ -68,6 +68,7 @@
     * [Python Modules](modules/module-development/python-modules.md)
     * [C# Modules](modules/module-development/c-modules.md)
     * [BOF Modules](modules/module-development/bof-modules.md)
+    * [Credential Parsers](modules/module-development/credential-parsers.md)
 * [Agents](agents/README.md)
   * [Python](agents/python/README.md)
     * [Main Agent Class](agents/python/mainagentclass.md)
