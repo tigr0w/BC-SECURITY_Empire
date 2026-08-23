@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+-   The staging key is no longer written to logs. `get_staging_key()` logged the configured key's value at INFO level and `Config.__repr__` rendered it in plaintext; both now omit it. The staging key is agent<->server crypto material and a log line or repr can reach aggregators, tracebacks, or support bundles.
+
 ### Added
 
 -   Inveigh captures now land in the credential store. The `situational_awareness/host/inveigh` module gained a credential parser that reads the hashcat-format response lines out of task output — NetNTLMv1 (mode 5500) and NetNTLMv2 (mode 5600), keyed off the response shape rather than the capture header, so SMB/HTTP/HTTPS/Proxy captures are all handled alike. Machine accounts are retained and tagged `inveigh machine_account` in `notes` (plus the ingest timestamp Empire appends to every harvested row), since Empire runs Inveigh with `-MachineAccounts Y`. Ingestion runs per task-result batch, so a long-running background capture stores hashes as they stream in rather than only at exit.

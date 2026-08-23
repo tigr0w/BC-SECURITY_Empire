@@ -119,5 +119,4 @@ def get_staging_key():
         log.error("Invalid staging key: must be exactly 32 characters long")
         raise ValueError("Staging key must be exactly 32 characters long")
 
-    log.info(f"Using configured staging key: {staging_key}")
     return staging_key

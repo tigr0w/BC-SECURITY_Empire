@@ -440,7 +440,11 @@ class Config(Base):
     ip_filtering: Mapped[bool]
 
     def __repr__(self):
-        return f"<Config(staging_key='{self.staging_key}')>"
+        # Never render the staging key: it is agent<->server crypto material and
+        # a repr can reach logs, tracebacks, or an interactive dump. Show only
+        # whether it is set.
+        state = "set" if self.staging_key else "unset"
+        return f"<Config(staging_key={state})>"
 
     def __getitem__(self, key):
         return self.__dict__[key]
