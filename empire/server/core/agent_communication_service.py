@@ -542,21 +542,21 @@ class AgentCommunicationService:
                     log.exception(f"Bad {lang_name} DH public")
                     return f"ERROR: Invalid {lang_name} DH public key"
 
-                # Only verify the agent cert if its actually present (not all zeros)
-                if any(agent_cert) and len(agent_cert) == proto.AGENT_CERT_SIZE:
-                    try:
-                        if not encryption.checkvalid(
-                            agent_cert, b"SIGNATURE", agent_cert_public_key
-                        ):
-                            log.error(f"Invalid agent certificate from {session_id}")
-                            return f"Error: Invalid agent certificate from {session_id}"
-                    except Exception:
-                        log.exception("Agent cert parse/verify error")
+                # The agent certificate is mandatory. It used to be skipped when
+                # the field was all zeros, which let a caller opt out of
+                # verification simply by sending 64 zero bytes.
+                if len(agent_cert) != proto.AGENT_CERT_SIZE:
+                    log.error(f"Missing agent certificate from {session_id}")
+                    return f"Error: Invalid agent certificate from {session_id}"
+                try:
+                    if not encryption.checkvalid(
+                        agent_cert, b"SIGNATURE", agent_cert_public_key
+                    ):
+                        log.error(f"Invalid agent certificate from {session_id}")
                         return f"Error: Invalid agent certificate from {session_id}"
-                else:
-                    log.debug(
-                        f"{lang_name} stage0 without agent cert; skipping Ed25519 verification"
-                    )
+                except Exception:
+                    log.exception("Agent cert parse/verify error")
+                    return f"Error: Invalid agent certificate from {session_id}"
 
                 # Continue DH as usual
                 serverPub = encryption.DiffieHellman()
@@ -623,21 +623,21 @@ class AgentCommunicationService:
                     log.exception(f"Bad {lang_name} DH public")
                     return f"ERROR: Invalid {lang_name} DH public key"
 
-                # Only verify the agent cert if its actually present (not all zeros)
-                if any(agent_cert) and len(agent_cert) == proto.AGENT_CERT_SIZE:
-                    try:
-                        if not encryption.checkvalid(
-                            agent_cert, b"SIGNATURE", agent_cert_public_key
-                        ):
-                            log.error(f"Invalid agent certificate from {session_id}")
-                            return f"Error: Invalid agent certificate from {session_id}"
-                    except Exception:
-                        log.exception("Agent cert parse/verify error")
+                # The agent certificate is mandatory. It used to be skipped when
+                # the field was all zeros, which let a caller opt out of
+                # verification simply by sending 64 zero bytes.
+                if len(agent_cert) != proto.AGENT_CERT_SIZE:
+                    log.error(f"Missing agent certificate from {session_id}")
+                    return f"Error: Invalid agent certificate from {session_id}"
+                try:
+                    if not encryption.checkvalid(
+                        agent_cert, b"SIGNATURE", agent_cert_public_key
+                    ):
+                        log.error(f"Invalid agent certificate from {session_id}")
                         return f"Error: Invalid agent certificate from {session_id}"
-                else:
-                    log.debug(
-                        f"{lang_name} stage0 without agent cert; skipping Ed25519 verification"
-                    )
+                except Exception:
+                    log.exception("Agent cert parse/verify error")
+                    return f"Error: Invalid agent certificate from {session_id}"
                 serverPub = encryption.DiffieHellman()
                 serverPub.gen_key(clientPub)
                 # serverPub.key == the negotiated session key

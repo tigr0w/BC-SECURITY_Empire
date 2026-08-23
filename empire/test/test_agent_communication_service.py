@@ -4,11 +4,13 @@ import struct
 import zlib
 
 import pytest
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from empire.server.common import packets
+from empire.server.common import encryption, packets
 from empire.server.common.empire import MainMenu
+from empire.server.common.encryption import AESCipher, DiffieHellman
 from empire.server.core.agent_communication_service import AgentCommunicationService
 from empire.server.core.db.base import engine as original_engine
 from empire.server.core.db.models import AgentTaskStatus
@@ -371,8 +373,128 @@ def test__get_queued_agent_temporary_tasks(
     assert agent_task_service.temporary_tasks[agent] == []
 
 
-def test__handle_agent_staging():
-    pass
+def _ed25519_keypair():
+    """Return (private_raw, public_raw) for an Ed25519 agent certificate key."""
+    private_raw = Ed25519PrivateKey.generate().private_bytes_raw()
+    return private_raw, encryption.publickey_unsafe(private_raw)
+
+
+def _stage1_body(staging_key: str, agent_cert: bytes) -> bytes:
+    """Build a STAGE1 payload: 768-byte DH public key || 64-byte agent cert."""
+    client_pub = DiffieHellman().publicKey.to_bytes(768, "big")
+    return AESCipher.encrypt_then_hmac(
+        staging_key.encode("UTF-8"), client_pub + agent_cert
+    )
+
+
+def _listener_options(name="test-listener"):
+    return {
+        "Name": {"Value": name},
+        "DefaultDelay": {"Value": 5},
+        "DefaultJitter": {"Value": 0.0},
+        "DefaultProfile": {"Value": "/admin/get.php|Mozilla/5.0"},
+        "KillDate": {"Value": ""},
+        "WorkingHours": {"Value": ""},
+        "DefaultLostLimit": {"Value": 60},
+    }
+
+
+STAGING_KEY = "A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6"
+
+
+def _stage(service, db, session_id, language, staging_key, agent_cert, agent_pub):
+    server_priv, server_pub = _ed25519_keypair()
+    return service._handle_agent_staging(
+        db,
+        session_id,
+        language,
+        "STAGE1",
+        0,
+        _stage1_body(staging_key, agent_cert),
+        staging_key,
+        agent_pub,
+        server_priv,
+        server_pub,
+        _listener_options(),
+        "1.2.3.4",
+    )
+
+
+@pytest.mark.parametrize("language", ["powershell", "csharp"])
+def test__handle_agent_staging_rejects_zeroed_agent_cert(
+    agent_communication_service, session_local, language
+):
+    """An all-zero certificate must not bypass Ed25519 verification.
+
+    The check used to be guarded by `if any(agent_cert)`, so sending 64 zero
+    bytes skipped verification entirely.
+    """
+    staging_key = STAGING_KEY
+    _agent_priv, agent_pub = _ed25519_keypair()
+
+    with session_local.begin() as db:
+        result = _stage(
+            agent_communication_service,
+            db,
+            "ZERO" + language[:4].upper(),
+            language,
+            staging_key,
+            b"\x00" * 64,
+            agent_pub,
+        )
+
+    assert isinstance(result, str)
+    assert "Invalid agent certificate" in result
+
+
+@pytest.mark.parametrize("language", ["powershell", "csharp"])
+def test__handle_agent_staging_rejects_wrong_signing_key(
+    agent_communication_service, session_local, language
+):
+    """A well-formed signature from the wrong key must be rejected."""
+    staging_key = STAGING_KEY
+    attacker_priv, attacker_pub = _ed25519_keypair()
+    _expected_priv, expected_pub = _ed25519_keypair()
+    forged = encryption.signature_unsafe(b"SIGNATURE", attacker_priv, attacker_pub)
+
+    with session_local.begin() as db:
+        result = _stage(
+            agent_communication_service,
+            db,
+            "WRNG" + language[:4].upper(),
+            language,
+            staging_key,
+            forged,
+            expected_pub,
+        )
+
+    assert isinstance(result, str)
+    assert "Invalid agent certificate" in result
+
+
+@pytest.mark.parametrize("language", ["powershell", "csharp"])
+def test__handle_agent_staging_accepts_valid_agent_cert(
+    agent_communication_service, session_local, language
+):
+    """The happy path still completes and returns a routing packet."""
+    staging_key = STAGING_KEY
+    agent_priv, agent_pub = _ed25519_keypair()
+    cert = encryption.signature_unsafe(b"SIGNATURE", agent_priv, agent_pub)
+
+    with session_local.begin() as db:
+        result = _stage(
+            agent_communication_service,
+            db,
+            "GOOD" + language[:4].upper(),
+            language,
+            staging_key,
+            cert,
+            agent_pub,
+        )
+
+    # A successful stage returns the raw routing packet, not an error string.
+    assert isinstance(result, bytes)
+    assert len(result) > 0
 
 
 def test_handle_agent_data():

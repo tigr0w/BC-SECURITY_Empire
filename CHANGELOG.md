@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 -   The staging key is no longer written to logs. `get_staging_key()` logged the configured key's value at INFO level and `Config.__repr__` rendered it in plaintext; both now omit it. The staging key is agent<->server crypto material and a log line or repr can reach aggregators, tracebacks, or support bundles.
+-   Agent-certificate verification during staging is now mandatory. A caller could previously skip Ed25519 verification by sending an all-zero certificate (the check was guarded by `if any(agent_cert)`); the PowerShell and C# staging branches now verify unconditionally, matching the Python and Go branches.
 
 ### Added
 
