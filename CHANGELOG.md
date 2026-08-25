@@ -14,9 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.0.1] - 2026-08-25
+
 ### Security
 
--   The staging key is no longer written to logs. `get_staging_key()` logged the configured key's value at INFO level and `Config.__repr__` rendered it in plaintext; both now omit it. The staging key is agent<->server crypto material and a log line or repr can reach aggregators, tracebacks, or support bundles.
+-   The staging key is no longer written to logs. `get_staging_key()` logged the configured key's value at INFO level and `Config.__repr__` rendered it in plaintext; both now omit it. The staging key is agent&lt;->server crypto material and a log line or repr can reach aggregators, tracebacks, or support bundles.
 -   Agent-certificate verification during staging is now mandatory. A caller could previously skip Ed25519 verification by sending an all-zero certificate (the check was guarded by `if any(agent_cert)`); the PowerShell and C# staging branches now verify unconditionally, matching the Python and Go branches.
 
 ### Added
@@ -29,11 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Inveigh's `[Array]` options no longer bind as a single joined element. The generic PowerShell command builder always quotes an option value whole, so `-NBNSTypes "00,20"` arrived as `@("00,20")`; passing it unquoted is no better, since PowerShell then parses `00` as the number `0`. That broke the six array options two ways: `NBNSTypes` and `mDNSTypes` were rejected outright by the script's `ValidateSet`, while the `SpooferHostsIgnore`/`Reply` and `SpooferIPsIgnore`/`Reply` lists failed silently — they are bare `[Array]` parameters matched with `-contains`, which never matches one joined element. All six now render per-element via `{{ VALUE_ARRAY }}`, with surrounding whitespace and empty entries dropped so a list typed as `00, 20,` still binds correctly.
 -   Inveigh's `Proxy` and `mDNSTypes` options no longer fail validation. `Proxy` was `strict` with an empty default absent from its suggested values, so every run that left it unset was rejected; it is optional like `HTTPAuth`/`WPADAuth`. `mDNSTypes` was `strict` against `QU`/`QM` individually, which rejected the valid `QU,QM` pairing that the script accepts via `-contains`. Both now list their values as suggestions rather than as a closed set.
--   The Rubeus credential parser now ingests `dump` output. Three independent defects stood in the way — the first alone reduced a `dump` to zero credentials, the other two mislabelled or truncated individual records once it was fixed: the parser only recognised the `base64(ticket.kirbi):` anchor while `dump` emits `Base64EncodedTicket :`; `dump` prints its `Key : Value` metadata *above* the ticket body rather than below, so reading in the kirbi direction attributed each ticket to the *next* ticket's fields; and the agent transport hard-wraps long lines mid-value (`UserName : HOST$ (NT_PRINC` / `IPAL)`), whose orphan tail read as a block boundary and truncated the metadata. Tickets from `dump` now also carry the `UserSID` of the logon-session header they appear under, and are tagged `rubeus:dump` from the anchor rather than being mislabelled `rubeus:asktgt` by the `Flags` heuristic.
+-   The Rubeus credential parser now ingests `dump` output. Three independent defects stood in the way — the first alone reduced a `dump` to zero credentials, the other two mislabelled or truncated individual records once it was fixed: the parser only recognised the `base64(ticket.kirbi):` anchor while `dump` emits `Base64EncodedTicket :`; `dump` prints its `Key : Value` metadata _above_ the ticket body rather than below, so reading in the kirbi direction attributed each ticket to the _next_ ticket's fields; and the agent transport hard-wraps long lines mid-value (`UserName : HOST$ (NT_PRINC` / `IPAL)`), whose orphan tail read as a block boundary and truncated the metadata. Tickets from `dump` now also carry the `UserSID` of the logon-session header they appear under, and are tagged `rubeus:dump` from the anchor rather than being mislabelled `rubeus:asktgt` by the `Flags` heuristic.
 -   Rubeus credential `notes` now carry the ticket's service name (e.g. `rubeus:dump krbtgt/ASGARD.CORP`). A single logon session holds many tickets, so without it a session key cannot be paired with the ticket it decrypts.
 -   Chat messages now reach everyone in the room on MySQL (MariaDB from 10.5 was unaffected). `ChatMessage.created_at` defaults to a SQL expression, so its value only exists after the INSERT; dialects without `INSERT..RETURNING` leave it unloaded, and the chat handler detached the row before the follow-up SELECT could run. Every `chat/message` broadcast then died with `DetachedInstanceError` — the message was still committed, so it reappeared only after a reload via `chat/history`.
 -   C# obfuscation now works with a stock install: the Docker image and `install.sh` install `mono-complete` rather than `mono-runtime`, which ships neither `Mono.Posix` nor the `System.Runtime` facade that ConfuserEx resolves out of the GAC. Any module whose merged assembly pulls in `IronPython.dll` or `System.Memory.dll` — SharpHound among them — previously failed obfuscation with `Could not resolve assembly: Mono.Posix`.
--   C# obfuscation of `Net47` modules now resolves framework types: `empire/server/data/confuser.crproj` gained a `net47` probePath alongside net35/net40/net45. Without it ConfuserEx resolves `mscorlib` from the net45 reference set, which lacks the `System.ValueTuple` type forward, and aborts with `Could not resolve type: System.ValueTuple`2`. SharpHound is currently the only `Net47` module. Both this and the `mono-complete` change are required to obfuscate it — neither is sufficient alone.
+-   C# obfuscation of `Net47` modules now resolves framework types: `empire/server/data/confuser.crproj` gained a `net47` probePath alongside net35/net40/net45. Without it ConfuserEx resolves `mscorlib` from the net45 reference set, which lacks the `System.ValueTuple` type forward, and aborts with `Could not resolve type: System.ValueTuple`2`. SharpHound is currently the only `Net47`module. Both this and the`mono-complete\` change are required to obfuscate it — neither is sufficient alone.
 
 ## [7.0.0] - 2026-08-12
 
@@ -1650,7 +1652,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.1...HEAD
+
+[7.0.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.0...v7.0.1
 
 [7.0.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.1...v7.0.0
 
