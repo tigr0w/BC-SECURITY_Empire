@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Updated Empire Compiler to v2.0.2: Sharpire now uses a CSPRNG for AES-GCM nonces and AES-CBC IVs, and fixes JSON backslash parsing, `cd` persistence, and network drive visibility. Certify submodule switched to BC-SECURITY fork with null-safety fixes, and adds BouncyCastle.Crypto.dll and updated CommandLine.dll/System.Net.Http.dll for Certify 2.0.
 
+### Removed
+
+-   Dropped Debian 11 (bullseye) support. It reached end of security support on 2026-08-31 and its `bullseye-security` release file expired on 2026-09-07, so `apt-get update` now fails and the installer cannot complete. Removed from the install script, the CI install-test matrix, and the docs.
+
 ### Fixed
 
 -   Updated the `credentials/Certify` module to the Certify 2.0 command format, building as `Net47` with merged references and passing arguments straight through.

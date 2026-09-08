@@ -356,9 +356,12 @@ PARENT_PATH=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; cd .. ; pwd -P )
 cd "$PARENT_PATH"
 OS_NAME=
 VERSION_ID=
-if VERSION_ID=$(grep -oP '^(11|12|13)' /etc/debian_version 2>/dev/null); then
+if VERSION_ID=$(grep -oP '^(12|13)' /etc/debian_version 2>/dev/null); then
   echo -e "\x1b[1;34m[*] Detected Debian $VERSION_ID\x1b[0m"
   OS_NAME="DEBIAN"
+elif grep -qP '^11' /etc/debian_version 2>/dev/null && [ "$OVERRIDE_OS" -ne 1 ]; then
+  echo -e '\x1b[1;31m[!] Debian 11 (bullseye) reached end of security support on 2026-08-31.\x1b[0m'
+  echo -e '\x1b[1;31m[!] Its apt repositories are frozen and expired, so this install cannot complete. Upgrade to Debian 12 or 13. Exiting.\x1b[0m' && exit
 elif grep -i "NAME=\"Ubuntu\"" /etc/os-release 2>/dev/null; then
   OS_NAME=UBUNTU
   VERSION_ID=$(grep -i VERSION_ID /etc/os-release | grep -o -E "[[:digit:]]+\\.[[:digit:]]+")
@@ -435,7 +438,7 @@ export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
 echo -e "\x1b[1;34m[*] Checking Python version\x1b[0m"
 
 # Ubuntu 22.04 - 3.10, 20.04 - 3.8
-# Debian 10 - 3.7, 11 - 3.9, 12 - 3.11
+# Debian 12 - 3.11, 13 - 3.13
 # Kali and Parrot do not have a reliable version
 if ! command_exists pyenv; then
   install_pyenv

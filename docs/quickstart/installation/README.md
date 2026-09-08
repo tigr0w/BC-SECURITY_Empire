@@ -5,7 +5,7 @@ We recommend using the installation script or the Docker images to run Empire. A
 The following operating systems have been tested for Empire compatibility.
 
 * Ubuntu 22.04 / 24.04
-* Debian 11 / 12 / 13
+* Debian 12 / 13
 * Kali Linux
 * ParrotOS
 
@@ -102,7 +102,7 @@ All image versions can be found at: [https://hub.docker.com/r/bcsecurity/empire/
 
 ## Community-Supported Operating Systems
 
-At this time, we are choosing to only support Kali, ParrotOS, Debian 11/12/13, and Ubuntu 22.04/24.04 installations, however, we will accept pull requests that fix issues or provide installation scripts specific to other operating systems to this wiki.
+At this time, we are choosing to only support Kali, ParrotOS, Debian 12/13, and Ubuntu 22.04/24.04 installations, however, we will accept pull requests that fix issues or provide installation scripts specific to other operating systems to this wiki.
 
 ## Common Issues
 
