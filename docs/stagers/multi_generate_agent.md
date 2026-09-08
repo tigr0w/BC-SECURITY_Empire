@@ -11,5 +11,3 @@ The `multi_generate_agent` stager is designed specifically for **Python, IronPyt
 ## How It Works
 
 The `multi_generate_agent` stager generates a self-contained Empire agent file that incorporates all required stages. Upon execution, the agent **performs a full key exchange** with the Empire server but does **not execute the passed code immediately**, allowing operators to trigger execution when needed. This design makes it ideal for debugging or scenarios where an agent needs to be prestaged without requiring additional network requests to retrieve code.
-
-![generate\_agent](../.gitbook/assets/multi_generate_agent.png)

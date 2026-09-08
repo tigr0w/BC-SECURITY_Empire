@@ -5,31 +5,29 @@ import shutil
 import signal
 import subprocess
 import sys
-import time
-from pathlib import Path
 
-import urllib3
+import uvicorn
 
 from empire.server.common import empire
-from empire.server.core.config import config_manager
-from empire.server.core.config.config_manager import CONFIG_DIR, DATA_DIR, empire_config
+from empire.server.core.config import config_manager, paths
+from empire.server.core.config.config_manager import (
+    CACHE_DIR,
+    CONFIG_DIR,
+    DATA_DIR,
+    empire_config,
+)
 from empire.server.core.db import base
-from empire.server.utils.file_util import run_as_user
+from empire.server.utils import cert_util
 from empire.server.utils.log_util import setup_logging
 
 log = logging.getLogger(__name__)
-main = None
-
-
-# Disable http warnings
-if empire_config.suppress_self_cert_warning:
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def clean():
     base.reset_db()
     shutil.rmtree(CONFIG_DIR, ignore_errors=True)
     shutil.rmtree(DATA_DIR, ignore_errors=True)
+    shutil.rmtree(CACHE_DIR, ignore_errors=True)
 
 
 def reset():
@@ -38,35 +36,37 @@ def reset():
 
 def shutdown_handler(signum, frame):
     """
-    This is used to gracefully shutdown Empire if uvicorn is not running yet.
-    Otherwise, the "shutdown" event in app.py will be used.
+    Handle SIGINT during the pre-uvicorn setup phase (cert generation, etc.)
+    when MainMenu has not yet been created.
+
+    Once uvicorn is running, it manages SIGINT itself and triggers the
+    lifespan's ``finally`` block in app.py, which handles MainMenu shutdown.
     """
     log.info("Shutting down Empire Server...")
 
-    if main:
-        log.info("Shutting down MainMenu...")
-        main.shutdown()
-
     sys.exit(0)
-
-
-signal.signal(signal.SIGINT, shutdown_handler)
 
 
 def get_commit_sha() -> str:
     """Return the git commit SHA for the running build.
 
     In Docker, this is baked in at build time via the EMPIRE_COMMIT_SHA env
-    var (set by --build-arg in the Makefile). At runtime (local dev), falls
-    back to running git. Returns "unknown" when neither source is available.
+    var (set by --build-arg in the Makefile). From a git checkout, falls back
+    to running git against the repository root -- never the CWD, which on a
+    package install would report a neighbouring repository's HEAD as Empire's
+    own. Returns "unknown" when neither source is available.
     """
     commit = os.environ.get("EMPIRE_COMMIT_SHA", "").strip()
     if commit:
         return commit
 
+    if not paths.is_git_checkout():
+        return "unknown"
+
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
+            cwd=paths.REPO_ROOT,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True,
@@ -84,31 +84,6 @@ def log_version():
     log.info(f"Starting Empire {empire.VERSION} (commit: {get_commit_sha()})")
 
 
-def check_submodules():
-    log.info("Checking submodules...")
-    if not Path(".git").exists():
-        log.info("No .git directory found. Skipping submodule check.")
-        return
-
-    result = subprocess.run(
-        ["git", "submodule", "status"], stdout=subprocess.PIPE, text=True, check=False
-    )
-    for line in result.stdout.splitlines():
-        if line[0] == "-":
-            log.error(
-                "Some git submodules are not initialized. Please run 'git submodule update --init --recursive'"
-            )
-            sys.exit(1)
-
-
-def fetch_submodules():
-    if not Path(".git").exists():
-        log.info("No .git directory found. Skipping submodule fetch.")
-        return
-    command = ["git", "submodule", "update", "--init", "--recursive"]
-    run_as_user(command)
-
-
 def check_recommended_configuration():
     log.info(f"Using {empire_config.database.use} database.")
     if empire_config.database.use == "sqlite":
@@ -119,6 +94,8 @@ def check_recommended_configuration():
 
 
 def run(args):
+    signal.signal(signal.SIGINT, shutdown_handler)
+
     if args.version:
         print(empire.VERSION)
         sys.exit()
@@ -126,13 +103,6 @@ def run(args):
     setup_logging(args)
     log_version()
 
-    if empire_config.submodules.auto_update:
-        log.info("Submodules auto update enabled. Loading.")
-        fetch_submodules()
-    else:
-        log.info("Submodules auto update disabled. Not fetching.")
-
-    check_submodules()
     check_recommended_configuration()
 
     if args.reset:
@@ -154,24 +124,33 @@ def run(args):
         sys.exit()
 
     else:
-        base.startup_db()
-        global main  # noqa: PLW0603
+        # generate_self_signed_cert creates the directory itself.
+        cert_path = config_manager.CERT_DIR
+        # Both halves, not just the certificate: the two files are written
+        # separately, so an interrupted run can leave one of them behind on
+        # its own. Gating on the certificate alone would skip regeneration
+        # forever after a run that wrote only the key, and the mismatch only
+        # ever surfaces as an "[SSL] key values mismatch" line from inside a
+        # listener's startup handler.
+        if not (
+            (cert_path / cert_util.CERT_FILENAME).exists()
+            and (cert_path / cert_util.KEY_FILENAME).exists()
+        ):
+            log.info("Certificate or private key not found. Generating...")
+            cert_file, key_file = cert_util.generate_self_signed_cert(cert_path)
+            log.info(f"Certificate written to {cert_file}")
+            log.info(f"Private key written to {key_file}")
 
-        # Calling run more than once, such as in the test suite
-        # Will generate more instances of MainMenu, which then
-        # causes shutdown failure.
-        if main is None:
-            main = empire.MainMenu(args=args)
+        uvicorn_kwargs = {
+            "host": empire_config.api.ip,
+            "port": empire_config.api.port,
+            "log_config": None,
+            "lifespan": "on",
+        }
+        if empire_config.api.secure:
+            uvicorn_kwargs["ssl_keyfile"] = str(cert_path / cert_util.KEY_FILENAME)
+            uvicorn_kwargs["ssl_certfile"] = str(cert_path / cert_util.CERT_FILENAME)
 
-        cert_path = config_manager.DATA_DIR / "cert"
-        cert_path.mkdir(parents=True, exist_ok=True)
-        if not (Path(cert_path) / "empire-chain.pem").exists():
-            log.info("Certificate not found. Generating...")
-            subprocess.call(["./setup/cert.sh", str(cert_path)])
-            time.sleep(3)
-
-        from empire.server.api import app
-
-        app.initialize(cert_path=cert_path)
+        uvicorn.run("empire.server.asgi:app", **uvicorn_kwargs)
 
     sys.exit()

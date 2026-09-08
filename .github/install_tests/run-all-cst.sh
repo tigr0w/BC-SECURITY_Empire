@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-# The script is run like `./run-all-cst.sh debian12 debian11` to test multiple images
+# The script is run like `./run-all-cst.sh debian12 debian13` to test multiple images
 # or `./run-all-cst.sh debian12` to test a single image
 # or `./run-all-cst.sh` to test all images
 
-all_images=(debian13 debian12 debian11 ubuntu2204 ubuntu2404 kalirolling parrotrolling)
+all_images=(debian13 debian12 ubuntu2204 ubuntu2404 kalirolling parrotrolling)
 
 for image in "${@:-${all_images[@]}}"
 do

@@ -9,7 +9,7 @@ description: |
   data during encryption and includes a demonstration mode that changes the desktop
   wallpaper and displays a ransom note popup.
 software: ''
-tactics: [TA0040, TA0005, TA0007]
+tactics: [TA0005, TA0007, TA0010, TA0040]
 techniques:
   - T1041
   - T1083
@@ -34,12 +34,8 @@ options:
     strict: true
   - name: Demo
     description: Remove wallpaper and popup ransom.
-    required: true
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    required: false
+    value: false
     depends_on:
       - name: Mode
         values: ['Encrypt']
@@ -52,12 +48,8 @@ options:
         values: ['Decrypt']
   - name: Exfiltrate
     description: Exfiltrate files to Command & Control Server.
-    required: true
-    value: 'False'
-    suggested_values:
-      - 'True'
-      - 'False'
-    strict: true
+    required: false
+    value: false
     depends_on:
       - name: Mode
         values: ['Encrypt']

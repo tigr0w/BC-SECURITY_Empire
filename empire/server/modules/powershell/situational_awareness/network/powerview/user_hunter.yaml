@@ -87,19 +87,11 @@ options:
     description: Return user accounts that are not marked as 'sensitive and not allowed
       for delegation'
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: UserAdminCount
     description: Search for users users with '(adminCount=1)' (meaning are/were privileged).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: UserSearchBase
     description: Specifies the LDAP source to search through for target users.
     required: false
@@ -107,19 +99,11 @@ options:
   - name: StopOnSuccess
     description: Stop hunting after finding after finding a target user.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: CheckAccess
     description: Check if the current user has local admin access to found machines.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: Delay
     description: Delay between enumerating hosts, defaults to 0.
     required: false
@@ -151,11 +135,7 @@ options:
     description: Specifies that the search should also return deleted/tombstoned
       objects.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: Jitter
     description: Specifies the jitter (0-1.0) to apply to any specified -Delay, defaults
       to +/- 0.3.
@@ -164,11 +144,7 @@ options:
   - name: Stealth
     description: Only enumerate sessions from connonly used target servers.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: StealthSource
     description: The source of target servers to use, 'DFS' (distributed file servers),
     required: false
@@ -176,11 +152,7 @@ options:
   - name: ShowAll
     description: Return all user location results without filtering.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: Threads
     description: The maximum concurrent threads to execute.
     required: false

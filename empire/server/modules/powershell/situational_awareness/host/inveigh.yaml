@@ -11,8 +11,8 @@ description: |
   hosts, and configurable authentication types. Provides real-time console output
   and can serve custom HTTP responses or proxy traffic.
 software: ''
-tactics: [TA0006, TA0009]
-techniques: [T1040, T1557.001, T1557.003, T1119]
+tactics: [TA0006, TA0007, TA0009]
+techniques: [T1040, T1119, T1187, T1557.001, T1557.003]
 background: true
 output_extension:
 needs_admin: false
@@ -93,11 +93,7 @@ options:
   - name: Inspect
     description: 'Inspect LLMNR, mDNS, and NBNS traffic only (no spoofing).'
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: IP
     description: 'Local IP address for listening and packet sniffing. Used for spoofing
       if SpooferIP is not set.'
@@ -123,10 +119,14 @@ options:
     description: 'mDNS types to spoof. Options: QU (unicast), QM (multicast to 224.0.0.251).'
     required: false
     value: 'QU'
-    strict: true
+    # Not strict: the script accepts both types at once and matches with
+    # -contains, so "QU,QM" is valid input that a strict suggested_values
+    # check would reject before the array format string ever renders.
+    strict: false
     suggested_values:
       - QU
       - QM
+    format_string: '-{{ KEY }} {{ VALUE_ARRAY }}'
   - name: NBNS
     description: (Y/N) Enable/Disable NBNS spoofer.
     required: false
@@ -139,11 +139,15 @@ options:
     description: 'NBNS types to spoof. Default: 00,20 (Workstation/Server services).'
     required: false
     value: '00,20'
+    format_string: '-{{ KEY }} {{ VALUE_ARRAY }}'
   - name: Proxy
     description: (Y/N) Enable/Disable Inveigh's proxy server authentication capture.
     required: false
     value: ''
-    strict: true
+    # Not strict: the empty default (proxy disabled) is a valid state, and a
+    # strict option whose default is absent from suggested_values fails
+    # validation on every run that leaves it unset.
+    strict: false
     suggested_values:
       - Y
       - N
@@ -176,19 +180,25 @@ options:
     description: 'Comma-separated list of hostnames to ignore when spoofing.'
     required: false
     value: ''
+    # [Array] parameter: quote each element so a multi-host list becomes a real
+    # array (the script matches it with -contains, which fails on a single joined element).
+    format_string: '-{{ KEY }} {{ VALUE_ARRAY }}'
   - name: SpooferHostsReply
     description: 'Comma-separated list of hostnames to respond to when spoofing.'
     required: false
     value: ''
+    format_string: '-{{ KEY }} {{ VALUE_ARRAY }}'
   - name: SpooferIPsIgnore
     description: 'Comma-separated list of source IP addresses to ignore when spoofing.'
     required: false
     value: ''
+    format_string: '-{{ KEY }} {{ VALUE_ARRAY }}'
   - name: SpooferIPsReply
     description: 'Comma-separated list of source IP addresses to respond to when
       spoofing.'
     required: false
     value: ''
+    format_string: '-{{ KEY }} {{ VALUE_ARRAY }}'
   - name: SpooferLearning
     description: 'Enable/Disable LLMNR/NBNS valid host learning to avoid spoofing
       legitimate hosts.'
@@ -225,3 +235,4 @@ options:
       - NTLMNoESS
 script_path: collection/Invoke-Inveigh.ps1
 script_end: Invoke-Inveigh -Tool "2" -MachineAccounts Y {{ PARAMS }}
+credential_parser: inveigh

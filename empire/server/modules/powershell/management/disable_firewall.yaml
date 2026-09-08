@@ -10,8 +10,8 @@ description: |
   method disables the firewall for all profiles (domain, private,
   public). The registry method disables the firewall via policy keys.
 software: ''
-tactics: [TA0005]
-techniques: [T1562.004]
+tactics: [TA0112]
+techniques: [T1686, T1686.003]
 background: true
 output_extension:
 needs_admin: true

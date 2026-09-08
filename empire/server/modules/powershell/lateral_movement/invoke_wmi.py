@@ -19,7 +19,7 @@ class Module:
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
+        launcher_obfuscate = params["Obfuscate"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         script = """$null = Invoke-WmiMethod -Path Win32_process -Name create"""

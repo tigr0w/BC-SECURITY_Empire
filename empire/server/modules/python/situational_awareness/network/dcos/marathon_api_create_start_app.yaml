@@ -14,6 +14,7 @@ software: ''
 tactics: [TA0002]
 techniques:
   - T1059.006
+  - T1610
 background: true
 output_extension: ''
 needs_admin: false

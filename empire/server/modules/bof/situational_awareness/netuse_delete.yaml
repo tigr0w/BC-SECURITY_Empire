@@ -1,0 +1,52 @@
+name: netuse_delete
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: Disconnects a network share connection by drive letter or UNC path via
+  WNetCancelConnection2. Supports forceful disconnect and optional removal from the
+  persistent connection profile. Useful for cleaning up mapped drives in-beacon without
+  spawning net.exe.
+software: ''
+tactics: [TA0007]
+techniques: [T1135]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/trustedsec/CS-Situational-Awareness-BOF
+options:
+  - name: Architecture
+    description: Architecture of the beacon_funcs.o to generate with (x64 or x86).
+    required: true
+    value: x64
+    strict: true
+    suggested_values:
+      - x64
+      - x86
+  - name: DeviceName
+    description: Drive letter (e.g. Z:) or UNC path of the connection to remove.
+    required: true
+    value: ''
+  - name: Persist
+    description: Also remove the connection from the persistent profile. False leaves
+      the profile entry intact.
+    required: true
+    value: false
+  - name: Force
+    description: Forcefully disconnect even if files are open on the share. False
+      fails if the share is in use.
+    required: true
+    value: false
+bof:
+  x86: bof/situational_awareness/netuse/netuse.x86.o
+  x64: bof/situational_awareness/netuse/netuse.x64.o
+  entry_point: ''
+  format_string: sZss
+script_path: ''
+script_end: ''
+advanced:
+  custom_generate: true

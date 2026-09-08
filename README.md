@@ -29,7 +29,7 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 - JA3/S and JARM Evasion
 - MITRE ATT&CK Integration
 - Integrated Roslyn compiler (Thanks to [Covenant](https://github.com/cobbr/Covenant))
-- Docker, Kali, ParrotOS, Ubuntu 22.04/24.04, and Debian 11/12/13 Install Support
+- Docker, Kali, ParrotOS, Ubuntu 22.04/24.04, and Debian 12/13 Install Support
 
 ### Agents
 - PowerShell
@@ -63,9 +63,8 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 Please see our [Releases](https://github.com/BC-SECURITY/Empire/releases) or [Changelog](/CHANGELOG.md) page for detailed release notes.
 
 ###  Quickstart
-When cloning this repository, you will need to recurse submodules.
 ```sh
-git clone --recursive https://github.com/BC-SECURITY/Empire.git
+git clone https://github.com/BC-SECURITY/Empire.git
 ```
 
 Check out the [Installation Page](https://bc-security.gitbook.io/empire-wiki/quickstart/installation) for install instructions.
@@ -73,7 +72,7 @@ Check out the [Installation Page](https://bc-security.gitbook.io/empire-wiki/qui
 Note: The `main` branch is a reflection of the latest changes and may not always be stable.
 After cloning the repo, you can checkout the latest stable release by running the `setup/checkout-latest-tag.sh` script.
 ```bash
-git clone --recursive https://github.com/BC-SECURITY/Empire.git
+git clone https://github.com/BC-SECURITY/Empire.git
 cd Empire
 ./setup/checkout-latest-tag.sh
 ./ps-empire install -y
@@ -101,7 +100,7 @@ For a complete list of changes, see the [changelog](./changelog).
 
 [Starkiller](https://github.com/BC-SECURITY/Starkiller) is a web application GUI for PowerShell Empire that interfaces remotely with Empire via its API.
 Starkiller can be ran as a replacement for the Empire client or in a mixed environment with Starkiller and Empire clients.
-As of 5.0, Starkiller is packaged in Empire as a git submodule and doesn't require any additional setup.
+As of 5.0, Starkiller is packaged with Empire and doesn't require any additional setup.
 
 ## Contribution Rules
 See [Contributing](./.github/CONTRIBUTING.md)

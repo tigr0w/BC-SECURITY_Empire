@@ -73,7 +73,6 @@ def constrained_empire_base_url(mysql_port, empire_log_path):
     config["database"]["mysql"]["pool_size"] = CONSTRAINED_POOL_SIZE
     config["database"]["mysql"]["max_overflow"] = CONSTRAINED_MAX_OVERFLOW
     config["starkiller"]["enabled"] = False
-    config["submodules"]["auto_update"] = False
     config["logging"]["level"] = "WARNING"
 
     config_fd, config_path = tempfile.mkstemp(

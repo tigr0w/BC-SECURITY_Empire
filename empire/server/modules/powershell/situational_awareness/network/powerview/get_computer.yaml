@@ -51,28 +51,16 @@ options:
   - name: Unconstrained
     description: Return computer objects that have unconstrained delegation.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: TrustedToAuth
     description: Return computer objects that are trusted to authenticate for other
       principals.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: Printers
     description: Return only printers.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: SPN
     description: Return computers with a specific service principal name, wildcards
       accepted.
@@ -93,11 +81,7 @@ options:
   - name: Ping
     description: Ping each host to ensure it's up before enumerating.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: Domain
     description: The domain to use for the query, defaults to the current domain.
     required: false
@@ -140,11 +124,7 @@ options:
     description: Specifies that the search should also return deleted/tombstoned
       objects.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
       "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").

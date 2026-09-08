@@ -94,7 +94,7 @@ def generate_pic_shellcode(
     )
 
     # Resolve data paths
-    data_dir = Path(main_menu.installPath) / "data" / "misc"
+    data_dir = main_menu.install_path / "data" / "misc"
     template_path = data_dir / "windows_shellcode.c"
     linker_script = data_dir / "pic_shellcode.ld"
     if not template_path.exists():

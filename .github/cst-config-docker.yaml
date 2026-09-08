@@ -35,7 +35,7 @@ commandTests:
   - name: "ps-empire version"
     command: "./ps-empire"
     args: ["-f", "server", "--version"]
-    expectedOutput: ["6.* BC Security Fork"]
+    expectedOutput: ["7.* BC Security Fork"]
   - name: "go which"
     command: "which"
     args: ["go"]
@@ -52,9 +52,29 @@ commandTests:
     command: "which"
     args: ["perl"]
     expectedOutput: ["/usr/bin/perl"]
+  # A floor, not the exact count: this job does not run on ordinary pull
+  # requests, so an exact number turns "someone added a profile" into a
+  # release-time failure for whoever cuts the release. What it has to catch is
+  # the tree not reaching the image at all.
+  - name: "profiles-shipped"
+    command: "bash"
+    args: ["-c", "test $(find /empire/empire/server/data/profiles -name '*.profile'
+        | wc -l) -gt 50 && echo shipped"]
+    # Unanchored: container-structure-test matches with Go's regexp, where `$`
+    # is end-of-text and does not skip the newline `echo` writes. The command
+    # prints nothing at all when the floor is not met, so this is exact enough.
+    expectedOutput: ["shipped"]
 fileExistenceTests:
   - name: 'profiles'
     path: '/empire/empire/server/data/profiles/'
+    shouldExist: true
+  # The redistribution obligation NOTICE.md records covers container images too,
+  # not just the wheel that .github/scripts/check_wheel.py gates.
+  - name: 'profiles third-party notice'
+    path: '/empire/empire/server/data/profiles/NOTICE.md'
+    shouldExist: true
+  - name: 'profiles license texts'
+    path: '/empire/empire/server/data/profiles/LICENSES/GPL-3.0.txt'
     shouldExist: true
   - name: 'starkiller'
     path: '/root/.local/share/empire/starkiller/'
@@ -63,7 +83,7 @@ fileExistenceTests:
     path: '/root/.local/share/empire/empire-compiler/'
     shouldExist: true
   - name: 'plugin-registries'
-    path: '/root/.local/share/empire/plugin-registries/BC-SECURITY/main/registry.yaml'
+    path: '/root/.local/share/empire/plugin-registries/BC-SECURITY/7.x/registry.yaml'
     shouldExist: true
   - name: 'openssl mingw prefix'
     path: '/opt/openssl-mingw64/'

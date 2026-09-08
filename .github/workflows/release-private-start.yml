@@ -27,7 +27,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ env.TARGET_BRANCH }}
-          submodules: 'recursive'
           fetch-depth: 0
           token: ${{ secrets.RELEASE_TOKEN }}
       - name: Initialize mandatory git config

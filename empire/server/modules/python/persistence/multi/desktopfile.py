@@ -38,7 +38,7 @@ home = os.path.expanduser("~")
 filePath = home + "/.config/autostart/"
 writeFile = filePath + "{file_name}.desktop"
 
-if remove.lower() == "true":
+if remove:
     if os.path.isfile(writeFile):
         os.remove(writeFile)
         print("\\n[+] Persistence has been removed")

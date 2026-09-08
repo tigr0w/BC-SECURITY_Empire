@@ -12,6 +12,8 @@ from empire.server.utils.option_util import validate_options
 log = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
+    from pathlib import Path
+
     from empire.server.core.db.base import SessionLocal
     from empire.server.core.download_service import DownloadService
     from empire.server.core.plugin_service import PluginService
@@ -28,9 +30,7 @@ class BasePlugin:
 
         self.enabled: bool = False
         self.execution_enabled: bool = True
-        # TODO(empire-7): Change type to Path (self.main_menu.install_path).
-        # Kept as str for backwards compatibility with third-party plugins.
-        self.install_path: str = self.main_menu.installPath
+        self.install_path: Path = self.main_menu.install_path
         self.execution_options: dict = {}
         self.settings_options: dict = {}
 
@@ -143,3 +143,15 @@ class BasePlugin:
     def send_socketio_message(self, message):
         """Send a message to the socketio server"""
         self.plugin_service.plugin_socketio_message(self.info.name, message)
+
+    def register_listener(self, instance, name: str | None = None) -> str:
+        """
+        Register a listener template contributed by this plugin.
+
+        Should be called from ``on_load`` so the template is available
+        before ``ListenerService.start_existing_listeners`` runs on
+        Empire startup. Returns the slugified template key.
+        """
+        return self.main_menu.listenertemplatesv2.register_listener_template(
+            instance, name=name
+        )

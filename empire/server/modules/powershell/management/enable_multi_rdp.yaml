@@ -23,8 +23,8 @@ description: |
   may be detected by file integrity monitoring or advanced EDR solutions. System
   updates or patches may revert these modifications, requiring reapplication.
 software: 'S0002'
-tactics: [TA0005, TA0008]
-techniques: [T1021.001, T1562]
+tactics: [TA0003, TA0008, TA0112]
+techniques: [T1021.001, T1112]
 background: true
 output_extension:
 needs_admin: true

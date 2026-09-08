@@ -35,10 +35,19 @@ def donut_create(**kwargs):
             "donut-shellcode is not installed. It is only supported on x86."
         )
 
-    orig_cwd = Path.cwd()
+    try:
+        orig_cwd = Path.cwd()
+    except FileNotFoundError:
+        orig_cwd = Path(tempfile.gettempdir())
     with _donut_lock, tempfile.TemporaryDirectory() as tmp_dir:
         os.chdir(tmp_dir)
         try:
             return donut.create(**kwargs)
         finally:
-            os.chdir(orig_cwd)
+            try:
+                os.chdir(orig_cwd)
+            except (FileNotFoundError, OSError):
+                log.warning(
+                    "donut_create: original CWD no longer exists, falling back to tempdir"
+                )
+                os.chdir(tempfile.gettempdir())

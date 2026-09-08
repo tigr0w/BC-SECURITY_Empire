@@ -13,7 +13,7 @@ description: |
 software: ''
 tactics: [TA0004, TA0005]
 techniques: [T1055]
-background: false
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true
@@ -38,11 +38,7 @@ options:
     description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
       for obfuscation types.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
     depends_on:
       - name: Language
         values: ['powershell']

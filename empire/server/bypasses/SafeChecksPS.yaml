@@ -1,0 +1,13 @@
+name: SafeChecksPS
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: |
+  Aborts the launcher on PowerShell <3 (where Empire's reflection-based bypasses
+  do not work) and disables the HTTP "Expect: 100-Continue" header to keep the
+  staging request a single round-trip.
+language: powershell
+min_language_version: '3'
+script: |
+  if($PSVersionTable.PSVersion.Major -lt 3){exit};[System.Net.ServicePointManager]::Expect100Continue=0;

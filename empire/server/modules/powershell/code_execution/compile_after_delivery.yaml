@@ -40,10 +40,6 @@ options:
     description: Execute the compiled binary after compilation. Set to False for
       compile-only.
     required: false
-    value: 'True'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: true
 advanced:
   custom_generate: true

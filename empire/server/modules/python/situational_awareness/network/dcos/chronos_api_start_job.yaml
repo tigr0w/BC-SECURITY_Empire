@@ -14,9 +14,8 @@ description: |
   execution through the distributed job scheduler in cloud-native
   environments.
 software: ''
-tactics: [TA0002]
-techniques:
-  - T1059.006
+tactics: [TA0002, TA0003, TA0004]
+techniques: [T1053.007, T1059.006, T1610]
 background: true
 output_extension: ''
 needs_admin: false

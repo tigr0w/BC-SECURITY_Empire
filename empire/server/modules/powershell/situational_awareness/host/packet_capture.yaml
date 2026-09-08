@@ -18,7 +18,7 @@ description: |
   protocol headers, and payload data. Requires administrative privileges to access network
   diagnostic capabilities.
 software: ''
-tactics: [TA0009, TA0006, TA0007]
+tactics: [TA0006, TA0007]
 techniques: [T1040]
 background: false
 output_extension:
@@ -45,18 +45,10 @@ options:
   - name: Persistent
     description: Persist capture across reboots.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: StopTrace
     description: Stop trace capture.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 advanced:
   custom_generate: true

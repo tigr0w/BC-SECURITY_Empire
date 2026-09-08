@@ -27,10 +27,8 @@ description: |
   often logged and may trigger alerts in security-conscious environments where
   SQL Server activity is monitored.
 software: ''
-tactics: [TA0002, TA0008, TA0003]
-techniques:
-  - T1105
-  - T1505.001
+tactics: [TA0002, TA0003, TA0008]
+techniques: [T1059.001, T1210, T1505.001]
 background: true
 output_extension:
 needs_admin: false
@@ -85,6 +83,18 @@ options:
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
     value: ''
-script_path: lateral_movement/Invoke-SQLOSCmd.ps
+  - name: Obfuscate
+    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
+      for obfuscation types.
+    required: false
+    value: false
+  - name: ObfuscateCommand
+    description: The Invoke-Obfuscation command to use.
+    required: false
+    value: Token\All\1
+    depends_on:
+      - name: Obfuscate
+        values: ['True']
+script_path: lateral_movement/Invoke-SQLOSCmd.ps1
 advanced:
   custom_generate: true

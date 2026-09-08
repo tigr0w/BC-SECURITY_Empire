@@ -12,8 +12,8 @@ description: |
   This technique is used by adversaries for persistence while
   maintaining stealth on compromised systems.
 software: ''
-tactics: [TA0005, TA0003]
-techniques: [T1564.002]
+tactics: [TA0003, TA0005]
+techniques: [T1136.001, T1564.002]
 background: false
 output_extension:
 needs_admin: true

@@ -20,10 +20,8 @@ description: |
   triggered by various events that may occur naturally in the environment,
   providing a reliable and difficult-to-detect persistence mechanism.
 software: ''
-tactics: [TA0004]
-techniques:
-  - T1070.001
-  - T1546.003
+tactics: [TA0003, TA0004]
+techniques: [T1546]
 background: false
 output_extension:
 needs_admin: true

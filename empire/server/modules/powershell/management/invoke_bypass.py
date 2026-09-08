@@ -23,7 +23,7 @@ class Module:
         return main_menu.modulesv2.finalize_module(
             script=script,
             script_end='"Bypass execution completed successfully."',
-            obfuscate=obfuscate or params["Obfuscate"].lower() == "true",
+            obfuscate=obfuscate or params["Obfuscate"],
             obfuscation_command=(
                 obfuscation_command
                 if obfuscation_command != ""

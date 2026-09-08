@@ -18,7 +18,7 @@ class Module:
         language = params["Language"]
         target_app = params["TargetApp"]
         cleanup = params["Cleanup"]
-        obf = params["Obfuscate"].lower() == "true"
+        obf = params["Obfuscate"]
         obf_cmd = params["ObfuscateCommand"]
         bypasses = params["Bypasses"]
         user_agent = params["UserAgent"]
@@ -39,7 +39,7 @@ class Module:
             backup_file = "$env:APPDATA\\Microsoft\\Excel\\XLSTART\\Personal.xlsb.bak"
             security_sub_key = "Excel\\Security"
 
-        if cleanup.lower() == "true":
+        if cleanup:
             script = (
                 '$templateFile = "' + template_file + '";\n'
                 '$backupFile = "' + backup_file + '";\n'

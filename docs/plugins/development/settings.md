@@ -23,7 +23,7 @@ def on_start(self, db):
 ```
 
 To set settings values, use `self.set_settings(db, settings)` where `settings` is a dict of
-the values you want to set, or `self.state_settings_option(db, key, value)` to set a single
+the values you want to set, or `self.set_settings_option(db, key, value)` to set a single
 value.
 
 ```python
@@ -48,5 +48,5 @@ def on_settings_change(self, db, settings):
 ## Internal State
 
 Internal state is state that is defined by the plugin and is not exposed via the API,
-but is persisted in the database. It can be accessed via `self.internal_state(db)`,
+but is persisted in the database. It can be accessed via `self.current_internal_state(db)`,
 and can be set via `self.set_internal_state(db, state)` or `self.set_internal_state_option(db, key, value)`.

@@ -12,10 +12,8 @@ description: |
   The technique exploits the Windows print spooler service to bypass security
   controls and gain elevated privileges on the target system.
 software: ''
-tactics: [TA0004]
-techniques:
-  - T1068
-  - T1136.001
+tactics: [TA0003, TA0004]
+techniques: [T1068, T1136.001, T1547.012]
 background: false
 output_extension: ''
 needs_admin: false

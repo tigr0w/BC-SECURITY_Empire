@@ -5,7 +5,9 @@ This allows anyone to build or add community projects to extend Empire functiona
 
 ## Installing Plugins
 
-Plugin installation is available through the Starkiller __Plugin Marketplace__.
+Plugin installation is available through the Starkiller __Plugin Marketplace__, reachable from the sidebar. Selecting a plugin shows its description, the registry and version to install from, and an **Install** button.
+
+![](../.gitbook/assets/plugin_marketplace.png)
 
 ### Auto-Installing Plugins
 

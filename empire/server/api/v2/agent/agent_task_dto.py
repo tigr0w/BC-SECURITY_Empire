@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from empire.server.api.v2.shared_dto import (
     DownloadDescription,
+    coerced_dict,
     domain_to_dto_download_description,
 )
 from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
@@ -73,7 +74,10 @@ class AgentTasks(BaseModel):
 
 class ShellPostRequest(BaseModel):
     command: str
-    literal: bool = False
+    literal: bool = Field(
+        default=False,
+        deprecated="No-op since 7.0; agent-side command aliases were removed.",
+    )
 
 
 class ModulePostRequest(BaseModel):
@@ -81,7 +85,11 @@ class ModulePostRequest(BaseModel):
     ignore_language_version_check: bool = False
     ignore_admin_check: bool = False
     background_override: bool | None = None
-    options: dict[str, str | int | float]
+    # String-coerced like the listener/stager/plugin DTOs: native JSON
+    # bool/int/float are still accepted on the wire and normalized to strings
+    # (see `coerced_dict`), then re-typed per option by `safe_cast`. Each
+    # option's real type is advertised on the GET side via `value_type`.
+    options: coerced_dict
     modified_input: str | None = None
 
 
@@ -107,10 +115,6 @@ class SleepPostRequest(BaseModel):
     jitter: float = Field(ge=0, le=1)
 
 
-class CommsPostRequest(BaseModel):
-    new_listener_id: int
-
-
 class KillDatePostRequest(BaseModel):
     kill_date: str  # todo validator. Or can we just set it to a datetime. same with killdate on the agent dto
 
@@ -120,6 +124,10 @@ class WorkingHoursPostRequest(BaseModel):
 
 
 class DirectoryListPostRequest(BaseModel):
+    path: str
+
+
+class ChdirPostRequest(BaseModel):
     path: str
 
 

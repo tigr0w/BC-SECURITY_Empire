@@ -5,7 +5,6 @@ import json
 import logging
 import shutil
 import typing
-import warnings
 from pathlib import Path
 
 import yaml
@@ -38,13 +37,25 @@ from empire.server.core.exceptions import (
     ModuleValidationException,
 )
 from empire.server.core.module_models import (
+    CSharpOption,
     EmpireModule,
     EmpireModuleOption,
     LanguageEnum,
 )
 from empire.server.utils import data_util
 from empire.server.utils.bof_packer import process_arguments
-from empire.server.utils.option_util import convert_module_options, validate_options
+from empire.server.utils.dotnet_version_util import (
+    CLR_2_VERSIONS,
+    CLR_4_VERSIONS,
+    VERSION_ORDER,
+    normalize_dotnet_version,
+    parse_agent_dotnet_versions,
+)
+from empire.server.utils.option_util import (
+    coerce_legacy_value,
+    convert_module_options,
+    validate_options,
+)
 from empire.server.utils.string_util import slugify
 
 if typing.TYPE_CHECKING:
@@ -53,6 +64,13 @@ if typing.TYPE_CHECKING:
     from empire.server.core.obfuscation_service import ObfuscationService
 
 log = logging.getLogger(__name__)
+
+# BOF modules where InjectSelf=True resolves Pid to the agent's own process ID.
+# Credential BOFs (handlekatz, credman) also have a Pid option but target a
+# different process (LSASS, token donor) — they must never appear here.
+_SELF_INJECT_PID_MODULES = frozenset(
+    {"bof_management_inject_amsi_bypass", "bof_management_inject_etw_bypass"}
+)
 
 
 class ModuleExecutionRequest(BaseModel):
@@ -178,24 +196,8 @@ class ModuleService:
             cleaned_options,
             agent.language,
         )
-        if isinstance(module_data, tuple):
-            warnings.warn(
-                "Returning a tuple on errors from module generation is deprecated. Raise exceptions instead."
-                "https://bc-security.gitbook.io/empire-wiki/module-development/powershell-modules#custom-generate",
-                DeprecationWarning,
-                stacklevel=5,
-            )
-            (module_data, err) = module_data
-        else:
-            # Not all modules return a tuple. If they just return a single value,
-            # we don't want to throw an unpacking error.
-            err = None
-
-        # Should standardize on the return type.
         if not module_data:
-            # This should probably be a ModuleExecutionException, but
-            # for backwards compatability with 5.x, it needs to raise a 400
-            raise ModuleValidationException(err or "module produced an empty script")
+            raise ModuleValidationException("module produced an empty script")
 
         if type(module_data) is not ModuleExecutionRequest:
             module_data = ModuleExecutionRequest(command="", data=module_data)
@@ -317,6 +319,65 @@ class ModuleService:
             return f"{cmd_type}_CMD_WAIT_SAVE", module_data
         return f"{cmd_type}_CMD_WAIT", module_data
 
+    @staticmethod
+    def _resolve_dotnet_version(
+        compatible_versions: list[str],
+        user_supplied: str,
+        agent_dotnet_version: str | None,
+    ) -> str | None:
+        compatible = [normalize_dotnet_version(v) for v in compatible_versions]
+        compatible = [v for v in compatible if v]
+
+        if not compatible:
+            return None
+
+        ranked = sorted(
+            (v for v in compatible if v in VERSION_ORDER),
+            key=VERSION_ORDER.index,
+            reverse=True,
+        )
+
+        user_val = normalize_dotnet_version(user_supplied)
+        if user_val:
+            if user_val in compatible:
+                return user_val
+            raise ModuleValidationException(
+                f"Requested DotNetVersion '{user_val}' is not in the module's compatible versions: {compatible}"
+            )
+
+        available = parse_agent_dotnet_versions(
+            agent_dotnet_version if isinstance(agent_dotnet_version, str) else None
+        )
+
+        if available:
+            agent_clr4 = max(
+                (v for v in available if v in CLR_4_VERSIONS),
+                key=VERSION_ORDER.index,
+                default=None,
+            )
+            has_clr2 = bool(available & CLR_2_VERSIONS)
+
+            candidates = [
+                v
+                for v in ranked
+                if (
+                    v in CLR_4_VERSIONS
+                    and agent_clr4
+                    and VERSION_ORDER.index(v) <= VERSION_ORDER.index(agent_clr4)
+                )
+                or (v in CLR_2_VERSIONS and has_clr2)
+            ]
+
+            if candidates:
+                return candidates[0]
+
+            raise ModuleValidationException(
+                f"Module requires one of {compatible} but no compatible "
+                f".NET runtime is available on agent (agent has: {sorted(available)})"
+            )
+
+        return ranked[0] if ranked else compatible[0]
+
     def _validate_module_params(  # noqa: PLR0913
         self,
         db: Session,
@@ -356,12 +417,30 @@ class ModuleService:
 
         converted_options = convert_module_options(module.options)
 
+        # Capture before validate_options injects module defaults into params
+        user_supplied_dotnet = params.get("DotNetVersion", "")
+
         options, err = validate_options(
             converted_options, params, db, self.download_service
         )
 
         if err:
             return None, err
+
+        # When InjectSelf is enabled, resolve Pid to the agent's own process ID.
+        # Done after validate_options so the value lands in the output options dict
+        # regardless of the depends_on gate that hides Pid in the UI.
+        if (
+            module.id in _SELF_INJECT_PID_MODULES
+            and str(options.get("InjectSelf", "True")).lower() == "true"
+        ):
+            if agent.process_id is None:
+                return (
+                    None,
+                    "InjectSelf is enabled but the agent has not reported its process ID yet. "
+                    "Wait for the agent to check in, or set InjectSelf to False and supply a Pid manually.",
+                )
+            options["Pid"] = str(agent.process_id)
 
         if not ignore_language_version_check and module.language == agent.language:
             module_version = parse(module.min_language_version or "0")
@@ -373,6 +452,17 @@ class ModuleService:
                     f"module requires language version {module.min_language_version} but agent running language version {agent.language_version}",
                 )
 
+        if module.language == LanguageEnum.csharp and isinstance(
+            module.csharp, CSharpOption
+        ):
+            selected = self._resolve_dotnet_version(
+                module.csharp.CompatibleDotNetVersions,
+                user_supplied_dotnet,
+                agent.dotnet_version,
+            )
+            if selected is not None:
+                options["DotNetVersion"] = selected
+
         if module.needs_admin and not ignore_admin_check and not agent.high_integrity:
             raise ModuleValidationException(
                 "module needs to run in an elevated context"
@@ -380,20 +470,23 @@ class ModuleService:
 
         return options, None
 
-    def _generate_script(  # noqa: PLR0911, PLR0912
+    def _generate_script(  # noqa: PLR0912
         self,
         db: Session,
         module: EmpireModule,
         params: dict,
         agent_language: str,
         obfuscation_config: models.ObfuscationConfig = None,
-    ) -> tuple[ModuleExecutionRequest | None, str | None]:
+    ) -> ModuleExecutionRequest | str:
         """
-        Generate the script to execute
-        :param module: the execution parameters (already validated)
-        :param params: the execution parameters
-        :param obfuscation_config: the obfuscation config. If not provided, will look up from the db.
-        :return: tuple containing the generated script and an error if it exists
+        Generate the script to execute.
+
+        Non-custom paths always return a ``ModuleExecutionRequest``.
+        Custom-generate modules (``module.advanced.custom_generate``) may also
+        return a bare ``str``.
+
+        Raises ``ModuleValidationException`` or ``ModuleExecutionException``
+        on failure.
         """
         if not obfuscation_config:
             obfuscation_config = self.obfuscation_service.get_obfuscation_config(
@@ -426,28 +519,28 @@ class ModuleService:
                 raise
             except Exception as e:
                 log.error(f"Error generating script: {e}", exc_info=True)
-                return None, "Error generating script."
-        elif module.language == LanguageEnum.powershell:
+                raise ModuleExecutionException("Error generating script.") from e
+        if module.language == LanguageEnum.powershell:
             resp = self._generate_script_powershell(module, params, obfuscation_config)
-            return ModuleExecutionRequest(command="", data=resp), None
+            return ModuleExecutionRequest(command="", data=resp)
         # We don't have obfuscation for other languages yet, but when we do,
         # we can pass it in here.
-        elif module.language == LanguageEnum.python:
+        if module.language == LanguageEnum.python:
             resp = self._generate_script_python(module, params, obfuscation_config)
-            return ModuleExecutionRequest(command="", data=resp), None
-        elif module.language == LanguageEnum.csharp:
-            return self.generate_script_csharp(module, params, obfuscation_config), None
-        elif module.language == LanguageEnum.bof:
+            return ModuleExecutionRequest(command="", data=resp)
+        if module.language == LanguageEnum.csharp:
+            return self.generate_script_csharp(module, params, obfuscation_config)
+        if module.language == LanguageEnum.bof:
             if agent_language == "go":
                 resp = self.generate_go_bof(module, params)
-                return ModuleExecutionRequest(command="", data=resp), None
+                return ModuleExecutionRequest(command="", data=resp)
             if not obfuscation_config:
                 obfuscation_config = self.obfuscation_service.get_obfuscation_config(
                     db, LanguageEnum.csharp
                 )
-            return self.generate_script_bof(module, params, obfuscation_enabled), None
+            return self.generate_script_bof(module, params, obfuscation_enabled)
 
-        return None, "Unsupported language"
+        raise ModuleValidationException("Unsupported language")
 
     def generate_script_bof(
         self,
@@ -472,10 +565,8 @@ class ModuleService:
             confuse=obfuscate,
         )
 
-        filtered_params = {
-            key: (
-                value if value != "" else " "
-            )  # Replace empty values with a blank space
+        arg_list = [
+            str(value)
             for key, value in params.items()
             if key.lower()
             not in [
@@ -484,19 +575,12 @@ class ModuleService:
                 "architecture",
                 "entrypoint",
             ]
-        }
-
-        formatted_args = " ".join(
-            f'"{value}"' if " " in str(value) else str(value)
-            for value in filtered_params.values()
-        )
+        ]
 
         params_dict = {}
         params_dict["Entrypoint"] = module.bof.entry_point or "go"
         params_dict["File"] = b64_bof_data
-        params_dict["HexData"] = process_arguments(
-            module.bof.format_string, formatted_args
-        )
+        params_dict["HexData"] = process_arguments(module.bof.format_string, arg_list)
 
         final_base64_json = base64.b64encode(
             json.dumps(params_dict).encode("utf-8")
@@ -570,10 +654,8 @@ class ModuleService:
         bof_data = script_path.read_bytes()
         b64_bof_data = base64.b64encode(bof_data).decode("utf-8")
 
-        filtered_params = {
-            key: (
-                value if value != "" else " "
-            )  # Replace empty values with a blank space
+        arg_list = [
+            str(value)
             for key, value in params.items()
             if key.lower()
             not in [
@@ -582,18 +664,13 @@ class ModuleService:
                 "architecture",
                 "entrypoint",
             ]
-        }
-
-        formatted_args = " ".join(
-            f'"{value}"' if " " in str(value) else str(value)
-            for value in filtered_params.values()
-        )
+        ]
 
         if not skip_params:
             params_dict = {}
             params_dict["File"] = b64_bof_data
             params_dict["HexData"] = process_arguments(
-                module.bof.format_string, formatted_args
+                module.bof.format_string, arg_list
             )
         else:
             params_dict = params
@@ -672,8 +749,10 @@ class ModuleService:
         else:
             script = module.script
 
-        for key, value in params.items():
+        for key, raw_value in params.items():
             if key.lower() != "agent":
+                # Native bool/int/float options arrive typed; str.replace needs str.
+                value = coerce_legacy_value(raw_value)
                 script = script.replace("{{ " + key + " }}", value).replace(
                     "{{" + key + "}}", value
                 )
@@ -715,8 +794,25 @@ class ModuleService:
         script_end = f" {module.script_end} "
         option_strings = []
 
+        # Per-option format-string overrides, keyed by name_in_code when set,
+        # else the option name — matching the keys validate_options emits from
+        # its normal and dependency branches. Its file branch keys by plain
+        # name only, but no file option reaches this loop (both modules that
+        # declare one use custom_generate), so that asymmetry is moot here.
+        # Lets an individual option escape the module-wide quoting; the token
+        # reference lives in docs/modules/module-development/powershell-modules.md.
+        option_format_overrides = {
+            (option.name_in_code or option.name): option.format_string
+            for option in module.options
+            if option.format_string
+        }
+
         # This is where the code goes for all the modules that do not have a custom generate function.
-        for key, value in params.items():
+        for key, raw_value in params.items():
+            # Native bool/int/float options arrive typed; the switch detection
+            # and `-Option value` substitution below operate on the legacy
+            # string form, so stringify each primitive value first.
+            value = coerce_legacy_value(raw_value)
             if key.lower() not in ["agent", "outputfunction"] and value and value != "":
                 if value.lower() == "true":
                     # if we're just adding a switch
@@ -730,11 +826,35 @@ class ModuleService:
                     # Have to add a continue for false statements, else it adds -option 'False'
                     continue
                 else:
-                    this_option = (
-                        module.advanced.option_format_string.replace(
-                            "{{ KEY }}", str(key)
+                    format_string = option_format_overrides.get(
+                        key, module.advanced.option_format_string
+                    )
+                    # {{ VALUE_ARRAY }} expands a comma-separated value into
+                    # individually double-quoted, comma-joined elements so
+                    # PowerShell binds it as a string array. "00,20" becomes
+                    # "00","20" (@("00","20")); quoting it whole binds one
+                    # element, and an unquoted 00,20 parses 00 as the number 0
+                    # — both fail a string ValidateSet. Elements are stripped
+                    # and blanks dropped, so the "00, 20" and "00,20," a user
+                    # naturally types don't reach PowerShell as " 20" or "".
+                    # Only built when the format string asks for it; the
+                    # replaces below are no-ops otherwise.
+                    value_array = (
+                        ",".join(
+                            f'"{stripped}"'
+                            for stripped in (
+                                element.strip() for element in str(value).split(",")
+                            )
+                            if stripped
                         )
+                        if "VALUE_ARRAY" in format_string
+                        else ""
+                    )
+                    this_option = (
+                        format_string.replace("{{ KEY }}", str(key))
                         .replace("{{KEY}}", str(key))
+                        .replace("{{ VALUE_ARRAY }}", value_array)
+                        .replace("{{VALUE_ARRAY}}", value_array)
                         .replace("{{ VALUE }}", str(value))
                         .replace("{{VALUE}}", str(value))
                     )
@@ -770,14 +890,20 @@ class ModuleService:
             obfuscate = (
                 obfuscation_config.enabled if obfuscation_config is not None else False
             )
+            merge_refs = module.csharp.MergeReferences if module.csharp else False
             script_file = self.dotnet_compiler.compile_task(
                 module.compiler_yaml,
                 module.name,
                 dot_net_version=params["DotNetVersion"].lower(),
                 confuse=obfuscate,
+                merge_references=merge_refs,
             )
             filtered_params = {}
-            for key, value in params.items():
+            for key, raw_value in params.items():
+                # Native bool/int/float options arrive typed; the agent payload
+                # JSON expects the legacy string form, so stringify primitives
+                # (file options stay db objects for the get_base64_file branch).
+                value = coerce_legacy_value(raw_value)
                 if (
                     key.lower() not in ["agent", "dotnetversion"]
                     and value
@@ -799,8 +925,8 @@ class ModuleService:
         except (ModuleValidationException, ModuleExecutionException):
             raise
         except Exception as e:
-            log.exception("dotnet compile error")
-            raise ModuleExecutionException("dotnet compile error") from e
+            log.error("Error generating C# script: %s", e, exc_info=True)
+            raise ModuleExecutionException(f"Error generating C# script: {e}") from e
 
     def _create_modified_module(self, module: EmpireModule, modified_input: str):
         """
@@ -893,13 +1019,26 @@ class ModuleService:
             my_model = EmpireModule(**yaml_module)
             my_model.compiler_yaml = compiler_yaml
 
+            _dotnet_versions = my_model.csharp.CompatibleDotNetVersions
+            _ranked_versions = sorted(
+                (
+                    v
+                    for v in _dotnet_versions
+                    if normalize_dotnet_version(v) in VERSION_ORDER
+                ),
+                key=lambda v: VERSION_ORDER.index(normalize_dotnet_version(v)),
+                reverse=True,
+            )
+            _default_dotnet = (
+                _ranked_versions[0] if _ranked_versions else _dotnet_versions[0]
+            )
             my_model.options.append(
                 EmpireModuleOption(
                     name="DotNetVersion",
-                    value=my_model.csharp.CompatibleDotNetVersions[0],
+                    value=_default_dotnet,
                     description=".NET version to compile against",
                     required=True,
-                    suggested_values=my_model.csharp.CompatibleDotNetVersions,
+                    suggested_values=_dotnet_versions,
                     strict=True,
                 )
             )

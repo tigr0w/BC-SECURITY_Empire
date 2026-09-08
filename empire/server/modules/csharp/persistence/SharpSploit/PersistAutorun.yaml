@@ -9,9 +9,9 @@ description: |
   program upon login. TargetHive specifies whether to modify the userland registry
   key or elevated Machine key.
 software: ''
-tactics: [TA0003]
-techniques: [T1547.001]
-background: false
+tactics: [TA0003, TA0004]
+techniques: [T1547, T1547.001]
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true

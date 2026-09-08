@@ -1,0 +1,41 @@
+name: Process List (Security Product Detection)
+authors:
+  - name: Cornelis de Plaa
+    handle: '@Cneelis'
+    link: https://github.com/outflanknl/C2-Tool-Collection
+description: |
+  Beacon Object File (BOF) that lists all running processes, annotating each
+  with detected security products (AV, EDR, logging tools). Set Mode to
+  extended for output (psxx) that includes additional process attributes.
+  Useful for identifying defensive tooling before taking action.
+software: ''
+tactics: [TA0007]
+techniques: [T1057]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/outflanknl/C2-Tool-Collection
+  - 'Source: outflanknl/C2-Tool-Collection @ e371a38c717edaf1650923575ab33bee0dd3e0ee'
+options:
+  - name: Mode
+    description: 'Output verbosity: standard (psx) or extended (psxx, with additional
+      process attributes).'
+    required: true
+    value: standard
+    strict: true
+    suggested_values:
+      - standard
+      - extended
+bof:
+  x86: ''
+  x64: bof/situational_awareness/psx/psx.x64.o
+  entry_point: ''
+  format_string: s
+script_path: ''
+script_end: ''
+advanced:
+  custom_generate: true

@@ -13,7 +13,7 @@ description: |
   installed applications, and security controls.
 software: ''
 tactics: [TA0007]
-techniques: [T1082]
+techniques: [T1016, T1082, T1087, T1518]
 background: false
 output_extension:
 needs_admin: false

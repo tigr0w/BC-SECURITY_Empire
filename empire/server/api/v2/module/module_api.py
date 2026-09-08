@@ -16,6 +16,7 @@ from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.core.module_models import EmpireModule
 from empire.server.core.module_service import ModuleService
+from empire.server.utils.option_util import get_listener_defaults
 
 log = logging.getLogger(__name__)
 
@@ -57,11 +58,13 @@ ModuleDep = Annotated[EmpireModule, Depends(get_module)]
     # response_model=Modules,
 )
 def read_modules(
+    db: CurrentSession,
     module_service: ModuleServiceDep,
     hide_disabled: bool = False,
 ):
+    default_listener, listener_names = get_listener_defaults(db)
     modules = [
-        domain_to_dto_module(x[1], x[0])
+        domain_to_dto_module(x[1], x[0], default_listener, listener_names)
         for x in module_service.get_all(hide_disabled).items()
     ]
 
@@ -71,9 +74,11 @@ def read_modules(
 @router.get("/{uid}", response_model=Module)
 def read_module(
     uid: str,
+    db: CurrentSession,
     module: ModuleDep,
 ):
-    return domain_to_dto_module(module, uid)
+    default_listener, listener_names = get_listener_defaults(db)
+    return domain_to_dto_module(module, uid, default_listener, listener_names)
 
 
 @router.get("/{uid}/script", response_model=ModuleScript)
@@ -99,8 +104,8 @@ def update_module(
     module_service: ModuleServiceDep,
 ):
     module_service.update_module(db, module, module_req)
-
-    return domain_to_dto_module(module, uid)
+    default_listener, listener_names = get_listener_defaults(db)
+    return domain_to_dto_module(module, uid, default_listener, listener_names)
 
 
 @router.put("/bulk/enable", status_code=204, response_class=Response)

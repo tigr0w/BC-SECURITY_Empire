@@ -11,8 +11,8 @@ description: |
   process. It does not support user defined payloads at this time.
 software: ''
 tactics: [TA0004, TA0005]
-techniques: [T1055.001, T1055.004, T1055.012]
-background: false
+techniques: [T1055, T1055.001, T1055.002, T1055.004, T1055.012]
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true
@@ -37,10 +37,6 @@ options:
       for obfuscation types.
     required: false
     value: false
-    strict: true
-    suggested_values:
-      - True
-      - False
     depends_on:
       - name: Language
         values: ['powershell']

@@ -20,7 +20,7 @@ description: |
   cleaned up or removed by security teams, providing a reliable fallback
   mechanism for persistence.
 software: ''
-tactics: [TA0004]
+tactics: [TA0003, TA0004]
 techniques: [T1546]
 background: false
 output_extension:
@@ -58,10 +58,6 @@ options:
   - name: Domain
     description: Check the current domain for the user account.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 advanced:
   custom_generate: true

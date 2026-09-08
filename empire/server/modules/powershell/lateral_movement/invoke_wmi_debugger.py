@@ -21,7 +21,7 @@ class Module:
         binary = params["Binary"]
         target_binary = params["TargetBinary"]
         listener_name = params["Listener"]
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
+        launcher_obfuscate = params["Obfuscate"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         # storage options
@@ -46,7 +46,7 @@ class Module:
                 if cred.password != "":
                     params["Password"] = cred.password
 
-        if cleanup.lower() == "true":
+        if cleanup:
             # the registry command to disable the debugger for the target binary
             payload_code = (
                 "Remove-Item 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\"

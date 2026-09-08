@@ -12,7 +12,7 @@ description: |
   exfiltration over text-based channels such as DNS or HTTP.
 software: ''
 tactics: [TA0005]
-techniques: [T1027]
+techniques: [T1027, T1027.013]
 background: true
 output_extension:
 needs_admin: false

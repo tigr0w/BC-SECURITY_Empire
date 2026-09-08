@@ -44,11 +44,7 @@ options:
   - name: Obfuscate
     description: Obfuscate the launcher code to evade signature-based detection.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
     depends_on:
       - name: Language
         values: ['powershell']
@@ -68,11 +64,7 @@ options:
   - name: SysWow64
     description: Spawn a SysWow64 (32-bit) powershell.exe instead of 64-bit.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: UserAgent
     description: User-agent string to use for the staging request (default, none,
       or other).

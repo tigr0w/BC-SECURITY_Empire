@@ -12,8 +12,8 @@ description: |
   events from including command line arguments, hindering forensic
   analysis and security monitoring.
 software: ''
-tactics: [TA0005]
-techniques: [T1562.003]
+tactics: [TA0112]
+techniques: [T1690]
 background: true
 output_extension:
 needs_admin: true

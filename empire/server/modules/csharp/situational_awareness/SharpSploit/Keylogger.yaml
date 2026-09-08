@@ -12,7 +12,7 @@ description: |
   surveillance.
 software: ''
 tactics: [TA0006, TA0009]
-techniques: [T1056.001]
+techniques: [T1056, T1056.001]
 background: true
 output_extension: ''
 needs_admin: false

@@ -8,6 +8,8 @@ from pydantic import (
     ConfigDict,
 )
 
+from empire.server.core.option_types import ValueType
+
 if typing.TYPE_CHECKING:
     from empire.server.core.db import models
 
@@ -18,14 +20,6 @@ class BadRequestResponse(BaseModel):
 
 class NotFoundResponse(BaseModel):
     detail: str
-
-
-class ValueType(StrEnum):
-    string = "STRING"
-    float = "FLOAT"
-    integer = "INTEGER"
-    boolean = "BOOLEAN"
-    file = "FILE"
 
 
 # Ensure the functionality of pydantic v1 coercing values to strings
@@ -51,6 +45,7 @@ class CustomOptionSchema(BaseModel):
     value_type: ValueType
     internal: bool
     depends_on: list[DependentOption] = []
+    bypass_language_map: dict[str, str] | None = None
 
 
 class OrderDirection(StrEnum):
@@ -81,22 +76,6 @@ def domain_to_dto_download_description(download: "models.Download"):
     )
 
 
-def to_value_type(value: Any, type: str = "") -> ValueType:
-    type = type or ""
-    if type.lower() == "file":
-        return ValueType.file
-    if type.lower() in ["string", "str"] or isinstance(value, str):
-        return ValueType.string
-    if type.lower() in ["boolean", "bool"] or isinstance(value, bool):
-        return ValueType.boolean
-    if type.lower() == "float" or isinstance(value, float):
-        return ValueType.float
-    if type.lower() in ["integer", "int"] or isinstance(value, int):
-        return ValueType.integer
-
-    return ValueType.string
-
-
 def to_string(value):
     return str(value)
 
@@ -107,5 +86,9 @@ def to_string(value):
 #   this behavior was changed to raise a validation error. Using this custom
 #   type with a BeforeValidator allows us to coerce the value to a string before
 #   validation.
-# This could be removed in Empire 6 as a breaking change.
+# Every option-bearing POST body (modules, stagers, listeners, plugins) uses this
+# contract: the OpenAPI schema stays a clean `dict[str, str]` (so typed-language
+# clients get a plain string map), while native JSON `bool`/`int`/`float` are
+# still accepted and normalized to strings. Each option's real type is advertised
+# on the GET side via `value_type` and re-applied server-side by `safe_cast`.
 coerced_dict = dict[str, Annotated[str, BeforeValidator(to_string)]]

@@ -9,8 +9,8 @@ description: |
   callback unhooking. Can patch AMSI only, ETW only, or both simultaneously,
   and can also revert patches to restore original functionality.
 software: ''
-tactics: [TA0005]
-techniques: [T1562.001]
+tactics: [TA0112]
+techniques: [T1685]
 background: false
 output_extension:
 needs_admin: false

@@ -46,19 +46,11 @@ options:
   - name: OfficeDocs
     description: Return only office documents.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: FreshEXES
     description: Find .EXEs accessed in the last week.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: LastAccessTime
     description: Only return files with a LastAccessTime greater than this date value.
     required: false
@@ -70,27 +62,15 @@ options:
   - name: ExcludeHidden
     description: Exclude hidden files and folders from the search results.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: CheckWriteAccess
     description: Only returns files the current user has write access to.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: NoPing
     description: Don't ping each host to ensure it's up before enumerating.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: Delay
     description: Delay between enumerating hosts, defaults to 0.
     required: false
@@ -103,11 +83,7 @@ options:
     description: Search for login scripts on the SYSVOL of the primary DCs for each
       specified domain.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: Threads
     description: The maximum concurrent threads to execute.
     required: false

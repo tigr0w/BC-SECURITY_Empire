@@ -30,7 +30,7 @@ class Module:
 
         status_msg = ""
 
-        if cleanup.lower() == "true":
+        if cleanup:
             # commands to remove the WMI filter and subscription
             script = (
                 "Get-WmiObject __eventFilter -namespace root\\subscription -filter \"name='"
@@ -81,7 +81,7 @@ class Module:
                 file_data = ext_path.read_text()
 
                 # unicode-base64 encode the script for -enc launching
-                enc_script = helpers.enc_powershell(file_data)
+                enc_script = helpers.enc_powershell(file_data).decode("UTF-8")
                 status_msg += "using external file " + ext_file
 
             else:

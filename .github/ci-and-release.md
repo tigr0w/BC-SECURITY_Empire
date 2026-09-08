@@ -30,7 +30,7 @@ If you don't feel comfortable pushing to `private-main`, you can branch from `pr
 
 ```bash
 cd /tmp
-git clone --recursive git@github.com:bc-security/empire-sponsors.git
+git clone git@github.com:bc-security/empire-sponsors.git
 cd empire-sponsors
 git remote add upstream git@github.com:bc-security/empire.git
 git fetch upstream
@@ -64,7 +64,7 @@ the merge conflicts need to be resolved, and its best to run this locally.
 
 ```bash
 cd /tmp
-git clone --recursive git@github.com:bc-security/empire-sponsors.git
+git clone git@github.com:bc-security/empire-sponsors.git
 cd empire-sponsors
 git checkout kali-main
 git merge origin/private-main
@@ -83,7 +83,7 @@ git push origin kali-main
 
 ```bash
 cd /tmp
-git clone --recursive git@github.com:bc-security/empire-sponsors.git
+git clone git@github.com:bc-security/empire-sponsors.git
 cd empire-sponsors
 git checkout sponsors-main
 git merge origin/private-main

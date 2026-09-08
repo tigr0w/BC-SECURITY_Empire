@@ -21,7 +21,7 @@ description: |
   technique requires administrative privileges and creates visible scheduled task
   artifacts that can be detected by security monitoring tools.
 software: S0111
-tactics: [TA0003, TA0004]
+tactics: [TA0002, TA0003, TA0004]
 techniques: [T1053.005]
 background: false
 output_extension:
@@ -40,11 +40,7 @@ options:
     description: Obfuscate the launcher PowerShell code to evade signature-based
       detection.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: ObfuscateCommand
     description: The Invoke-Obfuscation command to use.
     required: false
@@ -67,11 +63,7 @@ options:
   - name: OnLogon
     description: Trigger script on user logon (set to True to enable).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: TaskName
     description: Name for the scheduled task.
     required: true
@@ -94,11 +86,7 @@ options:
   - name: Cleanup
     description: Remove the persistence mechanism and clean up artifacts.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: UserAgent
     description: User-agent string to use for the staging request (default, none,
       or other).

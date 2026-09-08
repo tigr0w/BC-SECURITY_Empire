@@ -14,7 +14,7 @@ description: |
   user-defined queries with configurable timeouts and error handling.
 software: ''
 tactics: [TA0009]
-techniques: [T1213]
+techniques: [T1213, T1213.006]
 background: true
 output_extension:
 needs_admin: false

@@ -17,7 +17,7 @@ runs:
   using: "composite"
   steps:
     # This is technically only needed for the first time we update the public repo, as a bootstrap.
-    # After that, the submodule is already initialized to the right repo.
+    # After that, the config already points at the right repo.
     - name: Update config.yaml repo
       if: ${{ inputs.repo }}
       shell: bash

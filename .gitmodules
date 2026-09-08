@@ -1,3 +1,0 @@
-[submodule "empire/server/data/profiles"]
-	path = empire/server/data/profiles
-	url = https://github.com/BC-SECURITY/Malleable-C2-Profiles

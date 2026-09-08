@@ -1,7 +1,11 @@
+import hashlib
+import hmac
+import logging
+import os
 from datetime import UTC, datetime, timedelta
+from functools import cache
 from typing import Annotated
 
-import bcrypt
 import jwt
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
@@ -14,12 +18,23 @@ from empire.server.api.v2.shared_dependencies import CurrentSession
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 
+log = logging.getLogger(__name__)
+
 # This all comes from the amazing fastapi docs: https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
-SECRET_KEY = SessionLocal().scalars(select(models.Config)).first().jwt_secret_key
 ALGORITHM = "HS256"
 
 # Long token expiration until refresh token is implemented
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+
+# PBKDF2 parameters (FIPS SP 800-132 compliant)
+PBKDF2_ITERATIONS = 600_000
+PBKDF2_HASH_ALGO = "sha256"
+
+# Modular Crypt Format prefixes for bcrypt. We don't *support* bcrypt
+# (removed in PR #1236), but the shape is distinctive enough to detect
+# legacy hashes and give the operator a targeted recovery message
+# instead of an opaque "too many values to unpack" parse error.
+_BCRYPT_HASH_PREFIXES = ("$2a$", "$2b$", "$2x$", "$2y$")
 
 
 class Token(BaseModel):
@@ -37,14 +52,67 @@ api_key_header = APIKeyHeader(name="X-Empire-Token", auto_error=False)
 
 
 def verify_password(plain_password, hashed_password):
-    password_byte_enc = plain_password.encode("utf-8")
-    return bcrypt.checkpw(password_byte_enc, hashed_password.encode("utf-8"))
+    """Verify a password against a PBKDF2-HMAC-SHA256 hash.
+
+    Returns False for malformed hashes (no information leakage).
+    """
+    if hashed_password.startswith(_BCRYPT_HASH_PREFIXES):
+        # Pre-PR-#1236 deployments stored bcrypt hashes. The PBKDF2 parser
+        # below would reject them with a "too many values to unpack" trace
+        # that hides the real cause. Surface the specific problem and the
+        # documented recovery path instead.
+        log.error(
+            "Stored password hash for this user is legacy bcrypt (prefix: "
+            "'%.4s'); bcrypt was removed in PR #1236 for FIPS compliance. "
+            "Reset the user's password to a PBKDF2 hash — see CHANGELOG.md "
+            "for the recovery procedure.",
+            hashed_password,
+        )
+        return False
+    try:
+        header, salt_hex, stored_hash_hex = hashed_password.split("$")
+        _, algo, iterations_str = header.split(":")
+        if algo != PBKDF2_HASH_ALGO:
+            log.error("Unexpected hash algorithm: %s", algo)
+            return False
+        iterations = int(iterations_str)
+        if iterations < 100_000 or iterations > 2_000_000:  # noqa: PLR2004
+            log.error("Hash iteration count out of range: %d", iterations)
+            return False
+        computed = hashlib.pbkdf2_hmac(
+            algo,
+            plain_password.encode("utf-8"),
+            bytes.fromhex(salt_hex),
+            iterations,
+        )
+        return hmac.compare_digest(computed.hex(), stored_hash_hex)
+    except ValueError:
+        log.error(
+            "Failed to parse stored password hash (prefix: '%.20s')",
+            hashed_password,
+            exc_info=True,
+        )
+        return False
 
 
 def get_password_hash(plain_password: str) -> str:
-    pwd_bytes = plain_password.encode("utf-8")
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
+    """Hash a password using PBKDF2-HMAC-SHA256 (FIPS SP 800-132)."""
+    try:
+        salt = os.urandom(16)
+        derived = hashlib.pbkdf2_hmac(
+            PBKDF2_HASH_ALGO,
+            plain_password.encode("utf-8"),
+            salt,
+            PBKDF2_ITERATIONS,
+        )
+    except Exception:
+        log.exception(
+            "Failed to generate password hash. Verify that OpenSSL supports %s "
+            "and that os.urandom is available.",
+            PBKDF2_HASH_ALGO,
+        )
+        raise
+    return f"pbkdf2:{PBKDF2_HASH_ALGO}:{PBKDF2_ITERATIONS}${salt.hex()}${derived.hex()}"
 
 
 def get_user(db, username: str) -> models.User:
@@ -64,14 +132,36 @@ def authenticate_user(db: Session, username: str, password: str):
     return user
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+@cache
+def get_jwt_secret_key() -> str:
+    """
+    Load the JWT secret key from the DB (cached after first call).
+
+    The secret key is generated once at DB creation and never changes,
+    so it's safe to cache for the lifetime of the process.
+
+    Important: this must not run at import-time, so the ASGI app can be imported
+    cleanly by uvicorn/fastapi before DB startup.
+    """
+    with SessionLocal.begin() as db_session:
+        config = db_session.scalars(select(models.Config)).first()
+        if config is None or not config.jwt_secret_key:
+            raise RuntimeError("JWT secret key is not initialized in the database.")
+        return config.jwt_secret_key
+
+
+def create_access_token(
+    data: dict,
+    expires_delta: timedelta | None = None,
+):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
     else:
         expire = datetime.now(UTC) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    secret_key = get_jwt_secret_key()
+    return jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
 
 
 def get_token_from_headers(request: Request) -> str:
@@ -104,7 +194,8 @@ def get_current_user_from_token(
     )
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        secret_key = get_jwt_secret_key()
+        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception

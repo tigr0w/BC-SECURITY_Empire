@@ -20,8 +20,8 @@ description: |
   that could otherwise break persistence mechanisms. The module includes
   cleanup functionality to re-enable automatic password changes when needed.
 software: ''
-tactics: [TA0005, TA0004]
-techniques: [T1098]
+tactics: [TA0003, TA0004, TA0112]
+techniques: [T1098, T1112]
 background: false
 output_extension:
 needs_admin: true
@@ -37,11 +37,7 @@ options:
   - name: CleanUp
     description: Re-enable machine password changes.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 script: |
   Function Invoke-DisableAccountChange {
       param

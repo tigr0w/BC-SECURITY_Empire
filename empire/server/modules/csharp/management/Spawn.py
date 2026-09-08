@@ -28,7 +28,7 @@ class Module:
         dot_net_version = params["DotNetVersion"]
         bypasses = params["Bypasses"]
 
-        launcher_obfuscate = str(params.get("Obfuscate", "False")).lower() == "true"
+        launcher_obfuscate = params.get("Obfuscate", False)
 
         if language == "csharp":
             exe_path = main_menu.stagergenv2.generate_launcher(
@@ -40,7 +40,6 @@ class Module:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries="0",
                 bypasses=bypasses,
             )
 
@@ -56,7 +55,6 @@ class Module:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries="0",
                 bypasses=bypasses,
             )
             exe_path = main_menu.stagergenv2.generate_powershell_exe(

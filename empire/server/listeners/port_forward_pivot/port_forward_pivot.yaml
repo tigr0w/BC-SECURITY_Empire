@@ -1,0 +1,31 @@
+id: port_forward_pivot
+display_name: 'port_forward_pivot'
+authors:
+  - name: Chris Ross
+    handle: '@xorrior'
+    link: https://twitter.com/xorrior
+description: Internal redirector. Backgrounded TCP relay job on an active agent.
+  Windows agents must be elevated (auto-managed netsh firewall rule); Linux/macOS
+  Python only need root for ports below 1024.
+comments: []
+software: ''
+techniques: []
+tactics: []
+options:
+  - name: Name
+    description: Name for the listener.
+    required: true
+    value: port_forward_pivot
+  - name: Agent
+    description: Agent to run port forwards pivot on.
+    required: true
+    value: ''
+  - name: internalIP
+    description: Bind address on the agent host. Leave blank to use the agent's auto-detected
+      internal IP.
+    required: false
+    value: ''
+  - name: ListenPort
+    description: Port for the agent to listen on.
+    required: true
+    value: 80

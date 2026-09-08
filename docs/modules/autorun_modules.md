@@ -25,6 +25,8 @@ The **Autorun** feature allows users to predefine modules to automatically run w
 
 * Once inside the listener’s details, you’ll notice an option for the **AutoRun Modules** as a tab.
 * Click on this tab to configure what should happen automatically when the listener is engaged.
+
+![](../.gitbook/assets/autorun_modules.png)
 {% endstep %}
 
 {% step %}

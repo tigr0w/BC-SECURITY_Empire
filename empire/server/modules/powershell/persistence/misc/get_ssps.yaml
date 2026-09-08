@@ -21,8 +21,8 @@ description: |
   packages that may have been installed for malicious purposes or
   legitimate security enhancements.
 software: ''
-tactics: [TA0004]
-techniques: [T1547.005]
+tactics: [TA0007]
+techniques: [T1518]
 background: true
 output_extension:
 needs_admin: false

@@ -13,7 +13,7 @@ class Module:
     ):
         all_users = params["AllUsers"]
 
-        if all_users.lower() == "true":
+        if all_users:
             script = "'Logging off all users.'; Start-Sleep -s 3; $null = (gwmi win32_operatingsystem).Win32Shutdown(4)"
         else:
             script = "'Logging off current user.'; Start-Sleep -s 3; shutdown /l /f"

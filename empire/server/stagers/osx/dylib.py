@@ -1,8 +1,4 @@
-import logging
-
-from empire.server.common import helpers
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -41,19 +37,10 @@ class Stager:
                 "Required": True,
                 "Value": "x86",
             },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
-            },
             "Hijacker": {
                 "Description": "Generate dylib to be used in a Dylib Hijack. This provides a dylib with the LC_REEXPORT_DYLIB load command. The path will serve as a placeholder.",
                 "Required": True,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
             },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
@@ -75,22 +62,18 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         arch = self.options["Architecture"]["Value"]
         hijacker = self.options["Hijacker"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
 
         if arch == "":
-            print(helpers.color("[!] Please select a valid architecture"))
-            return ""
+            raise StagerGenerationException("Please select a valid architecture.")
 
         launcher = self.mainMenu.stagergenv2.generate_launcher(
             listener_name,
             language=language,
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
 
-        if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         launcher = launcher.removeprefix("echo ")
         launcher = launcher.removesuffix(" | python3 &")

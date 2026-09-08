@@ -11,9 +11,9 @@ description: |
   notifications to the specified relay URI, it will authenticate using the Exchange server's
   credentials, allowing the attacker to capture NTLM authentication tokens.
 software: ''
-tactics: [TA0004, TA0006, TA0009]
-techniques: [T1557.001, T1187]
-background: false
+tactics: [TA0006, TA0009]
+techniques: [T1187, T1557.001]
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true

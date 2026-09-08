@@ -21,23 +21,21 @@ class Module:
         dump_path = params.get("write", "")
         write_file = 1 if dump_path else 0
         chunk_size = int(params.get("chunksize", "0") or "0")
-        use_valid_sig = 1 if params.get("valid") == "true" else 0
-        fork = 1 if params.get("fork") == "true" else 0
-        snapshot = 1 if params.get("snapshot") == "true" else 0
-        dup = 1 if params.get("duplicate") == "true" else 0
-        elevate_handle = 1 if params.get("elevate-handle") == "true" else 0
-        duplicate_elevate = 1 if params.get("duplicate-elevate") == "true" else 0
-        get_pid = 1 if params.get("getpid") == "true" else 0
-        use_seclogon_leak_local = (
-            1 if params.get("seclogon-leak-local") == "true" else 0
-        )
+        use_valid_sig = 1 if params.get("valid") else 0
+        fork = 1 if params.get("fork") else 0
+        snapshot = 1 if params.get("snapshot") else 0
+        dup = 1 if params.get("duplicate") else 0
+        elevate_handle = 1 if params.get("elevate-handle") else 0
+        duplicate_elevate = 1 if params.get("duplicate-elevate") else 0
+        get_pid = 1 if params.get("getpid") else 0
+        use_seclogon_leak_local = 1 if params.get("seclogon-leak-local") else 0
         seclogon_leak_remote_binary = params.get("seclogon-leak-remote", "")
         use_seclogon_leak_remote = 1 if seclogon_leak_remote_binary else 0
-        use_seclogon_duplicate = 1 if params.get("seclogon-duplicate") == "true" else 0
-        spoof_callstack = 1 if params.get("spoof-callstack") == "true" else 0
+        use_seclogon_duplicate = 1 if params.get("seclogon-duplicate") else 0
+        spoof_callstack = 1 if params.get("spoof-callstack") else 0
         silent_process_exit = params.get("silent-process-exit", "")
         use_silent_process_exit = 1 if silent_process_exit else 0
-        use_lsass_shtinkering = 1 if params.get("shtinkering") == "true" else 0
+        use_lsass_shtinkering = 1 if params.get("shtinkering") else 0
 
         script_path = main_menu.modulesv2.module_source_path / module.bof.x64
         bof_data = script_path.read_bytes()

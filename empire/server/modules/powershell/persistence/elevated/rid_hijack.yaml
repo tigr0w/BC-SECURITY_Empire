@@ -20,7 +20,7 @@ description: |
   privileges to implement and creates persistent privilege escalation that survives
   reboots and password changes.
 software: ''
-tactics: [TA0004]
+tactics: [TA0003, TA0004]
 techniques: [T1098]
 background: false
 output_extension:
@@ -53,10 +53,6 @@ options:
   - name: Enable
     description: Enable the target account after modification (set to True to enable).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 script_path: persistence/Invoke-RIDHijacking.ps1
 script_end: Invoke-RIDHijacking {{ PARAMS }}

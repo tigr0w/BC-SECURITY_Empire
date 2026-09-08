@@ -11,9 +11,9 @@ description: |
   persistence mechanisms that can evade traditional startup detection while maintaining
   stealth through legitimate WMI infrastructure.
 software: ''
-tactics: [TA0003]
-techniques: [T1546.003]
-background: false
+tactics: [TA0002, TA0003, TA0004]
+techniques: [T1059.005, T1059.007, T1546, T1546.003]
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true

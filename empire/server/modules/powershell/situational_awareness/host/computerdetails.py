@@ -18,35 +18,35 @@ class Module:
         script_end = ""
         outputf = params.get("OutputFunction", "Out-String")
 
-        if params["4624"].lower() == "true":
+        if params["4624"]:
             script_end += "$SecurityLog = Get-EventLog -LogName Security; $Filtered4624 = Find-4624Logons $SecurityLog;"
             script_end += 'Write-Output "Event ID 4624 (Logon):`n";'
             script_end += "Write-Output $Filtered4624.Values"
             script_end += f" | {outputf}"
             return script, script_end
 
-        if params["4648"].lower() == "true":
+        if params["4648"]:
             script_end += "$SecurityLog = Get-EventLog -LogName Security; $Filtered4648 = Find-4648Logons $SecurityLog;"
             script_end += 'Write-Output "Event ID 4648 (Explicit Credential Logon):`n";'
             script_end += "Write-Output $Filtered4648.Values"
             script_end += f" | {outputf}"
             return script, script_end
 
-        if params["AppLocker"].lower() == "true":
+        if params["AppLocker"]:
             script_end += "$AppLockerLogs = Find-AppLockerLogs;"
             script_end += 'Write-Output "AppLocker Process Starts:`n";'
             script_end += "Write-Output $AppLockerLogs.Values"
             script_end += f" | {outputf}"
             return script, script_end
 
-        if params["PSScripts"].lower() == "true":
+        if params["PSScripts"]:
             script_end += "$PSLogs = Find-PSScriptsInPSAppLog;"
             script_end += 'Write-Output "PowerShell Script Executions:`n";'
             script_end += "Write-Output $PSLogs.Values"
             script_end += f" | {outputf}"
             return script, script_end
 
-        if params["SavedRDP"].lower() == "true":
+        if params["SavedRDP"]:
             script_end += "$RdpClientData = Find-RDPClientConnections;"
             script_end += 'Write-Output "RDP Client Data:`n";'
             script_end += "Write-Output $RdpClientData.Values"

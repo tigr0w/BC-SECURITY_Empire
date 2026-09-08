@@ -1,0 +1,79 @@
+id: http_malleable
+display_name: 'HTTP[S] MALLEABLE'
+authors:
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+  - name: ''
+    handle: '@johneiser'
+    link: ''
+description: Starts a http[s] listener that adheres to a Malleable C2 profile.
+comments: []
+software: ''
+techniques: []
+tactics: []
+options:
+  - name: Name
+    description: Name for the listener.
+    required: true
+    value: http_malleable
+  - name: Host
+    description: Hostname/IP for staging.
+    required: true
+    value: ''
+  - name: BindIP
+    description: The IP to bind to on the control server.
+    required: true
+    value: 0.0.0.0
+  - name: Port
+    description: Port for the listener.
+    required: true
+    value: 80
+    suggested_values:
+      - 80
+      - 443
+  - name: Profile
+    description: Malleable C2 profile to describe comms.
+    required: true
+    value: ''
+  - name: Launcher
+    description: Launcher string.
+    required: true
+    value: 'powershell -noP -sta -w 1 -enc '
+  - name: StagingKey
+    description: Staging key for initial agent negotiation.
+    required: true
+    value: 2c103f2c4ed1e59c0b4e2e01821770fa
+  - name: DefaultLostLimit
+    description: Number of missed checkins before exiting
+    required: true
+    value: 60
+  - name: CertPath
+    description: Certificate path for https listeners.
+    required: false
+    value: ''
+  - name: KillDate
+    description: Date for the listener to exit (MM/dd/yyyy).
+    required: false
+    value: ''
+  - name: WorkingHours
+    description: Hours for the agent to operate (09:00-17:00).
+    required: false
+    value: ''
+  - name: Proxy
+    description: Proxy to use for request (default, none, or other).
+    required: false
+    value: default
+  - name: ProxyCreds
+    description: 'Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).'
+    required: false
+    value: default
+  - name: Cookie
+    description: Custom Cookie Name
+    required: false
+    value: session
+  - name: JA3_Evasion
+    description: Randomly generate a JA3/S signature using TLS ciphers.
+    required: false
+    value: false

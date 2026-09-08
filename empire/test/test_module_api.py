@@ -2,6 +2,40 @@ import pytest
 from starlette import status
 
 
+def test_get_module_listener_default(
+    client, admin_auth_header, listener, listener_malleable
+):
+    """Listener option is pre-filled and suggested_values contains all active listeners."""
+    uid = "powershell_persistence_elevated_schtasks"
+    response = client.get(f"/api/v2/modules/{uid}", headers=admin_auth_header)
+
+    assert response.status_code == status.HTTP_200_OK
+    listener_opt = response.json()["options"]["Listener"]
+    # Session-autouse listener fixtures instantiate in unspecified order under
+    # xdist, so don't assume which is the default — only that it's a valid one.
+    assert listener_opt["value"] in listener_opt["suggested_values"]
+    assert listener["name"] in listener_opt["suggested_values"]
+    assert listener_malleable["name"] in listener_opt["suggested_values"]
+
+
+def test_get_modules_listener_default(
+    client, admin_auth_header, listener, listener_malleable
+):
+    """Listener option is pre-filled on the list endpoint too."""
+    response = client.get("/api/v2/modules/", headers=admin_auth_header)
+    assert response.status_code == status.HTTP_200_OK
+
+    uid = "powershell_persistence_elevated_schtasks"
+    module = next((m for m in response.json()["records"] if m["id"] == uid), None)
+    assert module is not None
+    listener_opt = module["options"]["Listener"]
+    # Session-autouse listener fixtures instantiate in unspecified order under
+    # xdist, so don't assume which is the default — only that it's a valid one.
+    assert listener_opt["value"] in listener_opt["suggested_values"]
+    assert listener["name"] in listener_opt["suggested_values"]
+    assert listener_malleable["name"] in listener_opt["suggested_values"]
+
+
 def test_get_module_not_found(client, admin_auth_header):
     response = client.get("/api/v2/modules/some_module", headers=admin_auth_header)
 
@@ -16,6 +50,35 @@ def test_get_module(client, admin_auth_header):
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["id"] == uid
     assert response.json()["name"] == "Say"
+
+
+def test_get_module_value_type_response_field(client, admin_auth_header):
+    # CHANGELOG promises "Module GET responses now reliably populate
+    # `value_type`". This pins the contract for typed frontend rendering.
+    # Picks `invoke_internal_monologue` because it has options across all
+    # four primitive types after the YAML migration.
+    uid = "powershell_credentials_invoke_internal_monologue"
+    response = client.get(f"/api/v2/modules/{uid}", headers=admin_auth_header)
+    assert response.status_code == status.HTTP_200_OK
+    options = response.json()["options"]
+    # `Challenge` is a string default → STRING.
+    assert options["Challenge"]["value_type"] == "STRING"
+    # `Downgrade`/`Impersonate`/`Restore`/`Verbose` are native YAML bools
+    # post-migration → BOOLEAN (regression-pinned against accidental drop
+    # of the `vtype_to_tag` mapping in `infer_type_and_coerce_value`).
+    for bool_opt in ("Downgrade", "Impersonate", "Restore", "Verbose"):
+        assert options[bool_opt]["value_type"] == "BOOLEAN", (
+            f"{bool_opt} should infer as BOOLEAN, got {options[bool_opt]['value_type']}"
+        )
+
+
+def test_get_module_value_type_integer(client, admin_auth_header):
+    # `sharpsecdump.Threads` has `value: 10` (native YAML int) post-migration.
+    # Locks in the INTEGER inference path that the bool tests can't catch.
+    uid = "powershell_credentials_sharpsecdump"
+    response = client.get(f"/api/v2/modules/{uid}", headers=admin_auth_header)
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["options"]["Threads"]["value_type"] == "INTEGER"
 
 
 def test_get_module_script_module_not_found(client, admin_auth_header):
@@ -55,7 +118,7 @@ def test_get_module_script_in_generate_function(client, admin_auth_header):
 
 
 def test_get_modules(client, admin_auth_header):
-    min_expected_modules = 383
+    min_expected_modules = 381
     response = client.get("/api/v2/modules/", headers=admin_auth_header)
 
     assert response.status_code == status.HTTP_200_OK

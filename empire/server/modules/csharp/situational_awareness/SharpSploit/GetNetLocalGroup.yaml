@@ -12,8 +12,8 @@ description: |
   of all local groups.
 software: ''
 tactics: [TA0007]
-techniques: [T1069.001]
-background: false
+techniques: [T1069, T1069.001]
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true

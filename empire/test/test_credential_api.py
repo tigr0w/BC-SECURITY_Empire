@@ -112,7 +112,7 @@ def test_get_credentials_search(client, admin_auth_header, credential):
     )
     password = response.json()["password"]
     response = client.get(
-        f"/api/v2/credentials?search={password[:3]}", headers=admin_auth_header
+        f"/api/v2/credentials?search={password}", headers=admin_auth_header
     )
 
     assert response.status_code == status.HTTP_200_OK

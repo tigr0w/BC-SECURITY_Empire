@@ -4,8 +4,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
+from empire.server.core.config import paths
 from empire.server.core.config.config_manager import EmpireCompilerConfig
 from empire.server.core.config.data_manager import (
+    _configure_compiler,
     _resolve_compiler_download_url,
     _resolve_compiler_platform,
 )
@@ -61,23 +63,23 @@ def test_download_url_repo_ref_finds_asset(mock_requests, monkeypatch):
     mock_resp.json.return_value = {
         "assets": [
             {
-                "name": "EmpireCompiler-linux-x64-v1.0.0-a.1.tgz",
-                "browser_download_url": "https://github.com/downloads/EmpireCompiler-linux-x64-v1.0.0-a.1.tgz",
+                "name": "EmpireCompiler-linux-x64-v1.1.0-a.7.tgz",
+                "browser_download_url": "https://github.com/downloads/EmpireCompiler-linux-x64-v1.1.0-a.7.tgz",
             },
             {
-                "name": "EmpireCompiler-osx-arm64-v1.0.0-a.1.tgz",
-                "browser_download_url": "https://github.com/downloads/EmpireCompiler-osx-arm64-v1.0.0-a.1.tgz",
+                "name": "EmpireCompiler-osx-arm64-v1.1.0-a.7.tgz",
+                "browser_download_url": "https://github.com/downloads/EmpireCompiler-osx-arm64-v1.1.0-a.7.tgz",
             },
         ]
     }
     mock_requests.get.return_value = mock_resp
 
-    config = EmpireCompilerConfig(repo="BC-SECURITY/Empire-Compiler", ref="v1.0.0-a.1")
+    config = EmpireCompilerConfig(repo="BC-SECURITY/Empire-Compiler", ref="v1.1.0-a.7")
     url = _resolve_compiler_download_url(config, "linux-x64")
-    assert url == "https://github.com/downloads/EmpireCompiler-linux-x64-v1.0.0-a.1.tgz"
+    assert url == "https://github.com/downloads/EmpireCompiler-linux-x64-v1.1.0-a.7.tgz"
 
     mock_requests.get.assert_called_once_with(
-        "https://api.github.com/repos/BC-SECURITY/Empire-Compiler/releases/tags/v1.0.0-a.1",
+        "https://api.github.com/repos/BC-SECURITY/Empire-Compiler/releases/tags/v1.1.0-a.7",
         timeout=30,
         headers={"Accept": "application/vnd.github+json"},
     )
@@ -138,14 +140,14 @@ def test_download_url_repo_ref_no_matching_asset(mock_requests):
     mock_resp.json.return_value = {
         "assets": [
             {
-                "name": "EmpireCompiler-osx-arm64-v1.0.0-a.1.tgz",
+                "name": "EmpireCompiler-osx-arm64-v1.1.0-a.7.tgz",
                 "browser_download_url": "https://example.com/osx.tgz",
             },
         ]
     }
     mock_requests.get.return_value = mock_resp
 
-    config = EmpireCompilerConfig(repo="BC-SECURITY/Empire-Compiler", ref="v1.0.0-a.1")
+    config = EmpireCompilerConfig(repo="BC-SECURITY/Empire-Compiler", ref="v1.1.0-a.7")
     assert _resolve_compiler_download_url(config, "linux-x64") is None
 
 
@@ -183,7 +185,8 @@ def _find_launcher_locations(entries):
 @pytest.mark.parametrize("stager_file", ["CSharpPS.yaml", "CSharpPy.yaml"])
 def test_stager_yaml_launcher_path_matches_service(stager_file):
     """Verify that stager YAML EmbeddedResources Location for launcher.txt
-    is consistent with the path used in StagerGenerationService._write_launcher_resource.
+    is ``common/launcher.txt`` — the base path that StagerGenerationService
+    patches in-memory to a unique subdirectory per compilation.
     """
     stager_data = yaml.safe_load(
         (STAGERS_DIR / stager_file).read_text(encoding="utf-8")
@@ -201,3 +204,46 @@ def test_stager_yaml_launcher_path_matches_service(stager_file):
             f"{stager_file}: EmbeddedResources Location '{loc}' does not match "
             f"expected '{LAUNCHER_RESOURCE_RELATIVE_PATH}'"
         )
+
+
+def test_configure_compiler_resolves_confuser_proj_off_the_package(
+    monkeypatch, tmp_path
+):
+    """A relative `confuser_proj` must resolve against the installed package.
+
+    Resolving it against the CWD meant a server started from anywhere but the
+    repo root died inside MainMenu.__init__.
+    """
+    package_root = tmp_path / "install-root"
+    template_path = package_root / "empire" / "server" / "data" / "confuser.crproj"
+    template_path.parent.mkdir(parents=True)
+    template_path.write_text("<project base='{confuser_base_dir}' />")
+    monkeypatch.setattr(paths, "REPO_ROOT", package_root)
+
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+
+    extracted = tmp_path / "extracted"
+    (extracted / "EmpireCompiler").mkdir(parents=True)
+    config = EmpireCompilerConfig(confuser_proj="empire/server/data/confuser.crproj")
+
+    _configure_compiler(config, extracted)
+
+    written = extracted / "EmpireCompiler" / "Data" / "Temp" / "empire.crproj"
+    assert written.exists()
+    assert "confuser_base_dir" not in written.read_text()
+
+
+def test_configure_compiler_honours_an_absolute_confuser_proj(tmp_path):
+    """Operators who set an absolute path must keep getting that exact file."""
+    template_path = tmp_path / "custom.crproj"
+    template_path.write_text("<project base='{confuser_base_dir}' />")
+
+    extracted = tmp_path / "extracted"
+    (extracted / "EmpireCompiler").mkdir(parents=True)
+    config = EmpireCompilerConfig(confuser_proj=str(template_path))
+
+    _configure_compiler(config, extracted)
+
+    assert (extracted / "EmpireCompiler" / "Data" / "Temp" / "empire.crproj").exists()

@@ -1,8 +1,9 @@
 import math
 from typing import Annotated
 
-from fastapi import Depends, File, HTTPException, UploadFile
+from fastapi import Depends, File, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
+from starlette import status
 
 from empire.server.common.empire import MainMenu
 from empire.server.core.db.base import SessionLocal
@@ -14,9 +15,18 @@ def get_db():
         yield db
 
 
-def get_main() -> MainMenu:
-    from empire.server.server import main
-
+def get_main(request: Request) -> MainMenu:
+    # We use app state here because we have a lot of long-lived singletons
+    # that can't be request scoped. create_app() initializes main to None and
+    # the lifespan populates it on startup, so a None here means a request
+    # arrived before startup finished — keep the None check so it 503s cleanly
+    # instead of handing out an uninitialized context.
+    main = request.app.state.main
+    if main is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Empire application context is not initialized yet.",
+        )
     return main
 
 

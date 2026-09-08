@@ -3,6 +3,7 @@ from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
 from empire.server.core.module_service import auto_finalize, auto_get_source
+from empire.server.utils.option_util import coerce_legacy_value
 
 
 class Module:
@@ -49,16 +50,19 @@ class Module:
                 "[!] Domain/UserName/Password or CredID required!"
             )
 
-        for option, values in params.items():
+        for option, raw_value in params.items():
+            values = coerce_legacy_value(raw_value)
             if (
                 option.lower() != "agent"
                 and option.lower() != "credid"
                 and values
                 and values != ""
             ):
-                if values.lower() == "true":
-                    # if we're just adding a switch
-                    script_end += " -" + str(option)
+                if isinstance(raw_value, bool):
+                    # Native boolean -> [switch]: bare flag only when set,
+                    # never "-Option 'False'".
+                    if raw_value:
+                        script_end += " -" + str(option)
                 else:
                     script_end += " -" + str(option) + " '" + str(values) + "'"
 

@@ -26,14 +26,14 @@ class Module:
         script_path = params["ScriptPath"]
         timeout = params["Timeout"]
         cleanup = params["Cleanup"]
-        obf = params["Obfuscate"].lower() == "true"
+        obf = params["Obfuscate"]
         obf_cmd = params["ObfuscateCommand"]
         bypasses = params["Bypasses"]
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
 
-        if cleanup.lower() == "true":
+        if cleanup:
             script = (
                 "$scriptFile = $ExecutionContext.InvokeCommand.ExpandString('"
                 + script_path

@@ -1,9 +1,11 @@
 import base64
 import hashlib
+import logging
 from datetime import datetime
 from pathlib import Path
 
 import pytest
+import yaml
 
 from empire.server.common import helpers
 
@@ -32,6 +34,249 @@ def test_dynamic_powershell(install_path):
         )
     assert len(new_script) == expected_len
     assert hashlib.sha256(new_script.encode()).hexdigest() == expected_sha256
+
+
+@pytest.fixture(scope="module")
+def powerview_script(install_path):
+    # Read the ~900KB script once for the module rather than per test.
+    return (
+        Path(install_path)
+        / "data/module_source/situational_awareness/network/powerview.ps1"
+    ).read_text(encoding="utf-8")
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    ("requested", "expected_body", "expected_alias"),
+    [
+        # Get-Proxy is now a Set-Alias to Get-WMIRegProxy.
+        (
+            "Get-Proxy",
+            "function Get-WMIRegProxy {",
+            "Set-Alias Get-Proxy Get-WMIRegProxy",
+        ),
+        # Invoke-FileFinder -> Find-InterestingDomainShareFile (a 31-char
+        # target name that the old extraction truncated).
+        (
+            "Invoke-FileFinder",
+            "function Find-InterestingDomainShareFile {",
+            "Set-Alias Invoke-FileFinder Find-InterestingDomainShareFile",
+        ),
+        # Get-DomainDFSShare is a plain (correctly cased) definition.
+        ("Get-DomainDFSShare", "function Get-DomainDFSShare {", None),
+        # Invoke-DowngradeAccount was re-added to powerview.ps1.
+        ("Invoke-DowngradeAccount", "function Invoke-DowngradeAccount {", None),
+    ],
+)
+def test_real_powerview_modules_resolve(
+    powerview_script, requested, expected_body, expected_alias
+):
+    """The real PowerView modules this fix rescues must emit a working script.
+
+    These four entry points were each broken in a different way (alias,
+    truncated alias target, casing, deleted function). Driving the actual
+    900KB powerview.ps1 — not a synthetic stub — guards against the real
+    script drifting (alias reworded, target renamed) in a way the unit tests
+    above would not catch.
+    """
+    result = helpers.generate_dynamic_powershell_script(powerview_script, requested)
+    assert expected_body in result
+    if expected_alias:
+        assert expected_alias in result
+        # alias must follow its target definition to resolve at runtime
+        assert result.index(expected_body) < result.index(expected_alias)
+
+
+@pytest.mark.slow
+def test_invoke_downgradeaccount_pulls_dependencies(powerview_script):
+    # The re-added function calls Get-DomainObject / Set-DomainObject /
+    # ConvertFrom-UACValue; the dep-walk must pull each into the payload.
+    result = helpers.generate_dynamic_powershell_script(
+        powerview_script, "Invoke-DowngradeAccount"
+    )
+    for dep in (
+        "function Get-DomainObject {",
+        "function Set-DomainObject {",
+        "function ConvertFrom-UACValue {",
+    ):
+        assert dep in result
+
+
+@pytest.mark.slow
+def test_all_powerview_modules_generate_nonempty(install_path, powerview_script):
+    """Every PowerView-backed module must resolve its entry function.
+
+    A module whose script_end names a function the dynamic-script generator
+    can't resolve (alias, casing mismatch, or a >30-char name the parser used
+    to truncate) silently produces an empty payload — the Get-Proxy class of
+    bug. This drives the real powerview.ps1 through every PowerView module's
+    entry token and fails if any generates an essentially-empty script, so the
+    whole class can't silently regress.
+    """
+    modules_root = Path(install_path) / "modules" / "powershell"
+    powerview_modules = []
+    for yaml_path in modules_root.rglob("*.yaml"):
+        data = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            continue
+        if data.get("script_path") != "situational_awareness/network/powerview.ps1":
+            continue
+        script_end = data.get("script_end")
+        if not script_end:
+            continue
+        # mirror module_service.finalize_module's entry-token extraction
+        entry = script_end.lstrip().split(" ")[0]
+        powerview_modules.append((yaml_path.name, entry))
+
+    assert powerview_modules, "no PowerView modules discovered — check the path"
+
+    # A resolved module emits thousands of chars; anything near-empty means the
+    # entry function failed to resolve (the bug this guards against).
+    min_resolved_len = 50
+    empty = [
+        (name, entry)
+        for name, entry in powerview_modules
+        if len(
+            helpers.generate_dynamic_powershell_script(powerview_script, entry).strip()
+        )
+        < min_resolved_len
+    ]
+    assert not empty, f"PowerView modules generated empty/degraded scripts: {empty}"
+
+
+class TestGenerateDynamicScriptResolution:
+    """Entry-point resolution of the requested function name.
+
+    PowerView ships backward-compat ``Set-Alias`` names (e.g.
+    ``Get-Proxy`` -> ``Get-WMIRegProxy``) and Empire modules sometimes
+    request a function by a case that differs from the definition. The
+    dependency walker keys a case-sensitive dict on real ``function`` /
+    ``filter`` definitions, so the requested name must be resolved to a
+    real definition before the walk, or the lookup raises ``KeyError``.
+    """
+
+    def test_resolves_set_alias_to_target_function(self):
+        script = (
+            "\nfunction Get-WMIRegProxy {\n  'real proxy body'\n}\n"
+            "Set-Alias Get-Proxy Get-WMIRegProxy\n"
+        )
+        result = helpers.generate_dynamic_powershell_script(script, "Get-Proxy")
+        assert "real proxy body" in result
+        # The alias is preserved so a script_end that invokes the
+        # backward-compat name still resolves at agent runtime.
+        assert "Set-Alias Get-Proxy Get-WMIRegProxy" in result
+
+    def test_alias_emitted_after_target_definition(self):
+        # The Set-Alias line must come *after* its target function so the
+        # alias resolves to an already-defined command at runtime.
+        script = (
+            "\nfunction Get-WMIRegProxy {\n  'real proxy body'\n}\n"
+            "Set-Alias Get-Proxy Get-WMIRegProxy\n"
+        )
+        result = helpers.generate_dynamic_powershell_script(script, "Get-Proxy")
+        assert result.index("function Get-WMIRegProxy") < result.index(
+            "Set-Alias Get-Proxy Get-WMIRegProxy"
+        )
+
+    def test_resolves_case_insensitive_function_name(self):
+        script = "\nfunction Get-DomainDFSShare {\n  'dfs share body'\n}\n"
+        result = helpers.generate_dynamic_powershell_script(
+            script, "Get-DomainDFSshare"
+        )
+        assert "dfs share body" in result
+
+    def test_resolves_long_function_name(self):
+        # Names longer than 30 chars were silently truncated by the old
+        # ``func_match[:40].split()[1]`` extraction (the ``\nfunction ``
+        # prefix eats 10 chars), so the definition was stored under a
+        # clipped key and could never be resolved or pulled in as a dep.
+        long_name = "Find-InterestingDomainShareFile"
+        script = f"\nfunction {long_name} {{\n  'long body'\n}}\n"
+        result = helpers.generate_dynamic_powershell_script(script, long_name)
+        assert "long body" in result
+
+    def test_resolves_alias_to_long_target_name(self):
+        long_name = "Find-InterestingDomainShareFile"
+        script = (
+            f"\nfunction {long_name} {{\n  'long body'\n}}\n"
+            f"Set-Alias Invoke-FileFinder {long_name}\n"
+        )
+        result = helpers.generate_dynamic_powershell_script(script, "Invoke-FileFinder")
+        assert "long body" in result
+        assert f"Set-Alias Invoke-FileFinder {long_name}" in result
+
+    def test_resolves_filter_definition(self):
+        # _FUNCTION_PATTERN matches `filter` as well as `function`, so the
+        # name extraction must work for both keywords.
+        script = "\nfilter Get-FilterThing {\n  'filter body'\n}\n"
+        result = helpers.generate_dynamic_powershell_script(script, "Get-FilterThing")
+        assert "filter body" in result
+
+    def test_only_requested_alias_is_emitted(self):
+        # Two aliases share a target; requesting one must not leak the other
+        # into the runtime payload.
+        script = (
+            "\nfunction Get-Target {\n  'target body'\n}\n"
+            "Set-Alias Alias-One Get-Target\n"
+            "Set-Alias Alias-Two Get-Target\n"
+        )
+        result = helpers.generate_dynamic_powershell_script(script, "Alias-One")
+        assert "Set-Alias Alias-One Get-Target" in result
+        assert "Alias-Two" not in result
+
+    def test_alias_to_missing_target_is_dropped(self, caplog):
+        # An alias whose target is not a real definition must be dropped, not
+        # emitted as a dangling Set-Alias into the payload (which would fail on
+        # the agent). The request then resolves to nothing and warns cleanly.
+        script = (
+            "\nfunction Real-Thing {\n  'real body'\n}\n"
+            "Set-Alias Ghost-Cmd Missing-Target\n"
+        )
+        with caplog.at_level(logging.WARNING):
+            result = helpers.generate_dynamic_powershell_script(script, "Ghost-Cmd")
+        assert "Set-Alias" not in result
+        assert "real body" not in result
+        assert "Ghost-Cmd" in caplog.text
+
+    def test_function_name_that_is_also_alias_emits_no_dangling_alias(self):
+        # If a requested name is both a real definition AND an alias name,
+        # resolve to the function and do NOT emit the Set-Alias (whose target
+        # is not pulled into the payload — that would be a dangling alias).
+        script = (
+            "\nfunction Get-Thing {\n  'thing body'\n}\n"
+            "\nfunction Other-Thing {\n  'other body'\n}\n"
+            "Set-Alias Get-Thing Other-Thing\n"
+        )
+        result = helpers.generate_dynamic_powershell_script(script, "Get-Thing")
+        assert "thing body" in result
+        assert "Set-Alias" not in result
+
+    def test_resolves_list_with_missing_name(self, caplog):
+        # A list request resolves each valid name and skips a missing one
+        # without aborting the rest of the batch.
+        script = (
+            "\nfunction Get-A {\n  'body a'\n}\n\nfunction Get-B {\n  'body b'\n}\n"
+        )
+        with caplog.at_level(logging.WARNING):
+            result = helpers.generate_dynamic_powershell_script(
+                script, ["Get-A", "Nope-Missing", "Get-B"]
+            )
+        assert "body a" in result
+        assert "body b" in result
+        assert "Nope-Missing" in caplog.text
+
+    def test_missing_function_logs_warning_not_traceback(self, caplog):
+        script = "\nfunction Real-Thing {\n  'real body'\n}\n"
+        with caplog.at_level(logging.WARNING):
+            result = helpers.generate_dynamic_powershell_script(
+                script, "Nonexistent-Func"
+            )
+        assert "real body" not in result
+        # The requested name is surfaced once, cleanly...
+        assert "Nonexistent-Func" in caplog.text
+        # ...and we no longer leak the two KeyError tracebacks.
+        assert "Traceback" not in caplog.text
+        assert "KeyError" not in caplog.text
 
 
 class TestValidateIP:
@@ -227,17 +472,6 @@ class TestEncodeBase64:
         data = b"hello world"
         encoded = helpers.encode_base64(data)
         assert base64.decodebytes(encoded) == data
-
-
-class TestParseCredentials:
-    def test_mac_text_returned(self):
-        data = b"button returned:OK, text returned:mypassword"
-        result = helpers.parse_credentials(data)
-        assert result is not None
-        assert result[0][3] == b"mypassword"
-
-    def test_unrecognized_format(self):
-        assert helpers.parse_credentials(b"some random output") is None
 
 
 class TestObfuscateCallHomeAddress:

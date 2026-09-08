@@ -60,19 +60,11 @@ options:
     description: True/False to verify the creds a user provides, and prompt them
       again until they either click cancel or enter valid creds (default = false)
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: HideProcess
     description: True/False to hide the window of the process we claim launched the
       prompt (default = false)
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 script_path: collection/Invoke-CredentialPhisher.ps1
 script_end: Invoke-CredentialPhisher {{ PARAMS }}

@@ -9,9 +9,9 @@ description: |
   as provided so ensure they are in the correct format their data type. Uses the current
   processes user context for accessing the remote computer.
 software: ''
-tactics: [TA0004, TA0005]
+tactics: [TA0003, TA0112]
 techniques: [T1112]
-background: false
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true

@@ -4,7 +4,7 @@ from starlette.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_404_NOT_FOUND,
-    HTTP_422_UNPROCESSABLE_ENTITY,
+    HTTP_422_UNPROCESSABLE_CONTENT,
 )
 
 
@@ -21,7 +21,7 @@ def test_create_ip_validates(client, admin_auth_header):
             },
         )
 
-        assert resp.status_code == HTTP_422_UNPROCESSABLE_ENTITY
+        assert resp.status_code == HTTP_422_UNPROCESSABLE_CONTENT
         assert (
             resp.json()["detail"][0]["msg"]
             == f"Value error, Invalid IP address {invalid}. Must be a valid IP Address, Range, or CIDR."

@@ -13,8 +13,8 @@ description: |
   SafeBoot\Minimal and SafeBoot\Network registry keys, and uses
   bcdedit to configure Safe Mode boot.
 software: ''
-tactics: [TA0003, TA0005]
-techniques: [T1562.009]
+tactics: [TA0003, TA0004, TA0112]
+techniques: [T1112, T1543.003, T1688]
 background: false
 output_extension:
 needs_admin: true
@@ -59,19 +59,11 @@ options:
       Set to True to schedule a reboot into Safe Mode 30 seconds after install completes
       (via shutdown /r /t 30). Default False leaves the reboot to the operator.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: Obfuscate
     description: Obfuscate the launcher powershell code.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
     depends_on:
       - name: Language
         values: ['powershell']
@@ -105,10 +97,6 @@ options:
   - name: Cleanup
     description: Remove the persistence mechanism and restore normal boot.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 advanced:
   custom_generate: true

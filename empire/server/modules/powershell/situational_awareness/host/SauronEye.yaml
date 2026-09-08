@@ -37,11 +37,7 @@ options:
   - name: contents
     description: Whether to search inside file contents or just filenames
     required: false
-    value: 'True'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: true
   - name: keywords
     description: Keywords or regex patterns to search for in files
     required: false
@@ -66,19 +62,11 @@ options:
   - name: systemdirs
     description: Include system directories (%APPDATA% and %WINDOWS%) in search
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: vbamacrocheck
     description: Check for VBA macros in legacy Office files (*.doc and *.xls)
     required: false
-    value: 'True'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: true
 script_path: collection/Invoke-SauronEye.ps1
 script_end: Invoke-SauronEye -Command "{{ PARAMS }}"
 advanced:

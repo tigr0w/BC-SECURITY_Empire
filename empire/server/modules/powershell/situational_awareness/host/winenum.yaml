@@ -12,7 +12,7 @@ description: |
   user accounts, group memberships, domain relationships, and security controls.
 software: ''
 tactics: [TA0007]
-techniques: [T1082]
+techniques: [T1007, T1016, T1069, T1082, T1087, T1518.001]
 background: true
 output_extension:
 needs_admin: false

@@ -1,8 +1,5 @@
-import logging
-
 from empire.server.core.db.base import SessionLocal
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -40,11 +37,6 @@ class Stager:
                 "SuggestedValues": ["x64", "x86"],
                 "Strict": True,
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,
@@ -68,9 +60,7 @@ class Stager:
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -86,6 +76,7 @@ class Stager:
                 "Description": "Bypasses as a space separated list to be prepended to the launcher",
                 "Required": False,
                 "Value": "",
+                "BypassLanguage": "powershell",
             },
         }
 
@@ -100,7 +91,6 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         obfuscate = self.options["Obfuscate"]["Value"]
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
@@ -108,38 +98,23 @@ class Stager:
         if not self.mainMenu.listenersv2.get_active_listener_by_name(
             listener_name
         ) and not self.mainMenu.listenersv2.get_by_name(SessionLocal(), listener_name):
-            # not a valid listener, return nothing for the script
-            log.error(f"[!] Invalid listener: {listener_name}")
-            return ""
+            raise StagerGenerationException(f"Invalid listener: {listener_name}")
 
-        obfuscate_script = False
-        if obfuscate.lower() == "true":
-            obfuscate_script = True
+        obfuscate_script = obfuscate
 
         if obfuscate_script and "launcher" in obfuscate_command.lower():
-            log.error(
+            raise StagerGenerationException(
                 "If using obfuscation, LAUNCHER obfuscation cannot be used in the dll stager."
             )
-            return ""
 
         if language in ["csharp", "ironpython"]:
-            if (
-                self.mainMenu.listenersv2.get_active_listener_by_name(
-                    listener_name
-                ).info["Name"]
-                != "HTTP[S]"
-            ):
-                log.error(
-                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
-                )
-                return ""
-
-            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner_routed(
                 language=language,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,
                 encode=True,
                 listener_name=listener_name,
+                bypasses=bypasses,
             )
 
         elif language == "powershell":
@@ -153,13 +128,11 @@ class Stager:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries=stager_retries,
                 bypasses=bypasses,
             )
 
-        if launcher == "":
-            log.error("[!] Error in launcher generation.")
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher generation.")
 
         launcher_code = launcher.split(" ")[-1]
         return self.mainMenu.stagergenv2.generate_dll(launcher_code, arch)

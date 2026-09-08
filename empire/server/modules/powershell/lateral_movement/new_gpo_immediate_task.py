@@ -3,6 +3,7 @@ from empire.server.common.empire import MainMenu
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
 from empire.server.core.module_service import auto_finalize, auto_get_source
+from empire.server.utils.option_util import coerce_legacy_value
 
 
 class Module:
@@ -23,7 +24,7 @@ class Module:
         user_agent = params["UserAgent"]
         proxy = params["Proxy"]
         proxy_creds = params["ProxyCreds"]
-        launcher_obfuscate = params["Obfuscate"].lower() == "true"
+        launcher_obfuscate = params["Obfuscate"]
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
@@ -55,7 +56,8 @@ class Module:
             module_name + " -Command cmd -CommandArguments '" + command + "' -Force"
         )
 
-        for option, values in params.items():
+        for option, raw_value in params.items():
+            values = coerce_legacy_value(raw_value)
             if (
                 option.lower()
                 in [

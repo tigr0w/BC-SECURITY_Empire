@@ -19,7 +19,7 @@ description: |
   maintains the appearance of normal system operation while ensuring continued
   access through user-initiated shortcut execution.
 software: ''
-tactics: [TA0004, TA0002]
+tactics: [TA0002, TA0003, TA0004]
 techniques: [T1204.001, T1547.009]
 background: true
 output_extension:
@@ -41,11 +41,7 @@ options:
     description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
       for obfuscation types.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: ObfuscateCommand
     description: The Invoke-Obfuscation command to use.
     required: false
@@ -73,11 +69,7 @@ options:
   - name: Cleanup
     description: Restore the original .LNK settings.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: UserAgent
     description: User-agent string to use for the staging request (default, none,
       or other).

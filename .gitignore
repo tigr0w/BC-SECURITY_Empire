@@ -39,6 +39,8 @@ empire/test/data/obfuscated_module_source
 .coverage
 htmlcov/
 empire/server/plugins/example_2/
+# Under xdist the same fixture clones one per worker, named for $PYTEST_XDIST_WORKER.
+empire/server/plugins/example_2_*/
 
 # misc
 *.log
@@ -47,6 +49,9 @@ empire/server/plugins/example_2/
 .vscode/*
 .idea/*
 *.txt
+# Third-party license texts shipped with the vendored malleable profiles.
+# They must be distributed, so they are exempt from the blanket *.txt rule.
+!empire/server/data/profiles/LICENSES/*.txt
 LastTask*
 xar**
 bomutils**
@@ -59,5 +64,13 @@ addons/
 __pycache__/
 workspace.xml
 starkiller-dist.tar.gz
+/dist/
 .worktrees/
 config.user.yaml
+.claude/settings.local.json
+
+# Superpowers brainstorming/planning artifacts — local working docs, not code
+docs/superpowers/
+
+# Superpowers subagent-driven-development workspace
+.superpowers/

@@ -79,7 +79,7 @@ class Packer:
 
 
 def process_arguments(format_string, arguments):
-    arg_list = shlex.split(arguments)
+    arg_list = arguments if isinstance(arguments, list) else shlex.split(arguments)
 
     p = Packer()
     packed_data = p.bof_pack(format_string, arg_list)

@@ -48,7 +48,7 @@ advanced:
   custom_generate: true
 ```
 
-The python file should share the same name as the yaml file. For example `Invoke-Assembly.yaml` and `Invoke-Assembly.py` The generate function is a static function that gets passed 5 parameters:
+The python file should share the same name as the yaml file. For example `invoke_shellcode.yaml` and `invoke_shellcode.py` The generate function is a static function that gets passed 5 parameters:
 
 * main\_menu: The main\_menu object that gives the module access to listeners, stagers, and just about everything else it might need
 * module: The module, loaded from the yaml. In case we need to check properties like `opsec_safe`, `background`, etc.
@@ -75,8 +75,8 @@ class Module(object):
 Examples of modules that use this custom generate function:
 
 * [bypassuac\_eventvwr](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/privesc/bypassuac_eventvwr.py)
-* [invoke\_assembly](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/code_execution/invoke_assembly.py)
-* [seatbelt](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/situational_awareness/host/seatbelt.py)
+* [invoke\_shellcode](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/code_execution/invoke_shellcode.py)
+* [screenshot](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/situational_awareness/host/screenshot.py)
 
 #### Error Handling
 
@@ -89,11 +89,9 @@ raise ModuleValidationException("Error Message")
 raise ModuleExecutionException("Error Message")
 ```
 
-**Deprecated**
-
-Previously, it was recommended that the generate function return a tuple of the script and the error. `handle_error_message` was provided as a helper function to handle this tuple.
-
-This is no longer recommended, but is still supported. Please migrate away from the tuple return type to raising exceptions. The tuple return type will be removed in a future major release.
+{% hint style="warning" %}
+In Empire 7.0, the deprecated `handle_error_message` helper and tuple return type for module `generate()` functions were removed. Modules must raise `ModuleValidationException` or `ModuleExecutionException` for error handling.
+{% endhint %}
 
 #### Functions
 
@@ -136,7 +134,7 @@ def generate(
     )
 
     if err:
-        return handle_error_message(err)
+        raise ModuleValidationException(err)
 
     # do stuff
     ...
@@ -144,7 +142,7 @@ def generate(
 
 `@auto_finalize` is a decorator that will automatically call `finalize_module` on the returned script from the decorated function.
 
-To use this decorator, the function must not utilize the deprecated tuple return type or the `handle_error_message` function. First migrate the function to raise exceptions before using this decorator.
+To use this decorator, the function must raise exceptions for error handling rather than returning error values.
 
 ```python
 @staticmethod
@@ -205,6 +203,26 @@ advanced:
   option_format_string: "{{ VALUE }}"
   option_format_string_boolean: ""
 ```
+
+**format\_string:** An individual option can override `option_format_string` for itself, for the cases where the module-wide quoting is wrong for just that one parameter. It accepts the same `{{ KEY }}` / `{{ VALUE }}` tokens, plus `{{ VALUE_ARRAY }}`, which splits a comma-separated value and double-quotes each element.
+
+`{{ VALUE_ARRAY }}` exists for PowerShell `[Array]` parameters. The default format quotes the value whole, so `-NBNSTypes "00,20"` binds as the single element `@("00,20")` and fails the script's `ValidateSet`; dropping the quotes doesn't help either, because PowerShell then parses `00` as the number `0`. Only per-element quoting binds a real string array:
+
+```yaml
+  - name: NBNSTypes
+    description: 'NBNS types to spoof. Default: 00,20 (Workstation/Server services).'
+    required: false
+    value: '00,20'
+    format_string: '-{{ KEY }} {{ VALUE_ARRAY }}'
+```
+
+This renders `-NBNSTypes "00","20"`, which binds as `@("00","20")`. It renders per element after trimming surrounding whitespace and dropping empty entries, so a list typed as `00, 20,` still comes out as `-NBNSTypes "00","20"`.
+
+Note that an array option must not be `strict` if it should accept more than one element. A `strict` option is validated for exact membership in `suggested_values` *before* the format string renders, so a multi-element value is rejected and the override never runs. Watch for the adjacent trap too: `suggested_values` defaults to an empty list rather than `None`, and the check only skips when it is `None` — so `strict: true` with no `suggested_values` rejects *every* value on every run.
+
+Keep `suggested_values` if you want the values offered in Starkiller — with `strict: false` they render as an editable combobox rather than a locked dropdown. The combobox is single-select, so operators pick one suggested value or type the full comma-separated list themselves.
+
+Only the value branch consults `format_string`; boolean switches still use `option_format_string_boolean`.
 
 **name\_in\_code**: There may be times when you want the display name for an option in Starkiller to be different from how it looks in the module's code. For this, you can use `name_in_code` such as in the [sharpsecdump module](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/credentials/sharpsecdump.yaml)
 

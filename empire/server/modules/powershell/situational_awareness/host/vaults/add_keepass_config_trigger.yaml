@@ -26,7 +26,7 @@ description: |
   user actions, ensuring continuous access to sensitive information
   without requiring ongoing operator interaction.
 software: ''
-tactics: [TA0003, TA0009]
+tactics: [TA0003, TA0004, TA0009]
 techniques: [T1119, T1546]
 background: true
 output_extension: ''

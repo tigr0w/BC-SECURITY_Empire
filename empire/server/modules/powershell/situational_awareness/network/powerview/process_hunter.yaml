@@ -55,11 +55,7 @@ options:
   - name: ComputerUnconstrained
     description: Search computer objects that have unconstrained delegation.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - 'True'
-      - 'False'
+    value: false
   - name: ComputerOperatingSystem
     description: Return computers with a specific operating system, wildcards accepted.
     required: false
@@ -84,11 +80,7 @@ options:
   - name: UserAdminCount
     description: Search for users with "(adminCount=1)" (meaning are/were privileged)
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: UserIdentity
     description: Specifies one or more user identities to search for.
     required: false
@@ -105,11 +97,7 @@ options:
   - name: StopOnSuccess
     description: Stop hunting after finding after finding a target user.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: Delay
     description: Delay between enumerating hosts, defaults to 0.
     required: false
@@ -141,11 +129,7 @@ options:
     description: Specifies that the search should also return deleted/tombstoned
       objects.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: Jitter
     description: Specifies the jitter (0-1.0) to apply to any specified -Delay, defaults
       to +/- 0.3.

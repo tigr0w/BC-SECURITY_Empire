@@ -15,7 +15,7 @@ description: |
   credential harvesting, user behavior analysis, and collecting
   sensitive configuration data for lateral movement and persistence.
 software: ''
-tactics: [TA0006]
+tactics: [TA0006, TA0009]
 techniques:
   - T1005
   - T1552.003
@@ -37,19 +37,11 @@ options:
     description: Sleep the agent's normal interval between downloads, otherwise use
       one blast.
     required: false
-    value: 'True'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: true
   - name: AllUsers
     description: Run for all users (needs root privileges!)
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 script: |
   import os
   # custom function to send downloac packets back

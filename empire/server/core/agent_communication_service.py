@@ -13,8 +13,7 @@ from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
 
 from empire.server.api.v2.agent.agent_task_dto import ModulePostRequest
-from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
-from empire.server.common import encryption, helpers, packets
+from empire.server.common import credential_parsers, encryption, helpers, packets
 from empire.server.common.encryption import AESCipher
 from empire.server.core import protocol_constants as proto
 from empire.server.core.config.config_manager import empire_config
@@ -22,6 +21,7 @@ from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.db.models import AgentTaskStatus
 from empire.server.core.hooks import hooks
+from empire.server.utils.dotnet_version_util import normalize_dotnet_version
 from empire.server.utils.file_util import is_path_within
 from empire.server.utils.string_util import is_valid_session_id
 
@@ -43,6 +43,7 @@ class AgentCommunicationService:
         self.credential_service = main_menu.credentialsv2
         self.listener_service = main_menu.listenersv2
         self.ip_service = main_menu.ipsv2
+        self.module_service = main_menu.modulesv2
 
         # internal agent dictionary for the client's session key, funcions, and URI sets
         #   this is done to prevent database reads for extremely common tasks (like checking tasking URI existence)
@@ -75,6 +76,80 @@ class AgentCommunicationService:
             )
             return False
         return True
+
+    def _ingest_credentials(self, db: Session, agent, tasking, data):
+        """Dispatch task output to the credential parser declared on the
+        module, or to a prefix-based fallback for ad-hoc invocations.
+
+        Parser exceptions are caught and logged: this runs on every agent
+        task response, so a bug in any one parser must not break the comms
+        loop. `CredentialService.create_credential` returns a `(cred, err)`
+        tuple — dedup collisions (err containing "Duplicate") are ignored,
+        any other error is logged at warning level but does not abort
+        ingestion or propagate.
+        """
+        parser = None
+        declared_parser_name = None
+        module_name = getattr(tasking, "module_name", None) if tasking else None
+        if module_name:
+            mod = self.module_service.modules.get(module_name)
+            if mod and mod.credential_parser:
+                declared_parser_name = mod.credential_parser
+                parser = credential_parsers.get_parser(declared_parser_name)
+                if parser is None:
+                    log.error(
+                        "Module %s declares unknown credential_parser %r — "
+                        "credentials from this module will not be ingested",
+                        module_name,
+                        declared_parser_name,
+                    )
+                    return
+        if parser is None:
+            parser = credential_parsers.detect_by_prefix(data)
+        if parser is None:
+            return
+
+        try:
+            parsed = parser.parse(data, agent)
+        except Exception:
+            log.exception(
+                "credential parser %s raised on task output",
+                parser.__class__.__name__,
+            )
+            return
+
+        if not isinstance(parsed, list):
+            log.error(
+                "credential parser %s returned %s; expected list — skipping",
+                parser.__class__.__name__,
+                type(parsed).__name__,
+            )
+            return
+
+        date_time = helpers.get_datetime()
+        for req in parsed:
+            req.notes = f"{req.notes} {date_time}" if req.notes else date_time
+            try:
+                _, err = self.credential_service.create_credential(db, req)
+            except Exception:
+                # Persist failure (DB integrity error, too-long value, etc.)
+                # must not kill the comms loop. Abort the batch so we don't
+                # fire more writes on a session that may be in an invalid
+                # state; the caller's outer transaction handling takes it
+                # from here.
+                log.exception(
+                    "credential_service raised persisting %s row for %s — "
+                    "aborting remainder of this batch",
+                    req.credtype,
+                    req.username,
+                )
+                return
+            if err and "Duplicate" not in err:
+                log.warning(
+                    "credential_service.create_credential rejected %s row: %s",
+                    req.credtype,
+                    err,
+                )
 
     def _decompress_python_data(self, data, filename, session_id):
         log.info(
@@ -289,13 +364,10 @@ class AgentCommunicationService:
                     )
                 )
 
-    # TODO listener and external_ip not used?
     def update_agent_sysinfo(  # noqa: PLR0913
         self,
         db: Session,
         session_id,
-        listener="",
-        external_ip="",
         internal_ip="",
         username="",
         hostname="",
@@ -306,6 +378,7 @@ class AgentCommunicationService:
         language_version="",
         language="",
         architecture="",
+        dotnet_version: str = "",
     ):
         """
         Update an agent's system information.
@@ -356,6 +429,10 @@ class AgentCommunicationService:
         agent.language_version = language_version
         agent.language = language
         agent.architecture = architecture
+        parts = [normalize_dotnet_version(p.strip()) for p in dotnet_version.split(",")]
+        normalized = ",".join(p for p in parts if p)
+        if normalized:
+            agent.dotnet_version = normalized
         db.flush()
 
     def _get_queued_agent_tasks(
@@ -465,21 +542,21 @@ class AgentCommunicationService:
                     log.exception(f"Bad {lang_name} DH public")
                     return f"ERROR: Invalid {lang_name} DH public key"
 
-                # Only verify the agent cert if its actually present (not all zeros)
-                if any(agent_cert) and len(agent_cert) == proto.AGENT_CERT_SIZE:
-                    try:
-                        if not encryption.checkvalid(
-                            agent_cert, b"SIGNATURE", agent_cert_public_key
-                        ):
-                            log.error(f"Invalid agent certificate from {session_id}")
-                            return f"Error: Invalid agent certificate from {session_id}"
-                    except Exception:
-                        log.exception("Agent cert parse/verify error")
+                # The agent certificate is mandatory. It used to be skipped when
+                # the field was all zeros, which let a caller opt out of
+                # verification simply by sending 64 zero bytes.
+                if len(agent_cert) != proto.AGENT_CERT_SIZE:
+                    log.error(f"Missing agent certificate from {session_id}")
+                    return f"Error: Invalid agent certificate from {session_id}"
+                try:
+                    if not encryption.checkvalid(
+                        agent_cert, b"SIGNATURE", agent_cert_public_key
+                    ):
+                        log.error(f"Invalid agent certificate from {session_id}")
                         return f"Error: Invalid agent certificate from {session_id}"
-                else:
-                    log.debug(
-                        f"{lang_name} stage0 without agent cert; skipping Ed25519 verification"
-                    )
+                except Exception:
+                    log.exception("Agent cert parse/verify error")
+                    return f"Error: Invalid agent certificate from {session_id}"
 
                 # Continue DH as usual
                 serverPub = encryption.DiffieHellman()
@@ -546,21 +623,21 @@ class AgentCommunicationService:
                     log.exception(f"Bad {lang_name} DH public")
                     return f"ERROR: Invalid {lang_name} DH public key"
 
-                # Only verify the agent cert if its actually present (not all zeros)
-                if any(agent_cert) and len(agent_cert) == proto.AGENT_CERT_SIZE:
-                    try:
-                        if not encryption.checkvalid(
-                            agent_cert, b"SIGNATURE", agent_cert_public_key
-                        ):
-                            log.error(f"Invalid agent certificate from {session_id}")
-                            return f"Error: Invalid agent certificate from {session_id}"
-                    except Exception:
-                        log.exception("Agent cert parse/verify error")
+                # The agent certificate is mandatory. It used to be skipped when
+                # the field was all zeros, which let a caller opt out of
+                # verification simply by sending 64 zero bytes.
+                if len(agent_cert) != proto.AGENT_CERT_SIZE:
+                    log.error(f"Missing agent certificate from {session_id}")
+                    return f"Error: Invalid agent certificate from {session_id}"
+                try:
+                    if not encryption.checkvalid(
+                        agent_cert, b"SIGNATURE", agent_cert_public_key
+                    ):
+                        log.error(f"Invalid agent certificate from {session_id}")
                         return f"Error: Invalid agent certificate from {session_id}"
-                else:
-                    log.debug(
-                        f"{lang_name} stage0 without agent cert; skipping Ed25519 verification"
-                    )
+                except Exception:
+                    log.exception("Agent cert parse/verify error")
+                    return f"Error: Invalid agent certificate from {session_id}"
                 serverPub = encryption.DiffieHellman()
                 serverPub.gen_key(clientPub)
                 # serverPub.key == the negotiated session key
@@ -805,6 +882,7 @@ class AgentCommunicationService:
                 language = str(parts[10], "utf-8")
                 language_version = str(parts[11], "utf-8")
                 architecture = str(parts[12], "utf-8")
+                dotnet_version = str(parts[13], "utf-8") if len(parts) > 13 else ""  # noqa: PLR2004
 
                 if domainname:
                     username = f"{domainname}\\{username}"
@@ -821,7 +899,6 @@ class AgentCommunicationService:
             self.update_agent_sysinfo(
                 db,
                 session_id,
-                listener=listener_name,
                 internal_ip=internal_ip,
                 username=username,
                 hostname=hostname,
@@ -832,6 +909,7 @@ class AgentCommunicationService:
                 language_version=language_version,
                 language=language,
                 architecture=architecture,
+                dotnet_version=dotnet_version,
             )
 
             self.autorun_tasks(db, session_id)
@@ -1221,6 +1299,9 @@ class AgentCommunicationService:
                 data = data.decode("UTF-8")
             # update the agent log
             self.agent_service.save_agent_log(session_id, "Error response: " + data)
+            # Cancel any pending chunked uploads if the errored task was an upload
+            if tasking and tasking.task_name == "TASK_UPLOAD":
+                self.agent_task_service.cancel_pending_uploads(session_id)
 
         elif response_name == "TASK_SYSINFO":
             # sys info response -> update the host info
@@ -1243,6 +1324,7 @@ class AgentCommunicationService:
                 language = parts[10]
                 language_version = parts[11]
                 architecture = parts[12]
+                dotnet_version = parts[13] if len(parts) > 13 else ""  # noqa: PLR2004
 
                 if domainname:
                     username = f"{domainname}\\{username}"
@@ -1251,7 +1333,6 @@ class AgentCommunicationService:
                 self.update_agent_sysinfo(
                     db,
                     session_id,
-                    listener=listener,
                     internal_ip=internal_ip,
                     username=username,
                     hostname=hostname,
@@ -1262,6 +1343,7 @@ class AgentCommunicationService:
                     language_version=language_version,
                     language=language,
                     architecture=architecture,
+                    dotnet_version=dotnet_version,
                 )
 
                 sysinfo = (
@@ -1278,6 +1360,7 @@ class AgentCommunicationService:
                             f"{'Language:':<18}{language}",
                             f"{'Language Version:':<18}{language_version}",
                             f"{'Architecture:':<18}{architecture}",
+                            f"{'DotNet Version:':<18}{normalize_dotnet_version(dotnet_version) or 'unknown'}",
                         ]
                     )
                     + "\n"
@@ -1304,6 +1387,9 @@ class AgentCommunicationService:
         elif response_name == "TASK_SHELL":
             # shell command response
             # update the agent log
+            self.agent_service.save_agent_log(session_id, data)
+
+        elif response_name == "TASK_CHDIR":
             self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_SOCKS":
@@ -1348,8 +1434,11 @@ class AgentCommunicationService:
             try:
                 result = json.loads(data.decode("utf-8"))
                 self._update_dir_list(db, session_id, result)
-            except ValueError:
-                pass
+            except (UnicodeDecodeError, json.JSONDecodeError, KeyError):
+                log.exception(
+                    "TASK_DIR_LIST: failed to process directory listing for %s",
+                    session_id,
+                )
 
             self.agent_service.save_agent_log(session_id, data)
 
@@ -1366,7 +1455,13 @@ class AgentCommunicationService:
             self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_UPLOAD":
-            pass
+            if isinstance(data, bytes):
+                data = data.decode("UTF-8", errors="replace")
+            self.agent_service.save_agent_log(session_id, data)
+            if data and data.startswith("[*] Upload of"):
+                self.agent_task_service.queue_next_upload_chunk(db, session_id)
+            else:
+                self.agent_task_service.cancel_pending_uploads(session_id)
 
         elif response_name == "TASK_GETJOBS":
             if not data or not data.strip():
@@ -1388,36 +1483,7 @@ class AgentCommunicationService:
             "TASK_BOF_CMD_WAIT",
         ]:
             # dynamic script output -> blocking
-
-            # see if there are any credentials to parse
-            date_time = helpers.get_datetime()
-            creds = helpers.parse_credentials(data)
-
-            if creds:
-                for cred in creds:
-                    hostname = cred[4]
-
-                    if not hostname:
-                        hostname = agent.hostname
-
-                    os_details = agent.os_details
-
-                    self.credential_service.create_credential(
-                        #  idk if i want to import api dtos here, but it's not a big deal for now.
-                        db,
-                        CredentialPostRequest(
-                            credtype=cred[0],
-                            domain=cred[1],
-                            username=cred[2],
-                            password=cred[3],
-                            host=hostname,
-                            os=os_details,
-                            sid=cred[5],
-                            notes=date_time,
-                        ),
-                    )
-
-            # update the agent log
+            self._ingest_credentials(db, agent, tasking, data)
             self.agent_service.save_agent_log(session_id, data)
 
         elif response_name in [
@@ -1486,93 +1552,8 @@ class AgentCommunicationService:
 
             else:
                 # dynamic script output -> non-blocking
-                # see if there are any credentials to parse
-                date_time = helpers.get_datetime()
-                creds = helpers.parse_credentials(data)
-                if creds:
-                    for cred in creds:
-                        hostname = cred[4]
-
-                        if not hostname:
-                            hostname = agent.hostname
-
-                        os_details = agent.os_details
-
-                        self.credential_service.create_credential(
-                            #  idk if i want to import api dtos here, but it's not a big deal for now.
-                            db,
-                            CredentialPostRequest(
-                                credtype=cred[0],
-                                domain=cred[1],
-                                username=cred[2],
-                                password=cred[3],
-                                host=hostname,
-                                os=os_details,
-                                sid=cred[5],
-                                notes=date_time,
-                            ),
-                        )
-
-                # update the agent log
+                self._ingest_credentials(db, agent, tasking, data)
                 self.agent_service.save_agent_log(session_id, data)
-
-            # TODO: redo this regex for really large AD dumps
-            #   so a ton of data isn't kept in memory...?
-            if isinstance(data, str):
-                data = data.encode("UTF-8")
-            parts = data.split(b"\n")
-            if len(parts) > proto.MIMIKATZ_OUTPUT_MIN_LINES:
-                date_time = helpers.get_datetime()
-                if parts[0].startswith(b"Hostname:"):
-                    # if we get Invoke-Mimikatz output, try to parse it and add
-                    #   it to the internal credential store
-
-                    # cred format: (credType, domain, username, password, hostname, sid, notes)
-                    creds = helpers.parse_mimikatz(data)
-
-                    for cred in creds:
-                        hostname = cred[4]
-
-                        if not hostname:
-                            hostname = agent.hostname
-
-                        os_details = agent.os_details
-
-                        self.credential_service.create_credential(
-                            #  idk if i want to import api dtos here, but it's not a big deal for now.
-                            db,
-                            CredentialPostRequest(
-                                credtype=cred[0],
-                                domain=cred[1],
-                                username=cred[2],
-                                password=cred[3],
-                                host=hostname,
-                                os=os_details,
-                                sid=cred[5],
-                                notes=date_time,
-                            ),
-                        )
-
-        elif response_name == "TASK_SWITCH_LISTENER":
-            # update the agent listener
-            if isinstance(data, bytes):
-                data = data.decode("UTF-8")
-
-            listener_name = data[38:]
-
-            agent.listener = listener_name
-
-            # update the agent log
-            self.agent_service.save_agent_log(session_id, data)
-            message = f"Updated comms for {session_id} to {listener_name}"
-            log.info(message)
-
-        elif response_name == "TASK_UPDATE_LISTENERNAME":
-            # The agent listener name variable has been updated agent side
-            # update the agent log
-            self.agent_service.save_agent_log(session_id, data)
-            message = f"Listener for '{session_id}' updated to '{data}'"
-            log.info(message)
 
         else:
             log.warning(f"Unknown response {response_name} from {session_id}")

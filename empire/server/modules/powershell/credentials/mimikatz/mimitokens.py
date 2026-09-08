@@ -26,21 +26,21 @@ class Module:
 
         script_end = "Invoke-Mimikatz -Command "
 
-        if revert.lower() == "true":
+        if revert:
             script_end += "'\"token::revert"
         else:
-            if list_tokens.lower() == "true":
+            if list_tokens:
                 script_end += "'\"token::list"
-            elif elevate.lower() == "true":
+            elif elevate:
                 script_end += "'\"token::elevate"
             else:
                 raise ModuleValidationException(
                     "[!] list, elevate, or revert must be specified!"
                 )
 
-            if domainadmin.lower() == "true":
+            if domainadmin:
                 script_end += " /domainadmin"
-            elif admin.lower() == "true":
+            elif admin:
                 script_end += " /admin"
             elif user.lower() != "":
                 script_end += " /user:" + str(user)

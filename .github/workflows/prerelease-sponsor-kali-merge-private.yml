@@ -37,7 +37,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v7
         with:
-          submodules: 'recursive'
           ref: private-main
           fetch-depth: 0
           token: ${{ secrets.RELEASE_TOKEN }}

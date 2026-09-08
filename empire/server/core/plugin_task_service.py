@@ -2,14 +2,15 @@ import logging
 import typing
 from datetime import datetime
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload, undefer
 
 from empire.server.api.v2.plugin.plugin_task_dto import PluginTaskOrderOptions
 from empire.server.api.v2.shared_dto import OrderDirection
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
-from empire.server.core.db.models import AgentTaskStatus
+from empire.server.core.db.models import PluginTaskStatus
+from empire.server.core.tag_service import tag_name_filter
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -35,7 +36,7 @@ class PluginTaskService:
         since: datetime | None = None,
         order_by: PluginTaskOrderOptions = PluginTaskOrderOptions.id,
         order_direction: OrderDirection = OrderDirection.desc,
-        status: AgentTaskStatus | None = None,
+        status: PluginTaskStatus | None = None,
         q: str | None = None,
     ):
         stmt = select(
@@ -52,13 +53,7 @@ class PluginTaskService:
             stmt = stmt.where(or_(*user_filters))
 
         if tags:
-            tags_split = [tag.split(":", 1) for tag in tags]
-            stmt = stmt.join(models.PluginTask.tags).where(
-                and_(
-                    models.Tag.name.in_([tag[0] for tag in tags_split]),
-                    models.Tag.value.in_([tag[1] for tag in tags_split]),
-                )
-            )
+            stmt = stmt.where(tag_name_filter(models.PluginTask.tags, tags))
 
         query_options = [
             joinedload(models.PluginTask.user),
@@ -74,7 +69,7 @@ class PluginTaskService:
             stmt = stmt.where(models.PluginTask.updated_at > since)
 
         if status:
-            stmt = stmt.where(models.AgentTask.status == status)
+            stmt = stmt.where(models.PluginTask.status == status)
 
         if q:
             stmt = stmt.where(

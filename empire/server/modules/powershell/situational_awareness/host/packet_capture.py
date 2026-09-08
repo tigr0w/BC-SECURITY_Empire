@@ -16,7 +16,7 @@ class Module:
         persistent = params["Persistent"]
         stop_trace = params["StopTrace"]
 
-        if stop_trace.lower() == "true":
+        if stop_trace:
             script = "netsh trace stop"
 
         else:
@@ -25,7 +25,7 @@ class Module:
             if max_size != "":
                 script += f" maxSize={max_size}"
 
-            if persistent != "":
+            if persistent:
                 script += " persistent=yes"
 
         return main_menu.modulesv2.finalize_module(

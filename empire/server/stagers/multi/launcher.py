@@ -1,6 +1,4 @@
-import logging
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -37,11 +35,6 @@ class Stager:
                 ],
                 "Strict": True,
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output.",
                 "Required": False,
@@ -50,16 +43,12 @@ class Stager:
             "Base64": {
                 "Description": "Base64 encode the output.",
                 "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": True,
             },
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -70,13 +59,6 @@ class Stager:
                     {"name": "Language", "values": ["powershell"]},
                     {"name": "Obfuscate", "values": ["True"]},
                 ],
-            },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
             },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
@@ -97,6 +79,8 @@ class Stager:
                 "Description": "Bypasses as a space separated list to be prepended to the launcher",
                 "Required": False,
                 "Value": "",
+                "BypassLanguage": "powershell",
+                "BypassLanguageOverrides": {"python": "python"},
             },
         }
 
@@ -112,57 +96,28 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
 
-        encode = False
-        if base64.lower() == "true":
-            encode = True
+        encode = base64
+        invoke_obfuscation = obfuscate
 
-        invoke_obfuscation = False
-        if obfuscate.lower() == "true":
-            invoke_obfuscation = True
-
-        if language == "csharp":
-            if self.mainMenu.listenersv2.get_active_listener_by_name(
-                listener_name
-            ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
-                log.error(
-                    "Only HTTP[S] and smb_pivot listeners are supported for C# stagers."
-                )
-                return ""
-
-            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
+        if language in ("csharp", "ironpython"):
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner_routed(
                 language=language,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
                 encode=encode,
                 listener_name=listener_name,
-            )
-        elif language == "ironpython":
-            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
-                language=language,
-                obfuscate=invoke_obfuscation,
-                obfuscation_command=obfuscate_command,
-                encode=encode,
-                listener_name=listener_name,
+                bypasses=self.options["Bypasses"]["Value"],
             )
 
         elif language == "go":
-            if self.mainMenu.listenersv2.get_active_listener_by_name(
-                listener_name
-            ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
-                log.error(
-                    "Only HTTP[S] and smb_pivot listeners are supported for Go stagers."
-                )
-                return ""
-
-            launcher = self.mainMenu.stagergenv2.generate_go_exe_oneliner(
+            launcher = self.mainMenu.stagergenv2.generate_go_exe_oneliner_routed(
                 language=language,
                 listener_name=listener_name,
                 encode=encode,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
+                bypasses=self.options["Bypasses"]["Value"],
             )
         else:
             launcher = self.mainMenu.stagergenv2.generate_launcher(
@@ -174,13 +129,10 @@ class Stager:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries=stager_retries,
-                safe_checks=safe_checks,
                 bypasses=self.options["Bypasses"]["Value"],
             )
 
-        if launcher == "":
-            log.error("Error in launcher command generation.")
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         return launcher

@@ -1,6 +1,4 @@
 import logging
-import os
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from empire.server.core import hooks_internal
@@ -10,6 +8,7 @@ from empire.server.core.agent_service import AgentService
 from empire.server.core.agent_socks_service import AgentSocksService
 from empire.server.core.agent_task_service import AgentTaskService
 from empire.server.core.bypass_service import BypassService
+from empire.server.core.config import paths
 from empire.server.core.credential_service import CredentialService
 from empire.server.core.dotnet import DotnetCompiler
 from empire.server.core.download_service import DownloadService
@@ -34,22 +33,16 @@ from empire.server.core.user_service import UserService
 if TYPE_CHECKING:
     from socket import SocketIO
 
-VERSION = "6.7.1 BC Security Fork"
+VERSION = "7.0.2 BC Security Fork"
 
 log = logging.getLogger(__name__)
 
 
 class MainMenu:
-    def __init__(self, args=None):
+    def __init__(self):
         log.info("Empire starting up...")
 
-        self.install_path = Path(os.path.realpath(__file__)).parent.parent
-        # TODO(empire-7): Remove installPath. Kept for backwards compatibility
-        # with listeners, stagers, modules, and third-party plugins that still
-        # reference self.mainMenu.installPath as a str.
-        self.installPath = str(self.install_path)
-
-        self.args = args
+        self.install_path = paths.SERVER_ROOT
 
         self.socketio: SocketIO | None = None
 

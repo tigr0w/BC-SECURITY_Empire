@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 import sys
+from contextlib import suppress
 from pathlib import Path
 from typing import Annotated
 
@@ -21,7 +22,43 @@ from pydantic_settings import (
     YamlConfigSettingsSource,
 )
 
+from empire.server.core.config import paths
+
 log = logging.getLogger(__name__)
+
+# Base directories. The platformdirs incantation lives in `paths` (a
+# side-effect-free leaf module) so config_manager and the root conftest derive
+# their dirs identically — without conftest importing config_manager at startup,
+# which would trigger this module's mkdir/config-copy side effects too early.
+# Defined here (not at module bottom) because DirectoriesConfig.cache uses
+# CACHE_DIR as a class-level field default, evaluated at import time. TEST_MODE
+# swaps in an isolated "empire-test" app name; on Linux/CI that resolves to the
+# same ~/.local/share/empire-test as before.
+#
+# Under pytest-xdist each worker gets its own DATA_DIR (a worker-<gw> subdir of
+# the shared base) so per-worker writable state — downloads/,
+# obfuscated_module_source/, and the MySQL database name — cannot collide. The
+# heavy read-only caches (empire-compiler, starkiller) still live under DATA_DIR,
+# so they are symlinked back to the shared base near the bottom of this module —
+# fetched once and reused across workers instead of re-downloaded per worker.
+# CACHE_DIR is a single shared location, so it needs no per-worker handling. The
+# first-download race on a cold shared cache is serialized by the
+# _warm_external_caches fixture (empire/test/conftest.py).
+_APP_NAME = "empire-test" if os.environ.get("TEST_MODE") else "empire"
+CONFIG_DIR = paths.config_dir(_APP_NAME)
+CACHE_DIR = paths.cache_dir(_APP_NAME)
+_DATA_BASE = paths.data_dir(_APP_NAME)
+_XDIST_WORKER = os.environ.get("PYTEST_XDIST_WORKER", "")
+if os.environ.get("TEST_MODE") and _XDIST_WORKER:
+    DATA_DIR = _DATA_BASE / f"worker-{_XDIST_WORKER}"
+else:
+    DATA_DIR = _DATA_BASE
+CONFIG_PATH = CONFIG_DIR / paths.CONFIG_FILENAME
+# The boot self-signed pair's directory. Anchored here so server.run (which
+# generates it) and the malleable listener (which loads it) resolve the same
+# path; cert_util owns the filenames but is a crypto leaf that can't import
+# this module.
+CERT_DIR = DATA_DIR / "cert"
 
 
 class EmpireBaseModel(BaseModel):
@@ -43,16 +80,18 @@ class ApiConfig(EmpireBaseModel):
     ip: str = "0.0.0.0"
     port: int = 1337
     secure: bool = False
-
-
-class SubmodulesConfig(EmpireBaseModel):
-    auto_update: bool = True
+    cors_origins: list[str] = ["*"]
 
 
 class StarkillerConfig(EmpireBaseModel):
     enabled: bool = True
     repo: str = "bc-security/starkiller"
     ref: str = "main"
+    # Points at an already-built Starkiller so the server doesn't clone one.
+    # `str`, not `Path`: a `Path` field would pick up `EmpireBaseModel.set_path`,
+    # which silently reinterprets a relative value as DATA_DIR-relative.
+    # `sync_starkiller` calls `expanduser()` itself.
+    directory: str | None = None
 
 
 class EmpireCompilerConfig(EmpireBaseModel):
@@ -120,8 +159,9 @@ class MySQLDatabaseConfig(EmpireBaseModel):
 
 
 class DatabaseConfig(EmpireBaseModel):
-    # Support legacy DATABASE_USE env in addition to nested EMPIRE_DATABASE__USE
-    use: str = Field(default="sqlite", env=["DATABASE_USE"])
+    # Legacy DATABASE_USE env is mapped in EmpireConfig.map_legacy_database_use_env;
+    # the field itself only declares its default.
+    use: str = Field(default="sqlite")
     sqlite: SQLiteDatabaseConfig
     mysql: MySQLDatabaseConfig
     defaults: DatabaseDefaultsConfig
@@ -132,10 +172,11 @@ class DatabaseConfig(EmpireBaseModel):
 
 class DirectoriesConfig(EmpireBaseModel):
     downloads: Path = Path("downloads")
-    # Persistent on-disk caches (e.g. Go build cache). Relative paths land under
-    # DATA_DIR (~/.local/share/empire/.cache) via EmpireBaseModel.set_path;
-    # operators can override to an absolute path in YAML.
-    cache: Path = Path(".cache")
+    # Persistent on-disk caches (e.g. Go build cache). Defaults to the platform
+    # cache dir (CACHE_DIR, e.g. ~/.cache/empire on Linux, ~/Library/Caches/empire
+    # on macOS). A relative override in YAML lands under DATA_DIR via
+    # EmpireBaseModel.set_path; an absolute override is used as-is.
+    cache: Path = CACHE_DIR
 
 
 class LoggingConfig(EmpireBaseModel):
@@ -196,7 +237,6 @@ class EmpireConfig(BaseSettings):
     server: ServerConfig = ServerConfig()
     empire_compiler: EmpireCompilerConfig = EmpireCompilerConfig()
     starkiller: StarkillerConfig = StarkillerConfig()
-    submodules: SubmodulesConfig = SubmodulesConfig()
     database: DatabaseConfig = DatabaseConfig(
         sqlite=SQLiteDatabaseConfig(),
         mysql=MySQLDatabaseConfig(),
@@ -257,7 +297,7 @@ class EmpireConfig(BaseSettings):
         ]
 
         # User config: config.user.yaml next to base config
-        user_path = base_path.parent / "config.user.yaml"
+        user_path = base_path.parent / paths.USER_CONFIG_FILENAME
         if user_path.exists():
             log.info(f"Loading user config from {user_path}")
             sources.append(
@@ -317,33 +357,68 @@ def _resolve_base_config_path() -> Path:
     return CONFIG_PATH
 
 
-DEFAULT_CONFIG = Path("empire/server/config.yaml")
+DEFAULT_CONFIG = paths.SERVER_ROOT / paths.CONFIG_FILENAME
 
-if os.environ.get("TEST_MODE"):
-    # Wipe semantics moved to root conftest.py::pytest_configure
-    # (see _reset_test_dirs). Outside pytest, this directory persists
-    # across invocations. If you change these paths, update
-    # _TEST_CONFIG_DIR / _TEST_DATA_DIR in the root conftest.py too.
-    CONFIG_DIR = Path.home() / ".config" / "empire-test"
-    DATA_DIR = Path.home() / ".local" / "share" / "empire-test"
-else:
-    CONFIG_DIR = Path.home() / ".config" / "empire"
-    DATA_DIR = Path.home() / ".local" / "share" / "empire"
-
-CONFIG_PATH = CONFIG_DIR / "config.yaml"
+# CONFIG_DIR / DATA_DIR / CACHE_DIR / CONFIG_PATH are defined near the top of this
+# module (platformdirs). The TEST_MODE wipe lives in root conftest.py::
+# _reset_test_dirs — if you change the path derivation, update _TEST_CONFIG_DIR /
+# _TEST_DATA_DIR / _TEST_CACHE_DIR there too.
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-if not CONFIG_PATH.exists():
-    shutil.copy(DEFAULT_CONFIG, CONFIG_PATH)
-    log.info(f"Copied {DEFAULT_CONFIG} to {CONFIG_PATH}")
+# Under pytest-xdist, symlink the shared heavy read-only caches into this
+# worker's isolated DATA_DIR so they are fetched once (into _DATA_BASE) and
+# reused across workers instead of re-downloaded per worker. Placed here (not at
+# the top) so the path-derivation block stays side-effect-free.
+if os.environ.get("TEST_MODE") and _XDIST_WORKER:
+    for _shared_name in ("empire-compiler", "starkiller"):
+        _shared_target = _DATA_BASE / _shared_name
+        _shared_target.mkdir(parents=True, exist_ok=True)
+        _worker_link = DATA_DIR / _shared_name
+        if not _worker_link.exists():
+            with suppress(FileExistsError):
+                _worker_link.symlink_to(_shared_target)
 
-DEFAULT_USER_CONFIG = DEFAULT_CONFIG.parent / "config.user.yaml"
-USER_CONFIG_PATH = CONFIG_DIR / "config.user.yaml"
+
+def seed_config(source: Path, destination: Path) -> None:
+    """Copy a shipped config template into the operator's config directory.
+
+    ``copyfile``, not ``copy``: ``copy`` is ``copyfile`` + ``copymode``, and a
+    packaged config.yaml can be read-only (0444 in a Nix store). Carrying that
+    mode across leaves the operator unable to edit the very file Empire
+    directs them to edit, and ``overwrite_base_config``'s PermissionError
+    handler then advises ``sudo chown $USER`` -- useless for a mode problem on
+    a file they already own.
+    """
+    shutil.copyfile(source, destination)
+    log.info(f"Copied {source} to {destination}")
+
+
+if not CONFIG_PATH.exists():
+    seed_config(DEFAULT_CONFIG, CONFIG_PATH)
+
+DEFAULT_USER_CONFIG = paths.SERVER_ROOT / paths.USER_CONFIG_FILENAME
+USER_CONFIG_PATH = CONFIG_DIR / paths.USER_CONFIG_FILENAME
 if DEFAULT_USER_CONFIG.exists() and not USER_CONFIG_PATH.exists():
-    shutil.copy(DEFAULT_USER_CONFIG, USER_CONFIG_PATH)
-    log.info(f"Copied {DEFAULT_USER_CONFIG} to {USER_CONFIG_PATH}")
+    seed_config(DEFAULT_USER_CONFIG, USER_CONFIG_PATH)
 
 
 _module_base_config_path: Path | None = _resolve_base_config_path()
 empire_config = EmpireConfig()
+
+# Per-xdist-worker database name. Mutated here (not in a fixture) because
+# db/base.py captures database_config at import time, and that import is
+# triggered transitively before any fixture runs. Each worker thus builds and
+# tears down its own isolated database; without xdist, behavior is unchanged.
+if os.environ.get("TEST_MODE") and os.environ.get("PYTEST_XDIST_WORKER"):
+    _worker = os.environ["PYTEST_XDIST_WORKER"]
+    empire_config.database.mysql.database_name = (
+        f"{empire_config.database.mysql.database_name}_{_worker}"
+    )
+    _sqlite_loc = str(empire_config.database.sqlite.location)
+    if _sqlite_loc.endswith(".db"):
+        empire_config.database.sqlite.location = Path(
+            _sqlite_loc[:-3] + f"_{_worker}.db"
+        )
+    else:
+        empire_config.database.sqlite.location = Path(_sqlite_loc + f"_{_worker}")

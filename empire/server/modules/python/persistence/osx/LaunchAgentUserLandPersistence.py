@@ -14,12 +14,10 @@ class Module:
         plist_name = params["PLISTName"]
         listener_name = params["Listener"]
         user_agent = params["UserAgent"]
-        safe_checks = params["SafeChecks"]
         launcher = main_menu.stagergenv2.generate_launcher(
             listener_name,
             language="python",
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
         launcher = launcher.removeprefix("echo ")
         launcher = launcher.removesuffix(" | python3 &")

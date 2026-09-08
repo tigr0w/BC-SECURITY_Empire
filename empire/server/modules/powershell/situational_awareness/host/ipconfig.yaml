@@ -1,0 +1,48 @@
+name: Get-IpConfig
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: |
+  Returns network adapter configuration (IP, MAC, gateway, DNS) for IP-enabled
+  adapters as JSON. Output feeds the server-side ipconfig_filter so the result
+  renders as a PowerShell-style table. Replaces the legacy in-agent
+  `shell ipconfig` alias.
+software: ''
+tactics: [TA0007]
+techniques: [T1016]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - Replaces the in-agent ipconfig alias removed in Empire 7.0.
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+script: |
+  function Get-IpConfig {
+      try {
+          Get-WmiObject -class 'Win32_NetworkAdapterConfiguration' -ErrorAction Stop | ? {$_.IPEnabled -Match 'True'} | ForEach-Object {
+              $out = New-Object psobject;
+              $out | Add-Member Noteproperty 'Description' $_.Description;
+              $out | Add-Member Noteproperty 'MACAddress' $_.MACAddress;
+              $out | Add-Member Noteproperty 'DHCPEnabled' $_.DHCPEnabled;
+              $out | Add-Member Noteproperty 'IPAddress' $($_.IPAddress -join ",");
+              $out | Add-Member Noteproperty 'IPSubnet' $($_.IPSubnet -join ",");
+              $out | Add-Member Noteproperty 'DefaultIPGateway' $($_.DefaultIPGateway -join ",");
+              $out | Add-Member Noteproperty 'DNSServer' $($_.DNSServerSearchOrder -join ",");
+              $out | Add-Member Noteproperty 'DNSHostName' $_.DNSHostName;
+              $out | Add-Member Noteproperty 'DNSSuffix' $($_.DNSDomainSuffixSearchOrder -join ",");
+              $out
+          } | ConvertTo-Json
+      }
+      catch {
+          "[!] ipconfig module failed: $_"
+      }
+  }
+script_end: Get-IpConfig

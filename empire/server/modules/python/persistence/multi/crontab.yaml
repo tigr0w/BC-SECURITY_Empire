@@ -42,11 +42,7 @@ options:
   - name: Remove
     description: Remove the cron job.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 script: |-
   import subprocess
 

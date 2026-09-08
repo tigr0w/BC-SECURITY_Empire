@@ -59,5 +59,10 @@ Please write tests for your code! We use [pytest](https://docs.pytest.org/en/lat
 
 For tests that take >20-30 seconds, please add the `@pytest.mark.slow` decorator to the test function. This will allow us to skip the slow tests when running the tests, unless we explicitly want to run them with `pytest --runslow`.
 
+### Changelog
+
+* Add a `CHANGELOG.md` entry for your change under the `[Unreleased]` section, in the matching category (Added / Changed / Fixed / etc.).
+* Keep it concise — one sentence, around 25 words maximum. Name the module, option, or component and what changed; leave the mechanism and rationale for the pull request.
+
 ## Upgrading dependencies
 Dependencies can be upgraded using [poetry-plugin-up](https://github.com/MousaZeidBaker/poetry-plugin-up).

@@ -17,8 +17,8 @@ description: |
   is often used to disrupt user activity, clear evidence, or ensure that only authorized
   sessions remain active during post-exploitation operations.
 software: ''
-tactics: [TA0040, TA0003, TA0004]
-techniques: [T1098, T1529]
+tactics: [TA0040]
+techniques: [T1529]
 background: false
 output_extension:
 needs_admin: false
@@ -34,10 +34,6 @@ options:
   - name: AllUsers
     description: Log off all current users (set to True to log off all sessions).
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 advanced:
   custom_generate: true

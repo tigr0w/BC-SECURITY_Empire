@@ -1,0 +1,41 @@
+name: Get-DirList
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: |
+  Lists files in a directory with mode, owner, last write time, length, and
+  name as JSON. Output feeds the server-side ls_filter so the result renders
+  as a PowerShell-style table. Replaces the legacy in-agent `shell ls` alias.
+software: ''
+tactics: [TA0007]
+techniques: [T1083]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - Replaces the in-agent ls/dir alias removed in Empire 7.0.
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: Path
+    description: Directory to list. Defaults to the current working directory.
+    required: false
+    value: '.'
+script: |
+  function Get-DirList {
+      param([string]$Path = '.')
+      if (-not $Path) { $Path = '.' }
+      try {
+          Get-ChildItem -Force -Path $Path -ErrorAction Stop | Select-Object mode,@{Name="Owner";Expression={(Get-Acl $_.FullName).Owner }},@{Name="LastWriteTime";Expression={($_.LastWriteTime.ToString("u"))}},length,name | ConvertTo-Json
+      }
+      catch {
+          "[!] dir_list module failed: $_"
+      }
+  }
+script_end: Get-DirList {{ PARAMS }}

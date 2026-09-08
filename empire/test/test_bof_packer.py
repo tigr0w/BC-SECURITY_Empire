@@ -254,3 +254,57 @@ class TestProcessArguments:
         packed = p.bof_pack("iz", ["42", "hello"])
         expected = base64.b64encode(hexlify(packed)).decode("utf-8")
         assert result == expected
+
+    def test_list_input(self):
+        """Test process_arguments accepts a pre-split list, bypassing shlex."""
+        result = process_arguments("iz", ["42", "hello"])
+        p = Packer()
+        packed = p.bof_pack("iz", ["42", "hello"])
+        expected = base64.b64encode(hexlify(packed)).decode("utf-8")
+        assert result == expected
+
+    def test_empty_string_packs_as_null(self):
+        """Empty string arg for 'z' must pack as a single null byte, not a space.
+
+        BOFs like reg_query check *hostname == '\\0' to detect local-only mode.
+        If an empty value were substituted with ' ' (space) and passed through
+        shlex, the BOF would receive ' ' instead of '\\0', treat the hostname
+        as non-empty, and try RegConnectRegistryA(' ', ...) → error 53.
+        """
+        result = process_arguments("z", [""])
+        p = Packer()
+        packed = p.bof_pack("z", [""])
+        expected = base64.b64encode(hexlify(packed)).decode("utf-8")
+        assert result == expected
+        # Confirm the packed string is exactly a null byte (length=1, data=b'\x00')
+        raw_inner = pack("<I", 1) + b"\x00"
+        raw = pack("<I", len(raw_inner)) + raw_inner
+        assert base64.b64encode(hexlify(raw)).decode("utf-8") == result
+
+    def test_backslash_preserved_in_path(self):
+        """Registry paths passed as list items must keep backslash separators.
+
+        shlex POSIX mode strips bare backslashes (e.g. SOFTWARE\\Microsoft →
+        SOFTWAREMicrosoft). Passing args as a list bypasses shlex entirely so
+        backslashes survive.
+        """
+        path = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion"
+        result = process_arguments("z", [path])
+        p = Packer()
+        packed = p.bof_pack("z", [path])
+        expected = base64.b64encode(hexlify(packed)).decode("utf-8")
+        assert result == expected
+
+    def test_reg_query_full_args(self):
+        """Simulate reg_query local enumeration: empty hostname and key must pack correctly."""
+        hostname = ""
+        hive = "2"
+        path = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion"
+        key = ""
+        recursive = "0"
+        args = [hostname, hive, path, key, recursive]
+        result = process_arguments("zizzi", args)
+        p = Packer()
+        packed = p.bof_pack("zizzi", args)
+        expected = base64.b64encode(hexlify(packed)).decode("utf-8")
+        assert result == expected

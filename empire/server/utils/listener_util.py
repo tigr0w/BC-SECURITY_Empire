@@ -19,22 +19,6 @@ def remove_lines_comments(lines):
     return code
 
 
-def python_safe_checks():
-    """
-    Check for Little Snitch and exits if found.
-    """
-    return dedent(
-        r"""
-    import re, subprocess;
-    cmd = "ps -ef | grep Little\ Snitch | grep -v grep"
-    ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = ps.communicate();
-    if re.search("Little Snitch", out.decode('UTF-8')):
-       sys.exit();
-    """
-    )
-
-
 def looks_like_decimal_blob(b: bytes) -> bool:
     """
     Heuristic: returns True if b decodes as ASCII and contains only digits and
@@ -90,17 +74,13 @@ def python_extract_stager(staging_key):
 
 def generate_random_cipher():
     """
-    Generate random cipher
+    Return FIPS-approved TLS 1.2 cipher suites (AEAD + forward secrecy)
+    in randomized order for JA3 evasion. Both suites are included so
+    OpenSSL can negotiate even if one is unavailable on the platform.
     """
-    random_tls12 = [
+    ciphers = [
         "ECDHE-RSA-AES256-GCM-SHA384",
         "ECDHE-RSA-AES128-GCM-SHA256",
-        "ECDHE-RSA-AES256-SHA384",
-        "ECDHE-RSA-AES256-SHA",
-        "AES256-SHA256",
-        "AES128-SHA256",
     ]
-    tls12 = secrets.choice(random_tls12)
-
-    tls10 = "ECDHE-RSA-AES256-SHA"
-    return f"{tls12}:{tls10}"
+    shuffled = secrets.SystemRandom().sample(ciphers, len(ciphers))
+    return ":".join(shuffled)

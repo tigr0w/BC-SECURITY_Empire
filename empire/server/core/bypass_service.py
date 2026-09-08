@@ -3,7 +3,7 @@ import logging
 import typing
 
 import yaml
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from empire.server.core.config.config_manager import empire_config
@@ -53,9 +53,10 @@ class BypassService:
                     ).first()
                     is None
                 ):
-                    yaml_bypass["script"] = ps_convert_to_oneliner(
-                        yaml_bypass["script"]
-                    )
+                    if yaml_bypass.get("language") == "powershell":
+                        yaml_bypass["script"] = ps_convert_to_oneliner(
+                            yaml_bypass["script"]
+                        )
                     my_model = models.Bypass(
                         name=yaml_bypass["name"],
                         authors=yaml_bypass["authors"],
@@ -77,10 +78,13 @@ class BypassService:
                 log.exception("Error loading default bypass from %s", file_path)
 
     @staticmethod
-    def get_all(db: Session, default: bool | None = None):
+    def get_all(db: Session, default: bool | None = None, language: str | None = None):
         stmt = select(models.Bypass)
         if default:
             stmt = stmt.where(models.Bypass.is_default)
+        normalized_language = language.strip().lower() if language else ""
+        if normalized_language:
+            stmt = stmt.where(func.lower(models.Bypass.language) == normalized_language)
 
         return db.scalars(stmt).all()
 

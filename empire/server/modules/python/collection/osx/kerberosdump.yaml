@@ -18,8 +18,7 @@ description: |
   for lateral movement in Active Directory environments.
 software: ''
 tactics: [TA0006]
-techniques:
-  - T1558.003
+techniques: [T1558, T1558.005]
 background: false
 output_extension:
 needs_admin: false

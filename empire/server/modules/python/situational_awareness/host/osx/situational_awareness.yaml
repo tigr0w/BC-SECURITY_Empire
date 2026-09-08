@@ -48,11 +48,7 @@ options:
     value: '10'
   - name: Debug
     description: Enable a find keyword to search for within the iMessage Database.
-    required: true
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    required: false
+    value: false
 advanced:
   custom_generate: true

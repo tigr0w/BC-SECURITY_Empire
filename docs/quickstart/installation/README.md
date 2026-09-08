@@ -5,7 +5,7 @@ We recommend using the installation script or the Docker images to run Empire. A
 The following operating systems have been tested for Empire compatibility.
 
 * Ubuntu 22.04 / 24.04
-* Debian 11 / 12 / 13
+* Debian 12 / 13
 * Kali Linux
 * ParrotOS
 
@@ -16,7 +16,7 @@ As of Empire 6.0, Python 3.13 is the minimum required Python version.
 Note: The `main` branch is a reflection of the latest changes and may not always be stable. After cloning the repo, you can checkout the latest stable release by running the `setup/checkout-latest-tag.sh` script.
 
 ```bash
-git clone --recursive https://github.com/BC-SECURITY/Empire.git
+git clone https://github.com/BC-SECURITY/Empire.git
 cd Empire
 ./setup/checkout-latest-tag.sh
 ./ps-empire install -y
@@ -39,7 +39,7 @@ When running the ps-empire installation script, you can use the following option
 **Sponsors:**
 
 ```
-git clone --recursive https://github.com/BC-SECURITY/Empire-Sponsors.git
+git clone https://github.com/BC-SECURITY/Empire-Sponsors.git
 cd Empire-Sponsors
 ./setup/checkout-latest-tag.sh sponsors
 ./ps-empire install -y
@@ -102,7 +102,7 @@ All image versions can be found at: [https://hub.docker.com/r/bcsecurity/empire/
 
 ## Community-Supported Operating Systems
 
-At this time, we are choosing to only support Kali, ParrotOS, Debian 11/12/13, and Ubuntu 22.04/24.04 installations, however, we will accept pull requests that fix issues or provide installation scripts specific to other operating systems to this wiki.
+At this time, we are choosing to only support Kali, ParrotOS, Debian 12/13, and Ubuntu 22.04/24.04 installations, however, we will accept pull requests that fix issues or provide installation scripts specific to other operating systems to this wiki.
 
 ## Common Issues
 

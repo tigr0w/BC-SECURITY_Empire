@@ -57,6 +57,20 @@ if [ $INSTALL -eq 1 ]; then
   exit $?
 fi
 
+# Forward -y to empire.py when the invoked subcommand accepts it (currently `update`).
+# The wrapper's `-y` case intercepts the flag for install.sh; we re-attach it here
+# so `./ps-empire update -y` works symmetrically with `./ps-empire install -y`.
+# For other subcommands (server, setup), `-y` has no consumer — error instead of
+# silently dropping it.
+if [ -n "$YES_OPTION" ]; then
+  if [ "${EMPIRE_ARGS[0]}" = "update" ]; then
+    EMPIRE_ARGS+=("$YES_OPTION")
+  else
+    echo -e "\x1b[1;31m[!] -y is only accepted by 'install' and 'update' subcommands.\x1b[0m" >&2
+    exit 2
+  fi
+fi
+
 # Top-level -h (without install/test) — pass through to empire.py
 if [ $TEST -eq 0 ] && [ -n "$SHOW_HELP" ]; then
   EMPIRE_ARGS+=("$SHOW_HELP")
@@ -125,6 +139,18 @@ if [ "$EUID" -eq 0 ] && [ -z "$FORCE_OPTION" ]; then
     exit 1
 fi
 
-if [ $INSTALL -eq 0 ]; then
-    sudo -E poetry run python empire.py "${EMPIRE_ARGS[@]}"
-fi
+# `update` and `setup` both operate on user-owned paths only —
+# ~/.config/empire and ~/.local/share/empire — and running them under
+# `sudo -E` is what produced the root-owned files that earlier `update`
+# drafts worked around with chown helpers. `setup` is invoked from
+# `install.sh:455` and from the user directly; in both cases it needs to
+# create the user's config/data dirs as the user, not root. `server` keeps
+# sudo for now (privileged listener ports).
+case "${EMPIRE_ARGS[0]}" in
+    update|setup)
+        poetry run python empire.py "${EMPIRE_ARGS[@]}"
+        ;;
+    *)
+        sudo -E poetry run python empire.py "${EMPIRE_ARGS[@]}"
+        ;;
+esac

@@ -15,6 +15,242 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 -   Fixed background jobs for the python agent.
 
+## [7.0.2] - 2026-09-08
+-   Updated Starkiller to v4.0.3
+
+### Changed
+
+-   Updated Empire Compiler to v2.0.2: Sharpire now uses a CSPRNG for AES-GCM nonces and AES-CBC IVs, and fixes JSON backslash parsing, `cd` persistence, and network drive visibility. Certify submodule switched to BC-SECURITY fork with null-safety fixes, and adds BouncyCastle.Crypto.dll and updated CommandLine.dll/System.Net.Http.dll for Certify 2.0.
+
+### Removed
+
+-   Dropped Debian 11 (bullseye) support. It reached end of security support on 2026-08-31 and its `bullseye-security` release file expired on 2026-09-07, so `apt-get update` now fails and the installer cannot complete. Removed from the install script, the CI install-test matrix, and the docs.
+
+### Fixed
+
+-   Updated the `credentials/Certify` module to the Certify 2.0 command format, building as `Net47` with merged references and passing arguments straight through.
+-   Fixed `cd` in the Gopire agent not persisting: shell `cd` is now routed to `os.Chdir` instead of a throwaway subprocess, and the missing `TASK_CHDIR` handler was added.
+
+## [7.0.1] - 2026-08-25
+
+### Security
+
+-   Stopped logging the staging key: `get_staging_key()` no longer logs it at INFO, and `Config.__repr__` no longer renders it in plaintext.
+-   Made Ed25519 agent-certificate verification mandatory in the PowerShell and C# staging branches, which previously skipped it for an all-zero certificate.
+
+### Added
+
+-   Added an Inveigh credential parser (`situational_awareness/host/inveigh`) that ingests NetNTLMv1/v2 hashes from task output, tagging machine accounts `inveigh machine_account`.
+-   Added a per-option `format_string` override and a `{{ VALUE_ARRAY }}` token that renders a value as double-quoted, comma-joined elements for PowerShell `[Array]` parameters.
+-   Added a `krb_session_key` credential type storing the Rubeus session key as `<keytype>:<base64key>`, for both `dump` and `asktgt`/`asktgs` output.
+
+### Fixed
+
+-   Fixed Inveigh's six `[Array]` options binding as a single joined element; they now render per-element via `{{ VALUE_ARRAY }}`.
+-   Fixed Inveigh's `Proxy` (now optional) and `mDNSTypes` (now suggestion-based, not a closed set) options failing validation.
+-   Fixed the Rubeus credential parser not ingesting `dump` output; `dump` tickets now carry their `UserSID` and are tagged `rubeus:dump`.
+-   Rubeus credential `notes` now carry the ticket's service name (e.g. `rubeus:dump krbtgt/ASGARD.CORP`) so a session key can be paired with its ticket.
+-   Fixed `chat/message` broadcasts dying with `DetachedInstanceError` on MySQL, so chat messages now reach everyone in the room instead of only reappearing via `chat/history`.
+-   Fixed C# obfuscation on a stock install: the Docker image and `install.sh` now install `mono-complete` instead of `mono-runtime` (needed for modules like SharpHound).
+-   Fixed C# obfuscation of `Net47` modules (e.g. SharpHound) by adding a `net47` probePath to `confuser.crproj` so ConfuserEx resolves `System.ValueTuple`.
+
+## [7.0.0] - 2026-08-12
+
+### Security
+
+-   **BREAKING:** Replaced bcrypt password hashing with PBKDF2-HMAC-SHA256 (600K iterations) for FIPS SP 800-132 compliance. Existing hashes are incompatible — reset passwords or recreate the database.
+-   **BREAKING:** Replaced MD5 with SHA-256 for staging key normalization (non-32-char keys) per FIPS. Agents staged under the old algorithm must be re-staged.
+-   **BREAKING:** Replaced `random` with `secrets` (server) and `random.SystemRandom()` (agent) for CSPRNG generation per FIPS SP 800-90A, covering staging keys, keyword obfuscation, session IDs, and nonces across listeners, stagers, agents, and utilities. Deployed agents must be re-staged.
+-   Hardened TLS for FIPS SP 800-52r2: enforce TLS 1.2 minimum, drop non-GCM/non-ECDHE cipher suites from the JA3 evasion pool, and use RSA 4096-bit keys for self-signed certificates.
+-   Added `filter='data'` to `tar.extractall()` in compiler download to prevent path traversal from untrusted archives.
+-   Malleable profile `header` directives now reject CRLF in the name or value at both parse and deserialize time (dropping the directive with a warning), closing a header-injection vector through the Flask `after_request` merge.
+-   Replaced MySQL `MD5()` with `SHA2(..., 256)` for the `hosts.unique_check` generated column.
+-   The generated TLS private key is now written with mode `0600` rather than inheriting the process umask, which under `sudo -E` left a root-owned world-readable key.
+-   The generated TLS private key and staged certificate are written with `O_NOFOLLOW`, so a symlink planted at either path during a `sudo -E` (root) run can no longer redirect the write and truncate an arbitrary root-owned file.
+
+### Added
+
+-   Added an `AFTER_CHAT_MESSAGE_HOOK` core hook, fired after a chat message is persisted with `(db, message: ChatMessage)`, so plugins can observe chat traffic. Refactored the `chat/message` Socket.IO handler onto a testable `persist_and_fire_chat` helper (behavior-preserving).
+-   **BREAKING:** Added a `./ps-empire update` subcommand that moves the checkout to the latest release tag, refreshes `config.yaml`, and fast-forwards Starkiller, the plugin registry, and the Empire Compiler binary (skips source on dev branches). The base `config.yaml` is overwritten on every update — move local customizations to `config.user.yaml`.
+-   `./ps-empire update` now applies pending Alembic migrations during the upgrade (prompts to back up first, `-y` to auto-confirm), so a schema mismatch no longer crashes the server on next start.
+-   Smoothed the bcrypt → PBKDF2 upgrade: a bcrypt-shaped default-user hash is auto-reset to PBKDF2 on startup (logged with recovery steps) and non-default bcrypt users are left untouched. **Manual recovery:** an admin `PUT /api/v2/users/{id}/password` (or Starkiller) stores a PBKDF2 hash.
+-   Added `starkiller.directory` config option to serve an already-built Starkiller instead of cloning one from GitHub at startup, enabling air-gapped and distro-packaged installs.
+-   Added `wdtoggle`, `psx`, `psm`, `psk`, `psw`, `psc`, and `winver` BOF modules from the Outflank C2-Tool-Collection:
+    -   `wdtoggle` — patch WDigest/Credential Guard in LSASS to re-enable plaintext credential caching
+    -   `psx` — process list annotated with detected security products (AV/EDR/logging tools)
+    -   `psm` — detailed single-process info by PID (loaded modules, TCP connections, RDP sessions)
+    -   `psk` — loaded kernel modules/drivers annotated with security-product driver detection
+    -   `psw` — enumerate window titles across running processes
+    -   `psc` — process list with active TCP connections and RDP session details
+    -   `winver` — Windows version, build number, and patch revision of the target host
+-   Added `netuse_add`, `netuse_list`, and `netuse_delete` BOF modules splitting the TrustedSec netuse BOF into three focused modes (map a share, enumerate connections, disconnect).
+-   Added `sc_enum` BOF module to bulk-enumerate all services on a local or remote host via SCM (config, query, failure, and trigger data in one call).
+-   Added `sc_qc` BOF module to query a Windows service's configuration (binary path, start type, account, dependencies) via SCM.
+-   Added `sc_qdescription` BOF module to query a Windows service's description via SCM.
+-   Added `sc_qfailure` BOF module to query a Windows service's failure actions (restart, run command, reboot) via SCM.
+-   Added `sc_qtriggerinfo` BOF module to query the trigger events that start or stop a Windows service.
+-   Added `netuserenum` BOF module to enumerate local or domain user accounts via `NetUserEnum` with a configurable filter.
+-   Added `nslookup` BOF module for DNS lookups via the Windows DNS client API, with optional custom server and record type.
+-   Added `notepad` BOF module to enumerate open Notepad/Notepad++ windows and extract the displayed file path or in-memory text.
+-   Added `sprayad` BOF module (credentials).
+-   Added `findLoadedModule` BOF module to enumerate processes that have a given module (DLL substring) loaded — useful for locating injection targets and fingerprinting EDR.
+-   Added `vssenum` BOF module to enumerate Volume Shadow Copies exposed on a host's SMB share — useful for locating offline SAM/SYSTEM/NTDS hives.
+-   Added an `InjectSelf` option (default `true`) to `inject_amsi_bypass` and `inject_etw_bypass` so the server injects the bypass into the agent's own process; set `false` to target a remote PID.
+-   Added `addmachineaccount` BOF module (lateral movement).
+-   Added `nonpaged_ldapsearch` BOF module for synchronous non-paged LDAP queries against a domain controller, useful when paged queries are throttled; refreshed the in-repo `.o` files.
+-   Added `ldapsearch` BOF module for LDAP/LDAPS queries against a domain controller with configurable scope.
+-   Added 5 ajpc500 BOF modules for syscall-based injection and defense evasion:
+    -   `etw_patching` — patch or revert `EtwEventWrite` in ntdll to degrade ETW logging in-process
+    -   `static_syscalls_dump` — dump a target process's memory via static syscall numbers, bypassing ntdll hooks
+    -   `static_syscalls_inject` — inject shellcode into a remote process via static syscalls
+    -   `static_syscalls_apc_spawn` — spawn a temporary process and inject shellcode via APC queue using static syscalls
+    -   `syscalls_shellcode_injection` — inject shellcode into a remote process via direct syscalls
+-   Added 7 Outflank C2-Tool-Collection BOF modules:
+    -   `reconad` — ADSI-based Active Directory reconnaissance
+    -   `domaininfo` — AD domain membership and Azure AD join status of the host
+    -   `smbinfo` — SMB server info via `NetServerGetInfo`
+    -   `findmodule` — find processes with a given module (DLL) loaded
+    -   `findprochandle` — find processes holding a handle to a named object
+    -   `startwebclient` — start the WebClient service via ETW trigger registration
+    -   `lapsdump` — dump LAPS passwords (`ms-Mcs-AdmPwd`) from AD via LDAP
+-   Added a downloadable chatlog report (`report=chat`, included in `report=all`) exporting `chatlog.csv`. Operator chat is now persisted to a new `chat_messages` table (alembic `0003`) instead of an in-memory list, and `chat/history` now returns the most recent 20 messages.
+-   Added `TASK_CHDIR` (opcode 44) and `POST /api/v2/agents/{id}/tasks/chdir` to persistently change the agent's working directory (PowerShell, Python, IronPython).
+-   Added situational-awareness modules replacing the removed in-agent aliases: `powershell/situational_awareness/host/{processes,ipconfig,route,dir_list}` and `python/situational_awareness/host/processes` (PowerShell variants emit JSON for the existing server-side filters).
+-   Added chunked file uploads to agents, removing the 1MB limit — files split into 512KB chunks drip-fed across checkins. Supports all agent languages with backward-compatible protocol detection.
+-   Added `reg_query` BOF module for in-agent Windows registry queries (key enumeration, value lookup, recursive traversal) on local or remote systems; refreshed the in-repo `.o`.
+-   Added SharpHound C# module for BloodHound Active Directory enumeration with ILRepack assembly merging.
+-   Added `MergeReferences` option to the C# module YAML schema, enabling ILRepack dependency merging via the Empire Compiler `--merge-references` flag.
+-   Added AES-256-GCM across the stack: an `AES256GCM` AEAD class in `encryption.py` (server), a pure-Python version (`agent/stagers/common/aesgcm.py`) for Python/IronPython stagers, and a .NET 4.x C# `AesGcmHelper` for PowerShell stagers.
+-   Added `SafeChecksPS` / `SafeChecksPython` bypass YAMLs consolidating the snippets the removed `SafeChecks` option used to inject. Opt in via a stager's `Bypasses` parameter.
+-   Added parser support for the Cobalt Strike `http-config` block. The malleable HTTP listener wires `trust_x_forwarded_for` (default False), `block_useragents` (fnmatch globs returning the shared IIS 7.5 404), and `header` (merged into every response); `set headers` ordering is parsed but not yet enforced.
+-   Added parser support for the Cobalt Strike `https-certificate` block (`CN`, `O`, `OU`, `C`, `L`, `ST`, `validity`, `keystore`, `password`). **Parse-only** — Empire still loads the cert from `CertPath` and logs a startup warning; runtime cert generation is deferred.
+-   Added a `language` query parameter to the bypasses list endpoint to filter bypasses to a single execution language.
+-   Added a computed `bypass_language_map` to stager-template options, exposing per payload `Language` which execution language its bypasses run in so Starkiller's bypass picker can filter correctly (declared via `BypassLanguage` plus sparse `BypassLanguageOverrides`).
+-   Added `port_forward_pivot` support for all agent types: a backgrounded userspace TCP relay replaces the netsh redirector (adding Sharpire, Gopire, and Python alongside PowerShell), and the listener manages its own inbound firewall rule so the relay binds without a Windows Firewall prompt.
+-   Added a `register_listener_template` plugin hook so plugins can contribute listener templates from `on_load` (with matching `unregister_listener_template` and a `BasePlugin.register_listener` convenience).
+-   Added credential-parser hooks for non-agent ingestion paths: the `CredentialParser` protocol now accepts `agent=None` for sources not tied to an Empire agent, plus a new `NETNTLMV2` credential type (hashcat mode 5600).
+-   Added Gopire (Go agent) support for backgrounding long-running PowerShell jobs and the `TASK_STOPJOB` stop-job task.
+-   Added a malleable `host_stage` gate to disable the stager URI, plus a Gopire malleable schema version guard.
+-   Added `api.cors_origins` config field (default `["*"]`) to make CORS allowed origins operator-configurable for both the REST API and Socket.IO server. Override via `config.yaml` or `EMPIRE_API__CORS_ORIGINS` (JSON-encoded list).
+-   Global tag registry API at `/api/v2/tags`: list (with `usage_count`), get, create, rename/recolor/edit-description, and delete-everywhere.
+-   Added a standalone C# module compilation test (`tests/test_compile_csharp.py`) compiling every C# module against the real EmpireCompiler, parametrized per-module. Marked `@pytest.mark.slow`.
+-   Added AES-GCM interoperability and routing-packet tests: cross-implementation server/agent parity, plus wrong-key rejection, tampered packets, AAD mismatch, empty/non-block-aligned plaintexts, and concatenated packets.
+-   Migration `0006`: widens `agent_files.session_id` to `String(255)` and adds `ON DELETE CASCADE` FK to `agents.session_id`.
+-   Added an `empire-server` console script so an installed Empire has a working entry point.
+-   Added `click` and `werkzeug` as explicit dependencies; both were imported directly but supplied only transitively by Flask.
+
+### Changed
+
+-   **BREAKING:** Base directories now use `platformdirs`, making config, data, and cache paths XDG-compliant. Defaults are unchanged unless `$XDG_*_HOME` is set; the Go build cache moves to `~/.cache/empire` and rebuilds on first use.
+-   **BREAKING:** Replaced raw SHA-256 with HKDF-SHA256 (RFC 5869) for DH session key derivation per FIPS SP 800-56C across all agent languages, normalizing the shared secret to 768 bytes (NIST SP 800-56A). All deployed agents must be re-staged.
+-   **BREAKING:** Tags are now a shared registry: a flat unique `name` with a single shared `color` and `description`, applied many-to-many to entities. The old `key:value` model (per-entity tag rows, `value` field, `name:value` label) is removed.
+-   **BREAKING:** Per-entity tag endpoints now ATTACH/DETACH a shared tag by id: `POST {entity}/{id}/tags` takes `{tag_id}` (attach existing, `200`; `404` if unknown) — create tags first via `POST /api/v2/tags`; `DELETE` detaches but the tag persists. Tag list filters use exact `?tags=name` (no colon).
+-   **BREAKING:** Tag hook contract changed: new `AFTER_TAG_ATTACHED_HOOK` (`db, tag, taggable`) fires on every attach; `AFTER_TAG_CREATED_HOOK` and `AFTER_TAG_UPDATED_HOOK` are now pure registry signals (`db, tag`, no `taggable`).
+-   **BREAKING:** Typed module-option metadata in GET responses. Boolean options moved to native `value: false` in YAML, so options now report a real `value_type` (`BOOLEAN`/`INTEGER`/`FLOAT` instead of `STRING`) and a populated `type`. POST bodies are unaffected — native JSON `bool`/`int`/`float` are accepted and re-typed per option by `safe_cast`.
+-   **BREAKING:** Listeners and stagers now raise `ListenerValidationException` / `StagerGenerationException` instead of returning error strings or `(False, "msg")` tuples. Plugin and module execution paths no longer return tuples; errors are raised.
+-   **BREAKING:** Removed unused `listener` and `external_ip` parameters from `update_agent_sysinfo()` in `AgentCommunicationService`.
+-   Pointed the plugin registry at the `7.x` branch of `Empire-Plugin-Registry-Sponsors`. Each major line reads its own `<major>.x` branch; `main` stays pinned for 6.x installs.
+-   The persisted plugin registry row is now reconciled from the on-disk clone on every boot instead of written once at first load, so a ref change reaches an already-installed server. A sync or parse failure keeps the last-good row instead of aborting startup.
+-   The plugin marketplace now serves only registries named in the config, so a renamed or removed registry's leftover row can't list plugins or resolve installs against an older major line.
+-   Extended typed boolean options to stager and listener templates, which now report `value_type: BOOLEAN` (e.g. `Obfuscate`, `Base64`, `JA3_Evasion`) instead of string `"True"`/`"False"` defaults — also fixing `JA3_Evasion`'s `'False'` default always being truthy. POST bodies are unaffected.
+-   Migrated server-side module `generate()` methods to read native typed options (`if params["X"]:`) and removed the `normalize_legacy_params` shim. API clients are unaffected; only direct non-API callers of `validate_options` passing a native `bool` against a stringly `depends_on`/`suggested_values` list see a change.
+-   Replaced ChaCha20-Poly1305 with AES-256-GCM for routing-packet encryption across all agent languages (FIPS compliance). The C# agent (Sharpire) must be updated separately.
+-   Increased HMAC-SHA256 truncation from 10 to 16 bytes (128 bits) for AES-CBC payload encryption per FIPS SP 800-107, across all agent languages. The C# agent (Sharpire) must be updated separately.
+-   Updated Empire Compiler to v2.0.0 (FIPS-compliant Sharpire with 16-byte HMAC, HKDF-SHA256, AES-GCM) and migrated C# module YAMLs to its new format.
+-   Fixed Go `CheckPublicKey` to use the Legendre symbol `(prime-1)/2` exponent instead of Fermat's `(prime-1)`, which always returned true.
+-   Set all C# modules to `background: true` so compiled tasks run without blocking the agent.
+-   Renamed VNC module `Username` option to `ServerName` to reflect its purpose (session display name, not a credential).
+-   Removed the redundant `Agent` option from PatchETW and PatchlessAMSI modules (auto-injected by the framework).
+-   Replaced `AESCipher.generate_key()` (sampled printables, ~207-bit entropy) with `os.urandom(32).hex()` for full 256-bit CSPRNG entropy, returned as hex to match the DH session-key format.
+-   Unexpected (non-`Module*Exception`) errors in a custom-generate module's `generate()` now return HTTP 500 (`"Error generating script."`) instead of 400; `ModuleValidationException`/`ModuleExecutionException` still map to 400/500 and the legacy tuple path still returns 400.
+-   `BypassService.load_bypasses` runs `ps_convert_to_oneliner` only on `language: powershell` scripts, so multi-line Python/Bash bodies are persisted verbatim.
+-   Python launcher branches in the `http`, `http_malleable`, `http_foreign`, `http_hop`, `port_forward_pivot`, and `smb` listeners now concatenate matching-language bypass scripts (previously Python-targeted bypasses never reached the agent).
+-   Changed `AES256GCM` / `ChaCha20Poly1305` decrypt/open to catch `InvalidTag` specifically instead of bare `Exception`.
+-   Changed `AESCipher.verify_hmac()` to use `hmac.compare_digest` for constant-time comparison.
+-   Downgraded the compiler-args log message from INFO to DEBUG to reduce server log noise.
+-   Demoted the malleable "accepting `set <key>` but not acting on it" log from INFO to DEBUG (the allow-list spans 60+ keys and flooded consoles); unknown directives still WARN.
+-   Parallelized the test suite with pytest-xdist and preserved the cached empire-compiler / Starkiller / Go-build dirs across runs instead of re-downloading them each time (developer/CI change).
+-   The two heaviest C# compile tests (SharpHound, Rubeus) now run only on release branches / the `run-all-versions` label instead of every PR; the other C# modules still compile per-PR (developer/CI change).
+-   Download responses now carry an explicit `Content-Type` from an Empire-owned extension map, so a file no longer serves as a different type depending on the operator's distro; anything unmapped serves as `application/octet-stream`.
+-   The self-signed server certificate is now generated in process with `cryptography` instead of shelling out to `setup/cert.sh`, which removes Empire's runtime dependency on `bash` and an `openssl` binary.
+-   Vendored the Malleable C2 profiles directly into the repository instead of shipping them as a git submodule, so installs that do not clone with submodules -- release tarballs, "Download ZIP", and the sdist and wheel -- now receive all 75 profiles instead of silently receiving none.
+    **Upgrading an existing clone:** run `rm -rf empire/server/data/profiles` before checking out or merging this change, or git will abort with "untracked working tree files would be overwritten".
+
+### Removed
+
+-   **BREAKING:** Removed the deprecated `handle_error_message` helper. Callers should let exceptions propagate.
+-   **BREAKING:** Removed deprecated `installPath` string attribute from `MainMenu`. Use `install_path` (a `Path`); third-party plugins and stagers referencing `self.main_menu.installPath` or `self.mainMenu.installPath` must switch.
+-   **BREAKING:** Removed in-agent `shell` command aliases (`ls`, `cd`, `pwd`, `ps`, `ipconfig`, etc.) from the PowerShell, Python, and IronPython agents; `shell <cmd>` now passes straight to the system shell (matching C#/Go). Use the new `situational_awareness/host/*` modules for structured output and `TASK_CHDIR` for directory changes.
+-   **BREAKING:** Removed unused `stager_retries` parameter from `generate_launcher()` across all listeners and stagers, and the corresponding `StagerRetries` stager option.
+-   **BREAKING:** Removed the per-entity `PUT {entity}/{id}/tags/{tag_id}` endpoint and the `value` / `label` fields on the tag DTO. Tags are now a flat global registry — edit a tag once via `PUT /api/v2/tags/{id}`; entities only attach and detach.
+-   **BREAKING:** Removed the `SafeChecks` option from all stagers, modules, listeners, and the stager API DTO (including the PowerShell version-guard, `Expect: 100-Continue`, and `python_safe_checks()` helpers). Behavior is now opt-in via the `SafeChecksPS`/`SafeChecksPython` bypasses; callers that hardcoded `SafeChecks=True` must add the matching bypass to `Bypasses`.
+-   Removed ChaCha20-Poly1305 classes from `encryption.py` and the agent-side `chacha.py` stager — not FIPS-approved; routing packets already use AES-256-GCM.
+-   Removed the Seatbelt module (superseded by updated Empire Compiler modules).
+-   Removed legacy PowerShell BloodHound/SharpHound modules, replaced by the native C# SharpHound module.
+-   Removed the `powershell/management/switch_listener` module and all switch-listener infrastructure (API endpoint, packet types, task service, response handlers).
+-   Removed dead `getIV()` function from agent stager AES code (bypassed by inline `os.urandom()`).
+-   Removed a byte-identical duplicate definition of `Profile._apply_set_directive` in `malleable/profile.py` (dead code from a merge artifact).
+-   Removed `setup/cert.sh`; certificate generation happens automatically on first server start.
+-   Removed the `submodules.auto_update` config key and the startup submodule check/fetch; existing configs carrying the key still load and the key is ignored.
+-   The startup submodule check used to abort the server with `sys.exit(1)` on an unpopulated submodule, though it returned early when no `.git` directory was present and so never fired for the archive installs this release fixes; with the submodule gone, a missing profiles directory is now logged rather than fatal.
+
+### Fixed
+
+-   Fixed one plugin raising in `on_stop`/`on_unload` aborting the whole shutdown teardown, leaving every plugin after it running. Each teardown now runs in its own session.
+-   Fixed a plugin raising during load taking down startup and every plugin behind it. Each load now runs in its own savepoint, a malformed `plugin.yaml` is skipped instead of aborting the boot, and a plugin that fails after `on_load` is unloaded rather than left with its hooks and listener templates registered.
+-   Fixed `plugin.enabled` being set only _after_ `on_start`/`on_stop` returned, so a `while self.enabled` worker raced the flag — exiting at boot, or never stopping on disable or shutdown. It is now set before the hook on every path.
+-   Fixed `hooks.unregister_hook(name)` / `unregister_filter(name)` raising `KeyError` when called without an event, unless the name was registered under every event. An unregistered name is still tolerated, but now warns.
+-   Fixed registry-supplied authors never reaching a plugin installed from the marketplace: `_merge_plugin_config` indexed a single registry entry as if it were a whole registry document, so the lookup always missed.
+-   Fixed `custom_generate` PowerShell modules emitting `-Option False` for an unset boolean `[switch]`, producing a malformed command (`find_fruit`, `WireTap`, `runas`, `inveigh_relay`, `deaduser`, `get_subnet_ranges`, and the `powershell_template.py` they derive from). A set switch now emits a bare flag and an unset one emits nothing. Closes #1518.
+-   Fixed `bof/credentials/nanodump` boolean flags (`valid`, `fork`, `snapshot`, etc.) being silently ignored — the module compared against lowercase `"true"` while option values render as `"True"`, so every flag resolved to `0`. They now read the native bool.
+-   Fixed `bof/management/static_syscalls_inject` and `syscalls_shellcode_injection` reporting success but never delivering a callback: `BeaconDataLength()` includes the 4-byte length prefix, so the shellcode size was 4 bytes too large and the page-rounded value clobbered the write length. Shellcode is now page-aligned.
+-   Fixed agent listener name not updating in the database on rename, causing Starkiller to show the old name.
+-   Fixed the csharp/ironpython/go EXE-oneliner stagers silently dropping the operator's `Bypasses` selection; the PowerShell downloader they emit now prepends the selected PowerShell bypasses.
+-   Fixed `windows/launcher_bat` ignoring the operator's `Bypasses` for PowerShell payloads on non-HTTP listeners, and silently emitting a do-nothing `.bat` for csharp/ironpython/go on non-HTTP listeners; bypasses now apply and unsupported language/listener combinations raise `StagerGenerationException`.
+-   Fixed a race in concurrent stager generation where `generate_powershell_exe` and `generate_python_exe` shared a single `Data/EmbeddedResources/common/launcher.txt`, cross-contaminating launcher content when two compilations overlapped. Each call now writes to a unique per-compilation subdirectory.
+-   Fixed the dead `length < 0` bounds check in routing-packet parsing (unreachable for unsigned lengths), replaced with proper end-of-buffer validation in both the Python server `parse_routing_packet` and the Go agent.
+-   Fixed Go agent `ParseRoutingPacket` to use the offset when reading the nonce from multi-packet payloads.
+-   Fixed silent error swallowing in agent `aesgcm.py` `process_tasking`/`process_job_tasking` — bare `except Exception: pass` replaced with specific handling and error reporting to C2.
+-   Fixed the VNC module using copy-pasted ThreadlessInject code instead of the NVNC library (non-functional since introduction); now uses `NVNC.VncServer` with the module's Password/Port/ServerName options.
+-   Fixed bare `except:` clauses in agent `parse_task_packet`, narrowed to `UnicodeDecodeError`.
+-   Fixed bypass concatenation being silently skipped in the `http_foreign`, `http_hop`, `port_forward_pivot`, and `template` listeners when `SafeChecks=False` (the loop was nested in the `safe_checks` block); bypasses now always apply.
+-   Fixed the pre-existing typo `safe_checks = params["UserAgent"]` in `python/privesc/multi/sudo_spawn.py` by removing the line with the rest of the `SafeChecks` plumbing.
+-   Fixed `Profile._deserialize`/`HttpsCertificate._deserialize` using raw `bool(...)` for `host_stage`/`trust_x_forwarded_for`, mapping `"false"` back to `True` — which could silently re-enable a disabled stager URI. A malformed `validity` is now log-dropped instead of killing listener startup.
+-   Fixed the malleable HTTP listener returning a Flask 500 (`AttributeError` on `extract_client`) for a request URI matching none of the configured `http-get`/`http-post`/`http-stager` URIs; it now returns the shared IIS 7.5 404, preserving the uniform fingerprint.
+-   Fixed `taskUri` vs `taskURI` variable name mismatch in HTTP malleable listener generated agent code that would cause a `NameError` on target.
+-   Fixed BOF argument packing in `generate_script_bof`/`generate_go_bof`: empty optional `z`-format options became a `" "` sentinel that BOFs misread as a value (e.g. `reg_query` → `ERROR_BAD_NETPATH`), and POSIX-mode `shlex` stripped backslashes from registry paths. Arguments are now passed as a pre-built list.
+-   Fixed C#/IronPython/Go stagers being blocked against the malleable HTTP listener despite Sharpire/Gopire support. The 15 hardcoded allow-list gates (`multi/launcher`, the `windows/*` wrappers, `invoke_psexec`) now route via `listener.stager_url()`, and `http_malleable.generate_stager` serves the binary instead of an empty stage, so launcher/wrapper flows get an executable payload at stage 0.
+-   Fixed boolean module options forwarded straight to a truthy check (`if obfuscate:`) being effectively always-on; native `False` now reaches custom-generate modules. Most notably `csharp/management/ThreadlessInject`'s `Obfuscate` always obfuscated regardless of the toggle; the same applies to `CheckAll`/`NoDefaults`/`Debug` in several SQL and macOS modules.
+-   Fixed `powershell/privesc/powerup/service_stager` and `service_exe_stager` raising `KeyError` on every invocation by setting `UserAgent` / `Proxy` / `ProxyCreds` on the `windows_launcher_bat` template, which defines no such options; removed the dead proxy plumbing from both modules and their YAMLs.
+-   Fixed `ExtFile` mode being non-functional in seven PowerShell persistence modules (`persistence/userland/{registry,schtasks,backdoor_lnk}`, `persistence/elevated/{registry,schtasks,wmi,wmi_updater}`): `enc_powershell()` returns `bytes`, so six raised `TypeError` (shown to the operator as the generic `Error generating script.`) and `backdoor_lnk` silently embedded the `b'...'` repr. Each call site now decodes to `str`.
+-   Fixed several long-standing module option read-mismatches surfaced during the typed-options review, where an option's name or type didn't line up with how `generate()` read it — leaving a toggle dead, always-on, or crashing the module. None were introduced by the boolean migration; all predate it.
+    -   `bof/situational_awareness/windowlist` — the "list every window" flag read `params.get("all")` (lowercase), which never matched the `All` option, so it was hard-wired off regardless of the toggle.
+    -   `powershell/lateral_movement/invoke_sqloscmd` — was entirely non-functional: its `script_path` pointed at `Invoke-SQLOSCmd.ps` (the source file is `.ps1`), so loading failed on every run, and `generate()` read `Obfuscate` / `ObfuscateCommand` options the YAML never declared (a `KeyError`). The path is corrected and the two launcher-obfuscation options added.
+    -   `powershell/credentials/mimikatz/dcsync_hashdump` — `Forest`, `Computers`, and `Active` are booleans but were compared against `""`, so `-DumpForest` / `-GetComputers` were always appended and `-OnlyActive:$false` never was. They now read as native bools; `Active` defaults to `true` (only-active) to match its description and the `$OnlyActive = $true` default in `Invoke-DCSync.ps1`.
+    -   `python/collection/osx/prompt` — `ListApps` / `SandboxMode` are booleans compared against `""`, so the `ListApps` branch was always taken and the sandbox / app-prompt branches were dead.
+    -   `powershell/credentials/credential_injection` — the "either `NewWinLogon` or `ExistingWinLogon` must be specified" guard compared both booleans against `""`, so it never raised and the module ran with neither option selected. The module's bespoke option loop also emitted every option as `-Name Value`, so a normal `NewWinLogon` run still appended the unset `-ExistingWinLogon False`; because the two are `[Switch]` parameters in mutually-exclusive parameter sets, that command failed to bind on the agent. The loop now keys on each option's native type — boolean switches emit a bare flag only when set, while value options (including a literal `"True"`/`"False"`, e.g. a password) pass through unchanged.
+    -   `powershell/persistence/elevated/schtasks` — the `OnLogon` boolean was compared against `""`, so the ONLOGON trigger was always selected and the `IdleTime` / `DailyTime` trigger branches were unreachable.
+    -   `powershell/situational_awareness/host/packet_capture` — the `Persistent` boolean was compared against `""`, so `persistent=yes` was always appended to `netsh trace start` regardless of the toggle.
+    -   `powershell/privesc/bypassuac_fodhelper` — `generate()` reads a `Command` option (a custom launcher command used instead of a Listener) that the YAML never declared, so that path was dead; and `Listener` was `required: true`, so the custom-command branch was unreachable anyway. `Command` is now declared and `Listener` made optional, matching the module's "either Listener or Command" logic.
+-   Fixed the `csharp_exe` stager ignoring the global obfuscation config — csharp/ironpython payloads (where the per-stager `Obfuscate` option is hidden) now fall back to the `csharp` `ObfuscationConfig`, so ConfuserEx runs on the produced `.exe`.
+-   Fixed dynamic PowerShell script generation not resolving aliased, mis-cased, or long-form PowerView function names.
+-   Fixed `create_download` requiring a user, which blocked downloads from autorun tasks that have no associated operator.
+-   Fixed 25 module YAMLs carrying ATT&CK technique IDs that no longer resolve under v19, remapping the `T1562` Impair Defenses family to `T1685`/`T1686`/etc. and `T1070.001` to `T1685.005`.
+-   Fixed Python 3.13/3.14 and library deprecation warnings across the server (`datetime.utcnow()` → `now(UTC)`, `asyncio.iscoroutinefunction` → `inspect`, pyparsing `escChar`/`searchString`, Pydantic v1 `class Config`/`Field(env=)`, Starlette `HTTP_422_*`).
+-   Fixed `_generate_script` firing a spurious `DeprecationWarning` on every successful module execution; it now returns data directly (or raises `Module*Exception`). The tuple-return warning in `execute_module` now fires only for legacy `(None, msg)` custom-generate modules.
+-   Fixed `ShellPostRequest.literal` firing a spurious `DeprecationWarning` on every shell POST; the handler no longer reads the field and `literal` was dropped from `create_task_shell`, though the DTO keeps it `deprecated=` for clients.
+-   Fixed `is_option_required` raising `KeyError` on a `depends_on` entry that omits a `values` list; a valueless dependency now imposes no value constraint, matching `evaluate_dependencies`. No shipped module triggers this, but it crashed validation for any valueless `depends_on`.
+-   Fixed a missing `x86_64-w64-mingw32-gcc` in the Windows C stager returning an opaque 500 instead of a 400 naming the toolchain and its install command.
+-   The built wheel now ships modules, listeners, stagers, profiles, agent sources and configs, so an installed Empire is no longer left with zero of them.
+-   The server no longer resolves its seeded config, ConfuserEx project file or certificate script against the current working directory, so it can be started from any directory.
+-   `git` submodule and commit-SHA lookups now run against Empire's own repository instead of whatever directory the server was launched from.
+-   The `install` subcommand now exits with an error where it is unavailable instead of silently succeeding.
+-   Running the server with no subcommand now prints usage and exits 2, instead of importing the whole server and exiting 0 for what is a usage error.
+-   The server now regenerates its self-signed certificate when either half of the pair is missing, so a key written without its certificate is no longer left mismatched on every subsequent start.
+-   An HTTPS `http_malleable` listener with no `CertPath` now falls back to the generated pair in the data directory instead of a CWD-relative `setup/`, which never contained one.
+-   Removed a startup network fetch (`git submodule update --init --recursive`) that ran by default on git checkouts and blocked air-gapped installs.
+-   The profile loader now logs an error when it finds no profiles at all instead of starting up silently, so an empty profiles directory is visible at boot rather than when a malleable listener has nothing to select.
+
 ## [6.7.1] - 2026-07-25
 -   Updated Starkiller to v3.6.0
 
@@ -38,6 +274,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+-   Refactored FastAPI app to use lifespan context manager, `app.state` for singletons, and a standard ASGI entrypoint (`empire.server.asgi`), eliminating module-level globals and import-time side effects
 -   Migrated the data-access layer from the SQLAlchemy 1.x Query API to the 2.0 `select()` idiom across the core services, `data_util`, `jwt_auth`, the `http`/`http_malleable` listeners, and `basic_reporting`. Behavior-preserving and still synchronous; `db.query()` no longer appears in `empire/server`.
 -   Migrated the ORM models in `core/db/models.py` from `Column()`/`declarative_base()` to 2.0 typed declarative (`Mapped[]`/`mapped_column()`). Schema-preserving: generated DDL is identical and `alembic` autogenerate detects no diff.
 -   Modernization quick wins (no behavior change): timezone-aware `datetime.now(UTC)` in `jwt_auth`, O(1) startup existence checks in `core/db/base.py`, removal of the Python-2 `old_div` shim and unused `math_util.py`, and a `ruff` pre-commit bump to match `pyproject.toml`.
@@ -1453,7 +1690,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.2...HEAD
+
+[7.0.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.1...v7.0.2
+
+[7.0.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.0...v7.0.1
+
+[7.0.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.1...v7.0.0
 
 [6.7.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.7.0...v6.7.1
 

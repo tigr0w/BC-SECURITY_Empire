@@ -4,10 +4,28 @@ from pathlib import Path
 
 import pytest
 
-# Paths must stay in sync with config_manager.py's TEST_MODE branch.
+from empire.server.core.config import paths
+
+# Test dirs use the same side-effect-free `paths` helpers as config_manager, with
+# the isolated "empire-test" app name. We import `paths`, NOT `config_manager` —
+# importing config_manager at startup would trigger its mkdir/config-copy side
+# effects before _reset_test_dirs runs (see _reset_test_dirs for the invariant).
 _REPO_ROOT = Path(__file__).resolve().parent
-_TEST_CONFIG_DIR = Path.home() / ".config" / "empire-test"
-_TEST_DATA_DIR = Path.home() / ".local" / "share" / "empire-test"
+_TEST_CONFIG_DIR = paths.config_dir("empire-test")
+_TEST_DATA_DIR = paths.data_dir("empire-test")
+_TEST_CACHE_DIR = paths.cache_dir("empire-test")
+
+
+def _worker_data_dir():
+    """DATA_DIR for the current process — per-worker under pytest-xdist.
+
+    Mirrors config_manager's DATA_DIR derivation: under xdist each worker owns
+    ``empire-test/worker-<gw>`` (writable state), while the shared base
+    ``empire-test`` holds the read-only caches symlinked into each worker dir.
+    Keep in sync with the DATA_DIR branch of config_manager.py.
+    """
+    worker = os.environ.get("PYTEST_XDIST_WORKER", "")
+    return _TEST_DATA_DIR / f"worker-{worker}" if worker else _TEST_DATA_DIR
 
 
 def pytest_addoption(parser):
@@ -31,16 +49,40 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "mysql: mark test as requiring MySQL (and Docker)"
     )
+    config.addinivalue_line(
+        "markers",
+        "release_only: heavy test (the SharpHound/Rubeus C# compiles) run only on "
+        "release/label CI, deselected on per-PR runs via -m 'not release_only'",
+    )
+    config.addinivalue_line(
+        "markers",
+        "mingw: requires the x86_64-w64-mingw32-gcc cross-compiler; the tests "
+        "self-skip too, so -m 'not mingw' deselects them without running",
+    )
     _reset_test_dirs()
 
 
 def _reset_test_dirs():
-    """Wipe and reseed test-mode CONFIG_DIR and DATA_DIR once per pytest session.
+    """Reseed test-mode CONFIG_DIR and scrub per-run state once per pytest session.
 
-    The wipe used to live as a module-import side-effect in config_manager.py.
-    That meant every subprocess (e.g. the perf-test Empire server) re-wiped the
-    directory, defeating the in-process compiler cache. Owning it here in
-    pytest_configure lets the wipe fire exactly once.
+    Owning this here in pytest_configure — rather than as a config_manager
+    module-import side effect — makes it fire exactly once per session instead of
+    once per subprocess (e.g. the perf-test Empire server), which used to defeat
+    the in-process compiler cache.
+
+    It used to ``rmtree`` the *entire* DATA_DIR every session, which wiped the
+    cached ~540MB empire-compiler, the Starkiller clone, and the plugin-registry
+    clones, forcing a full re-download on every run (~13s on CI, ~30s+ locally) —
+    and, under pytest-xdist, once per worker. We now PRESERVE those read-only
+    caches and scrub only the per-run mutable state subdirs. Test isolation does
+    not depend on this wipe: the database is reset independently by
+    reset_db()/startup_db() in the client fixture, and the per-run mutable dirs
+    below are recreated by the app as needed.
+
+    Cache dirs preserved (under DATA_DIR): empire-compiler/, starkiller/,
+    plugin-registries/. Mutable dirs scrubbed: downloads/,
+    obfuscated_module_source/. CACHE_DIR (the separate platform cache dir) holds
+    the Go build cache; see the wipe-guard below for its xdist handling.
 
     The invariant we rely on: nothing imported during pytest startup or
     initial-conftest loading transitively imports config_manager. The first
@@ -49,22 +91,42 @@ def _reset_test_dirs():
     and empire/test/conftest.py has set sys.argv to point at
     test_server_config.yaml. So config_manager's module body — and the
     empire_config singleton it builds — uses the test config and sees a
-    clean DATA_DIR.
+    clean per-worker DATA_DIR.
     """
     if not os.environ.get("TEST_MODE"):
         return
 
-    shutil.rmtree(_TEST_CONFIG_DIR, ignore_errors=True)
-    shutil.rmtree(_TEST_DATA_DIR, ignore_errors=True)
+    # Delete the seeded files, not the directory: CONFIG_DIR *is* DATA_DIR on
+    # macOS and Windows (see paths.py), so rmtree'ing it took the caches the
+    # rest of this function preserves.
     _TEST_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    for seeded in paths.SEEDED_CONFIG_FILENAMES:
+        (_TEST_CONFIG_DIR / seeded).unlink(missing_ok=True)
+
+    # CACHE_DIR (separate platform cache dir) holds the shared Go build cache.
+    # Without xdist we wipe it for a fresh per-session slate (7.0-dev behavior).
+    # Under xdist it is a single location shared across all workers, so wiping it
+    # from each worker's pytest_configure would race and force a full Go recompile
+    # per worker — preserve it there, as with the DATA_DIR caches below.
+    if not os.environ.get("PYTEST_XDIST_WORKER"):
+        shutil.rmtree(_TEST_CACHE_DIR, ignore_errors=True)
+
+    # Preserve the heavy read-only caches under the shared base; scrub only the
+    # per-run mutable state in this process's DATA_DIR (per-worker under xdist)
+    # so cached external deps survive across sessions.
     _TEST_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    data_dir = _worker_data_dir()
+    data_dir.mkdir(parents=True, exist_ok=True)
+    for mutable in ("downloads", "obfuscated_module_source"):
+        shutil.rmtree(data_dir / mutable, ignore_errors=True)
+
     shutil.copy(
         _REPO_ROOT / "empire/test/test_registry_1.yaml",
-        _TEST_DATA_DIR / "test_registry_1.yaml",
+        data_dir / "test_registry_1.yaml",
     )
     shutil.copy(
         _REPO_ROOT / "empire/test/test_registry_2.yaml",
-        _TEST_DATA_DIR / "test_registry_2.yaml",
+        data_dir / "test_registry_2.yaml",
     )
 
 

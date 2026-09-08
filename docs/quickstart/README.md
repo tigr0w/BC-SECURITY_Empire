@@ -29,6 +29,42 @@ Run the test suite via pytest. All arguments after `test` are passed directly to
 ./ps-empire test empire/test/test_agent_api.py -v
 ```
 
+### Update
+
+Refresh the Empire source, Starkiller, Empire-Compiler, and plugin registries in one step:
+
+```bash
+# Interactive: prompts before downloading a new Starkiller / Compiler ref when one is cached
+./ps-empire update
+
+# Non-interactive (auto-confirms cache-migration prompts)
+./ps-empire update -y
+```
+
+What it does, in order:
+
+1. **Source.** If the install is a git checkout at a release tag (the documented install path uses `setup/checkout-latest-tag.sh`), runs `git fetch --tags` and re-runs `checkout-latest-tag.sh` to move HEAD to the latest tag for the appropriate channel (`sponsors`, `kali`, or mainline, detected from `origin`). If HEAD is on a development branch, the source step is skipped — manage upstream pulls yourself with git. Skipped entirely if the install is not a git checkout.
+2. **Config.** Overwrites `~/.config/empire/config.yaml` with the shipped template from the repo. **Local customizations belong in `~/.config/empire/config.user.yaml`**, which the server merges on top of the base config at startup (see [User Config Overrides](server.md#user-config-overrides)).
+3. **Database.** Checks for pending Alembic migrations and, if any are found, prompts to back up the database and apply them (`-y` auto-confirms). See [Migrations](../database/README.md#migrations).
+4. **Starkiller / plugin registries.** Fast-forwards the existing clone of the configured ref. If the configured ref changed (e.g. 7.0 moves the plugin registry from `main` to `7.x`), prompts before downloading the new ref into the cache.
+5. **Empire-Compiler.** Re-downloads the binary if the configured release tag changed.
+
+{% hint style="warning" %}
+Step 2 overwrites the base config every run. Any edits made directly to `~/.config/empire/config.yaml` will be lost — move overrides to `config.user.yaml` first.
+{% endhint %}
+
+{% hint style="info" %}
+**Upgrading from 6.x?** 7.0 has breaking changes and requires a fresh database (`--reset`) — there is no in-place upgrade path. See [Upgrading to 7.0](upgrading-to-7.md) before you touch a running instance.
+{% endhint %}
+
+{% hint style="info" %}
+**Upgrading from a pre-`update` install?** Earlier versions of `./ps-empire install` ran under `sudo`, which left `~/.config/empire/` and `~/.local/share/empire/` root-owned. `update` runs as your user and aborts up front if it detects this; one-shot fix:
+
+```bash
+sudo chown -R "$USER" ~/.config/empire ~/.local/share/empire
+```
+{% endhint %}
+
 ### Reset
 
 The server can be reset by passing a `--reset` flag. This will delete the database and any files that were created at runtime. It is recommended to run a `--reset` after any upgrades.
@@ -48,6 +84,10 @@ Password: password123
 It is strongly recommended that these be changed if Empire is used for any operational engagement.
 {% endhint %}
 
+{% hint style="warning" %}
+**Upgrading from pre-7.0?** Empire 7.0 replaced bcrypt password hashing with PBKDF2-HMAC-SHA256 for FIPS compliance, so pre-7.0 password hashes are unusable. 7.0 requires a fresh database — see [Upgrading to 7.0](upgrading-to-7.md).
+{% endhint %}
+
 ## The Basics
 
 {% tabs %}
@@ -58,7 +98,7 @@ The first thing you need to do is set up a local listener. The **listeners** tab
 
 ![](../.gitbook/assets/listeners_tab.png)
 
-HTTP is the most commonly used listener and supports both HTTP and HTTPS. For HTTPS, you must first set the CertPath to be a local .pem file. The provided **./setup/cert.sh** script will generate a self-signed cert and place it in **\~/.local/share/empire/cert/empire.pem**.
+HTTP is the most commonly used listener and supports both HTTP and HTTPS. For HTTPS, CertPath is the **directory** holding the certificate/key pair — Empire appends the `empire-chain.pem` and `empire-priv.key` filenames itself, so it is a folder, not a single `.pem` file. Empire generates a self-signed pair on first server start in the data directory's `cert/` folder (**\~/.local/share/empire/cert/** by default; see [data & config locations](server.md#data--config-locations)); point CertPath there to use it.
 
 Set any optional parameters such as WorkingHours, KillDate, DefaultDelay, and DefaultJitter for the listener, as well as whatever name you want it to be referred to as. You can then hit **submit** to start the listener. If the name is already taken, a nameX variant will be used, and Empire will alert you if the port is already in use.
 
@@ -86,13 +126,28 @@ For details on stager output formats and downloads, see the [Stagers documentati
 
 When an agent checks in, you will get a notification both on the server and in Starkiller.
 
-![](../.gitbook/assets/server_check_in.png) ![](../.gitbook/assets/starkiller_checkin.png)
+On the server you will see the staging exchange and the check-in:
+
+```
+[INFO]: http-primary: Sending PYTHON stager (stage 1) to 192.0.2.88
+[INFO]: Agent R9TF6NCV from 192.0.2.88 posted public key
+[INFO]: Agent R9TF6NCV from 192.0.2.88 posted valid Python PUB key
+[INFO]: New agent R9TF6NCV checked in
+[INFO]: Initial agent R9TF6NCV from 192.0.2.88 now active
+[INFO]: http-primary: Sending agent (stage 2) to R9TF6NCV at 192.0.2.88
+```
+
+In Starkiller the same check-in arrives as a notification:
+
+![](../.gitbook/assets/starkiller_checkin.png)
 
 Once you have received a check-in notification, you can go to the agents tab and see all checked-in agents. If an agent turns red, it means the agent has failed to check in and the server cannot currently communicate with it. These are referred to as stale agents
 
 ![](../.gitbook/assets/agents_tab.png)
 
 From here you can click on any agent where you will be presented with a number of tabs including the interact tab for running modules, tasks, and view. The view tab will provide you with information that has been collected about the host, along with other key information like delay and jitter intervals.
+
+![](../.gitbook/assets/agent_interact.png)
 
 For each registered agent, a `downloads/AGENT_NAME/` folder is created. An `agent.log` is created here with timestamped commands/results for agent communication. Downloads/module outputs are broken out into relevant folders here as well.
 

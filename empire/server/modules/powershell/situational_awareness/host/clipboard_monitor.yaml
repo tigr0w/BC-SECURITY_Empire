@@ -8,8 +8,8 @@ description: |
   system. Helpful in tracking copied passwords or sensitive data used during a
   session.
 software: ''
-tactics: [TA0009, TA0007]
-techniques: [T1115, T1082]
+tactics: [TA0009]
+techniques: [T1115]
 background: true
 output_extension:
 needs_admin: false

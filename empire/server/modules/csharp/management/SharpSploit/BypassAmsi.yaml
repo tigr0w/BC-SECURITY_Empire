@@ -10,10 +10,9 @@ description: |
   ran by the agent after execution of this module will no longer be sent to AMSI for
   scanning when loaded.
 software: ''
-tactics: [TA0005]
+tactics: [TA0112]
 techniques:
-  - T1562.001
-  - T1562.006
+  - T1685
 background: false
 output_extension: ''
 needs_admin: false

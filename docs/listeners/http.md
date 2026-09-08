@@ -9,7 +9,7 @@ By default, the HTTP listener runs on:
 
 ## Key Configuration Options
 
-<div align="center"><img src="../.gitbook/assets/http_listener_required.png" alt=""> <img src="../.gitbook/assets/http_listener_optional.png" alt=""></div>
+Every option below is set when creating the listener in Starkiller.
 
 ### **Staging Key**
 

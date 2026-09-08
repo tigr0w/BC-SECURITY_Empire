@@ -15,7 +15,6 @@ class Module:
         listener_name = params["Listener"]
         time_spec = params["Time"]
         user_agent = params.get("UserAgent", "default")
-        safe_checks = params.get("SafeChecks", "True")
 
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             raise ModuleValidationException(f"[!] Invalid listener: {listener_name}")
@@ -25,7 +24,6 @@ class Module:
             language="python",
             encode=True,
             user_agent=user_agent,
-            safe_checks=safe_checks,
         )
         if not launcher or not launcher.strip():
             raise ModuleValidationException("[!] Error in launcher command generation.")

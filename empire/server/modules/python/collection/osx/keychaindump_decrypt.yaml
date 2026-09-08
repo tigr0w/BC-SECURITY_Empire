@@ -15,7 +15,7 @@ description: |
   extraction capabilities for website passwords, application
   passwords, and other stored credentials in the user's keychain.
 software: ''
-tactics: [TA0006]
+tactics: [TA0006, TA0009]
 techniques:
   - T1005
   - T1555.001

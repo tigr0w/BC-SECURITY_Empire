@@ -67,11 +67,7 @@ options:
     description: Want to see failed logon attempts? And found users? Set this to
       any value.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
 script_path: recon/Fetch-And-Brute-Local-Accounts.ps1
 advanced:
   custom_generate: true

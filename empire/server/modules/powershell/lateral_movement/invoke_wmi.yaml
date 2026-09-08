@@ -23,11 +23,7 @@ description: |
   attack vector.
 software: ''
 tactics: [TA0002, TA0008]
-techniques:
-  - T1021.006
-  - T1047
-  - T1105
-  - T1550.002
+techniques: [T1047, T1059.001, T1550.002]
 background: false
 output_extension:
 needs_admin: false
@@ -83,11 +79,7 @@ options:
     description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
       for obfuscation types.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: ObfuscateCommand
     description: The Invoke-Obfuscation command to use.
     required: false

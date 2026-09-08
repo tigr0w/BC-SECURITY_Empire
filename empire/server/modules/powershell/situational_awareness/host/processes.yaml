@@ -1,0 +1,77 @@
+name: Get-Processes
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: |
+  Enumerates running processes on the target via WMI and returns process name,
+  PID, architecture, owning user, and working set memory as JSON. Output feeds
+  the server-side ps_filter/ps_hook so Starkiller's HostProcess view stays
+  populated. Replaces the legacy in-agent `shell ps` alias.
+software: ''
+tactics: [TA0007]
+techniques: [T1057]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - Replaces the in-agent ps alias removed in Empire 7.0.
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: ProcessName
+    description: Optional process name filter (wildcards allowed). Defaults to all.
+    required: false
+    value: '*'
+script: |
+  function Get-Processes {
+      param([string]$ProcessName = '*')
+      try {
+          $owners = @{};
+          Get-WmiObject win32_process -ErrorAction Stop | ForEach-Object {
+              try {
+                  $o = $_.getowner()
+                  if (-not $($o.User)) {
+                      $o = 'N/A'
+                  } else {
+                      $o = "$($o.Domain)\$($o.User)"
+                  }
+              } catch {
+                  $o = 'N/A'
+              }
+              $owners[$_.handle] = $o
+          }
+          if (-not $ProcessName) { $ProcessName = '*' }
+          Get-Process $ProcessName -ErrorAction Stop | ForEach-Object {
+              $arch = 'x64';
+              if ([System.IntPtr]::Size -eq 4) {
+                  $arch = 'x86'
+              }
+              else {
+                  foreach($module in $_.modules) {
+                      if([System.IO.Path]::GetFileName($module.FileName).ToLower() -eq "wow64.dll") {
+                          $arch = 'x86';
+                          break
+                      }
+                  }
+              }
+              $out = New-Object psobject;
+              $out | Add-Member Noteproperty 'ProcessName' $_.ProcessName;
+              $out | Add-Member Noteproperty 'PID' $_.ID;
+              $out | Add-Member Noteproperty 'Arch' $arch;
+              $out | Add-Member Noteproperty 'UserName' $owners[$_.id.tostring()];
+              $mem = "{0:N2} MB" -f $($_.WS/1MB);
+              $out | Add-Member Noteproperty 'MemUsage' $mem;
+              $out;
+          } | Sort-Object -Property PID | ConvertTo-Json
+      }
+      catch {
+          "[!] processes module failed: $_"
+      }
+  }
+script_end: Get-Processes {{ PARAMS }}

@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import logging
 from collections.abc import Callable
 
@@ -105,13 +106,30 @@ class Hooks:
     # Its arguments are (db: Session, agent_id: str)
     AFTER_AGENT_CALLBACK_HOOK = "after_agent_callback_hook"
 
-    # This event is triggered after a tag is created.
-    # Its arguments are (db: Session, tag: models.Tag, taggable: Union[models.Agent, models.Listener, etc])
+    # This event is triggered after a brand-new tag row is created in the tag
+    # registry (NOT on every attach — attaching an existing tag does not fire
+    # this). Its arguments are (db: Session, tag: models.Tag). When a tag is
+    # created as part of attaching it to an entity, AFTER_TAG_ATTACHED_HOOK fires
+    # immediately afterwards with that entity, so this stays a pure
+    # registry-creation signal.
     AFTER_TAG_CREATED_HOOK = "after_tag_created_hook"
 
-    # This event is triggered after a tag is updated.
-    # Its arguments are (db: Session, tag: models.Tag, taggable: Union[models.Agent, models.Listener, etc])
+    # This event is triggered when a tag is newly attached to an entity (the
+    # "an entity was tagged" signal), whether the tag already existed or was
+    # just created. It does NOT fire on an idempotent re-attach of a tag the
+    # entity already carries. Its arguments are (db: Session, tag: models.Tag,
+    # taggable: Agent|Listener|...).
+    AFTER_TAG_ATTACHED_HOOK = "after_tag_attached_hook"
+
+    # This event is triggered after a tag is edited (rename/recolor/description).
+    # Its arguments are (db: Session, tag: models.Tag) — tag edits are global and
+    # have no associated entity.
     AFTER_TAG_UPDATED_HOOK = "after_tag_updated_hook"
+
+    # Triggered after a chat message is persisted. Args: (db: Session, message: models.ChatMessage).
+    # Fired with None as the session arg (like the tasking/callback hooks) so the
+    # async dispatch opens its own managed session.
+    AFTER_CHAT_MESSAGE_HOOK = "after_chat_message_hook"
 
     def __init__(self):
         self.hooks: dict[str, dict[str, Callable]] = {}
@@ -133,27 +151,36 @@ class Hooks:
             self.filters[event] = {}
         self.filters[event][name] = filter
 
+    @staticmethod
+    def _unregister(
+        registry: dict[str, dict[str, Callable]],
+        kind: str,
+        name: str,
+        event: str | None,
+    ):
+        """Drop `name` from one event, or from every event when none is given.
+
+        A miss is tolerated but warned about: an on_unload may defensively
+        unregister something on_start never registered, but a typo'd name looks
+        identical and leaves the real callback firing against a torn-down plugin.
+        """
+        events = list(registry) if event is None else [event]
+        # A list, not a generator: all() short-circuits on the first hit and
+        # would leave the remaining events un-popped.
+        removed = [registry.get(ev, {}).pop(name, None) for ev in events]
+        if all(hook is None for hook in removed):
+            where = f" for event {event}" if event else ""
+            log.warning(
+                f"No {kind} named {name!r} was registered{where}; nothing removed"
+            )
+
     def unregister_hook(self, name: str, event: str | None = None):
-        """
-        Unregister a hook.
-        """
-        if event is None:
-            for ev in self.hooks:
-                self.hooks[ev].pop(name)
-            return
-        if name in self.hooks.get(event, {}):
-            self.hooks[event].pop(name)
+        """Drop a hook from one event, or from all events when none is given."""
+        self._unregister(self.hooks, "hook", name, event)
 
     def unregister_filter(self, name: str, event: str | None = None):
-        """
-        Unregister a filter.
-        """
-        if event is None:
-            for ev in self.filters:
-                self.filters[ev].pop(name)
-            return
-        if name in self.filters.get(event, {}):
-            self.filters[event].pop(name)
+        """Drop a filter from one event, or from all events when none is given."""
+        self._unregister(self.filters, "filter", name, event)
 
     def run_hooks(self, event: str, *args):
         """Run all hooks for a hook type.
@@ -169,9 +196,13 @@ class Hooks:
         """
         if event not in self.hooks:
             return
-        for hook in self.hooks.get(event, {}).values():
+        # Snapshot: a hook that unregisters itself would otherwise mutate the
+        # dict being iterated, and that RuntimeError comes from the iterator —
+        # past the handler below. Unregistering takes effect from the next
+        # dispatch.
+        for hook in list(self.hooks[event].values()):
             try:
-                if asyncio.iscoroutinefunction(hook):
+                if inspect.iscoroutinefunction(hook):
                     try:  # https://stackoverflow.com/a/61331974/
                         loop = asyncio.get_running_loop()
                     except RuntimeError:
@@ -211,7 +242,8 @@ class Hooks:
         """
         if event not in self.filters:
             return None
-        for filter in self.filters.get(event, {}).values():
+        # Snapshot, same reason as run_hooks.
+        for filter in list(self.filters[event].values()):
             if not isinstance(args, tuple):
                 args = (args,)
             try:

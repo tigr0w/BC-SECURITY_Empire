@@ -15,7 +15,7 @@ description: |
   adjustments. In monitored environments, these changes may trigger security alerts
   as they modify standard Windows configurations.
 software: ''
-tactics: [TA0005, TA0008]
+tactics: [TA0003, TA0008, TA0112]
 techniques: [T1021.001, T1112]
 background: false
 output_extension:

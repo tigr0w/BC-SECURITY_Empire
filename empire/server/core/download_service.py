@@ -1,7 +1,6 @@
 import logging
 import shutil
 import typing
-from operator import and_
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile
@@ -15,6 +14,7 @@ from empire.server.api.v2.download.download_dto import (
 from empire.server.api.v2.shared_dto import OrderDirection
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
+from empire.server.core.tag_service import tag_name_filter
 from empire.server.utils.file_util import is_path_within, safe_filename
 
 if typing.TYPE_CHECKING:
@@ -91,13 +91,7 @@ class DownloadService:
             )
 
         if tags:
-            tags_split = [tag.split(":", 1) for tag in tags]
-            stmt = stmt.join(models.Download.tags).where(
-                and_(
-                    models.Tag.name.in_([tag[0] for tag in tags_split]),
-                    models.Tag.value.in_([tag[1] for tag in tags_split]),
-                )
-            )
+            stmt = stmt.where(tag_name_filter(models.Download.tags, tags))
 
         if order_by == DownloadOrderOptions.filename:
             order_by_prop = func.lower(models.Download.filename)
@@ -153,18 +147,26 @@ class DownloadService:
     def create_download(
         self,
         db: Session,
-        user: models.User,
+        user: models.User | None,
         file: UploadFile | Path,
         tags: list[str] | None = None,
     ):
         """
         Upload the file to the downloads directory and save a reference to the db.
-        Tags strings will be split on the first colon and the first part will be the
-        name and the second part will be the value.
+        Each string in ``tags`` is attached as a label by that exact name (a label
+        is created on miss); the string is used verbatim and is no longer split.
+
+        If ``user`` is None, the file is stored under ``uploads_system/`` for
+        system-attributed uploads (e.g. listener autorun tasks).
         """
         filename = file.name if isinstance(file, Path) else file.filename
 
-        base_dir = empire_config.directories.downloads / "uploads" / user.username
+        if user is not None:
+            base_dir = empire_config.directories.downloads / "uploads" / user.username
+        else:
+            # System-attributed uploads (e.g. listener autorun_tasks) have no user.
+            # Kept outside uploads/<username>/ so no real username can collide.
+            base_dir = empire_config.directories.downloads / "uploads_system"
         location = self._secure_upload_location(base_dir, filename)
         location.parent.mkdir(parents=True, exist_ok=True)
 
@@ -220,8 +222,7 @@ class DownloadService:
         db.flush()
 
         for tag in tags or []:
-            tag_name, tag_value = tag.split(":", 1)
-            self.tag_service.add_tag(db, download, tag_name, tag_value)
+            self.tag_service.attach_tag(db, download, name=tag)
 
         db.execute(models.upload_download_assc.insert().values(download_id=download.id))
 

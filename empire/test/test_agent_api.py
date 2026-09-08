@@ -30,8 +30,12 @@ def test_get_agents_include_stale_false(client, admin_auth_header, agents):
     )
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(response.json()["records"]) > 0
-    assert all(record["stale"] is False for record in response.json()["records"])
+    # Scope to this fixture's agents: the worker DB is shared across files under
+    # xdist, so foreign agents near the staleness boundary would otherwise flake
+    # this.
+    records = [r for r in response.json()["records"] if r["session_id"] in agents]
+    assert len(records) > 0
+    assert all(record["stale"] is False for record in records)
 
 
 def test_get_agents_include_archived_true(client, admin_auth_header, agents):

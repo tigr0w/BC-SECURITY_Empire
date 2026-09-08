@@ -16,8 +16,7 @@ description: |
   access across user sessions and system reboots.
 software: ''
 tactics: [TA0003, TA0004]
-techniques:
-  - T1037.005
+techniques: [T1547, T1547.013]
 background: false
 output_extension:
 needs_admin: false
@@ -39,11 +38,7 @@ options:
   - name: Remove
     description: Remove Persistence based on FileName.
     required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
+    value: false
   - name: FileName
     description: File name without extension that you would like created in ~/.config/autostart/
       folder.

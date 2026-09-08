@@ -8,9 +8,9 @@ description: |
   an installed program or service attempts to load a missing CLSID. If successful
   the executable is launched at the privilege level of the targeted program or service.
 software: ''
-tactics: [TA0003]
-techniques: [T1546.015]
-background: false
+tactics: [TA0003, TA0004]
+techniques: [T1546, T1546.015]
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true

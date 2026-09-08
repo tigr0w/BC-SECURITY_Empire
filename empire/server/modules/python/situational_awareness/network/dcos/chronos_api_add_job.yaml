@@ -11,9 +11,8 @@ description: |
   to define new scheduled jobs with specified commands, owners,
   descriptions, and ISO8601 schedule formats.
 software: ''
-tactics: [TA0002]
-techniques:
-  - T1059.006
+tactics: [TA0002, TA0003, TA0004]
+techniques: [T1053.007, T1059.006, T1610]
 background: true
 output_extension: ''
 needs_admin: false

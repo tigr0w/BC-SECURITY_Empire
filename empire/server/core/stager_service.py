@@ -10,7 +10,10 @@ from sqlalchemy.orm import Session
 
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
-from empire.server.core.exceptions import ModuleExecutionException
+from empire.server.core.exceptions import (
+    ModuleExecutionException,
+    StagerGenerationException,
+)
 from empire.server.utils.option_util import set_options, validate_options
 
 log = logging.getLogger(__name__)
@@ -50,7 +53,7 @@ class StagerService:
         self, db: Session, template: str, params: dict
     ) -> tuple[Any | None, str | None]:
         """
-        Validates the new listener's options. Constructs a new "Listener" object.
+        Validates the stager options. Constructs a new Stager template instance.
         :param template:
         :param params:
         :return: (Stager, error)
@@ -167,7 +170,7 @@ class StagerService:
     def generate_stager(self, template_instance):
         try:
             resp = template_instance.generate()
-        except ModuleExecutionException as e:
+        except (ModuleExecutionException, StagerGenerationException) as e:
             # Convert compile/subprocess failures to a structured (None, err)
             # result so the API surfaces a 400 with the message rather than a
             # 500 stack trace. exc_info=True preserves the chained subprocess
@@ -180,10 +183,8 @@ class StagerService:
             )
             return None, str(e)
 
-        # todo generate should return error response much like listener validate
-        #  options should.
         if not resp:
-            return None, "Error generating"
+            return None, "Error generating stager"
 
         out_file = template_instance.options.get("OutFile", {}).get("Value")
         file_name = Path(out_file).name if out_file else f"{uuid.uuid4()}.txt"

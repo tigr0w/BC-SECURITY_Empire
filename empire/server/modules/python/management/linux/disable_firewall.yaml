@@ -9,8 +9,8 @@ description: |
   rules, disables ufw (Uncomplicated Firewall), and stops the
   firewalld service. Also attempts to stop ufw via systemctl.
 software: ''
-tactics: [TA0005]
-techniques: [T1562.004]
+tactics: [TA0112]
+techniques: [T1686]
 background: false
 output_extension: ''
 needs_admin: true

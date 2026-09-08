@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
 from empire.server.core.db import models
+from empire.server.core.tag_service import tag_name_filter
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -34,13 +35,7 @@ class CredentialService:
             )
 
         if tags:
-            tags_split = [tag.split(":", 1) for tag in tags]
-            stmt = stmt.join(models.Credential.tags).where(
-                and_(
-                    models.Tag.name.in_([tag[0] for tag in tags_split]),
-                    models.Tag.value.in_([tag[1] for tag in tags_split]),
-                )
-            )
+            stmt = stmt.where(tag_name_filter(models.Credential.tags, tags))
 
         if credtype:
             stmt = stmt.where(models.Credential.credtype == credtype)

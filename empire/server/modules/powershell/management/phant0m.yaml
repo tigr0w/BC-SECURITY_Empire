@@ -15,10 +15,9 @@ description: |
   the module maintains the appearance of normal system operation while preventing
   new events from being logged.
 software: ''
-tactics: [TA0005]
+tactics: [TA0112]
 techniques:
-  - T1562.002
-  - T1562.006
+  - T1685.001
 background: false
 output_extension:
 needs_admin: true
