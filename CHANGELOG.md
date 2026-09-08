@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.0.2] - 2026-09-08
+
 ### Changed
 
 -   Updated Empire Compiler to v2.0.2: Sharpire now uses a CSPRNG for AES-GCM nonces and AES-CBC IVs, and fixes JSON backslash parsing, `cd` persistence, and network drive visibility. Certify submodule switched to BC-SECURITY fork with null-safety fixes, and adds BouncyCastle.Crypto.dll and updated CommandLine.dll/System.Net.Http.dll for Certify 2.0.
@@ -1665,7 +1667,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.2...HEAD
+
+[7.0.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.1...v7.0.2
 
 [7.0.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.0...v7.0.1
 
