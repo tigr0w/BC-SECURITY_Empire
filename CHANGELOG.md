@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+-   Updated Empire Compiler to v2.0.2: Sharpire now uses a CSPRNG for AES-GCM nonces and AES-CBC IVs, and fixes JSON backslash parsing, `cd` persistence, and network drive visibility. Certify submodule switched to BC-SECURITY fork with null-safety fixes, and adds BouncyCastle.Crypto.dll and updated CommandLine.dll/System.Net.Http.dll for Certify 2.0.
+
+### Fixed
+
+-   Updated the `credentials/Certify` module to the Certify 2.0 command format, building as `Net47` with merged references and passing arguments straight through.
+-   Fixed `cd` in the Gopire agent not persisting: shell `cd` is now routed to `os.Chdir` instead of a throwaway subprocess, and the missing `TASK_CHDIR` handler was added.
+
 ## [7.0.1] - 2026-08-25
 
 ### Security
